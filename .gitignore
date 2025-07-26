@@ -1,0 +1,38 @@
+# R build files
+.Rhistory
+.RData
+.Rproj.user/
+.Rproj.user
+.Rproj
+.Ruserdata
+.Rapp.history
+
+# Compiled source files
+src/*.o
+src/*.so
+src/*.dll
+src/*.a
+src/*.dylib
+src/*.exe
+src/*.obj
+src/*.lib
+src/*.exp
+src/*.pdb
+
+# R package build output
+*.tar.gz
+*.Rcheck/
+
+# IDE and OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# VSCode
+.vscode/
+
+# Other
+inst/include/*/
+!inst/include/tensory.h
+Read-and-delete-me
