@@ -1,109 +1,237 @@
-
-#' S4 `tensor` class
+#' R6 Tensor Class
 #'
-#' @slot data An R  array.
-#' @slot dims The dimension of the tensor.  
+#' A modern tensor class for R that provides MATLAB Tensor Toolbox compatibility
+#' with high-performance operations via xtensor C++ backend.
 #'
-#' @name tensor-class
-#' @rdname tensor-class
-#' @aliases tensor-class
-#' @docType class
+#' @examples
+#' # Create a tensor from a matrix
+#' t <- Tensor$new(matrix(1:6, nrow=2, ncol=3))
+#' print(t)
+#' 
+#' # Create a tensor with specific dimensions
+#' t2 <- Tensor$new(1:24, c(2, 3, 4))
+#' 
+#' # Mathematical operations
+#' t3 <- t2$clone_tensor()$add(t2)
+#' 
 #' @export
-setClass("tensor", slots = c(data = "ANY", dims = "integer"))
+Tensor <- R6::R6Class("Tensor",
+  public = list(
+    #' @field data The underlying array data
+    data = NULL,
+    
+    #' @field dims The dimensions of the tensor
+    dims = NULL,
+    
+    #' Initialize a new tensor
+    #' 
+    #' @param data A vector, matrix, array, or numeric value
+    #' @param dims The dimensions of the tensor. If NULL, inferred from data
+    #' @return A new Tensor object
+    initialize = function(data, dims = NULL) {
+      # Handle different input types
+      if (is.null(dims)) {
+        if (is.vector(data)) {
+          dims <- length(data)
+        } else if (is.matrix(data) || is.array(data)) {
+          dims <- dim(data)
+        } else if (is.numeric(data) && length(data) == 1) {
+          dims <- 1
+          data <- as.double(data)
+        } else {
+          stop("Unsupported data type")
+        }
+      }
+      
+      # Convert dims to integer
+      dims <- as.integer(dims)
+      
+      # Handle scalar case
+      if (length(dims) == 1 && dims == 1 && length(data) == 1) {
+        data <- array(as.double(data), dim = 1)
+      } else {
+        # Validate that dimensions match data length
+        if (prod(dims) != length(data)) {
+          stop("Product of specified dimensions must match the number of elements in data.")
+        }
+        
+        # Convert data to double array
+        if (!is.double(data)) data <- as.double(data)
+        data <- array(data, dim = dims)
+      }
+      
+      self$data <- data
+      self$dims <- dims
+    },
+    
+    #' Get tensor dimensions
+    #' @return Integer vector of dimensions
+    dim = function() {
+      return(self$dims)
+    },
+    
+    #' Get number of elements
+    #' @return Integer number of elements
+    length = function() {
+      return(length(self$data))
+    },
+    
+    #' Get number of dimensions
+    #' @return Integer number of dimensions
+    ndims = function() {
+      return(length(self$dims))
+    },
+    
+    #' Convert to R array
+    #' @return R array representation
+    as_array = function() {
+      return(self$data)
+    },
+    
+    #' Print tensor information
+    #' 
+    #' @return Invisible self
+    print = function() {
+      cat("<Tensor object>\n")
+      cat("A tensor of order", self$ndims(), "with dimensions:", paste(self$dims, collapse = " x "), "\n")
+      invisible(self)
+    },
+    
+    #' Show tensor (alias for print)
+    #' 
+    #' @return Invisible self
+    show = function() {
+      self$print()
+    },
+    
+    #' Clone the tensor
+    #' @return A new Tensor object with copied data
+    clone_tensor = function() {
+      Tensor$new(self$data)
+    },
+    
+    #' Reshape the tensor
+    #' @param new_dims New dimensions
+    #' @return Self (in-place operation)
+    reshape = function(new_dims) {
+      new_dims <- as.integer(new_dims)
+      if (prod(new_dims) != length(self$data)) {
+        stop("Product of new dimensions must match the number of elements in tensor.")
+      }
+      self$data <- array(self$data, dim = new_dims)
+      self$dims <- new_dims
+      return(self)
+    },
+    
+    #' Element-wise addition
+    #' @param other Another Tensor or numeric value
+    #' @return Self (in-place operation)
+    add = function(other) {
+      if (inherits(other, "Tensor")) {
+        if (!identical(self$dims, other$dims)) {
+          stop("Tensors must have the same dimensions for element-wise addition")
+        }
+        self$data <- self$data + other$data
+      } else {
+        self$data <- self$data + as.double(other)
+      }
+      return(self)
+    },
+    
+    #' Element-wise subtraction
+    #' @param other Another Tensor or numeric value
+    #' @return Self (in-place operation)
+    subtract = function(other) {
+      if (inherits(other, "Tensor")) {
+        if (!identical(self$dims, other$dims)) {
+          stop("Tensors must have the same dimensions for element-wise subtraction")
+        }
+        self$data <- self$data - other$data
+      } else {
+        self$data <- self$data - as.double(other)
+      }
+      return(self)
+    },
+    
+    #' Element-wise multiplication
+    #' @param other Another Tensor or numeric value
+    #' @return Self (in-place operation)
+    multiply = function(other) {
+      if (inherits(other, "Tensor")) {
+        if (!identical(self$dims, other$dims)) {
+          stop("Tensors must have the same dimensions for element-wise multiplication")
+        }
+        self$data <- self$data * other$data
+      } else {
+        self$data <- self$data * as.double(other)
+      }
+      return(self)
+    },
+    
+    #' Element-wise division
+    #' @param other Another Tensor or numeric value
+    #' @return Self (in-place operation)
+    divide = function(other) {
+      if (inherits(other, "Tensor")) {
+        if (!identical(self$dims, other$dims)) {
+          stop("Tensors must have the same dimensions for element-wise division")
+        }
+        self$data <- self$data / other$data
+      } else {
+        self$data <- self$data / as.double(other)
+      }
+      return(self)
+    },
+    
+    #' Sum along dimensions
+    #' @param dims Dimensions to sum along (NULL for all)
+    #' @return New Tensor with reduced dimensions
+    sum = function(dims = NULL) {
+      if (is.null(dims)) {
+        result <- base::sum(self$data)
+        return(Tensor$new(result, 1))
+      } else {
+        dims <- as.integer(dims)
+        result_array <- base::apply(self$data, dims, base::sum)
+        if (is.null(dim(result_array))) {
+          result_array <- array(result_array, dim = length(result_array))
+        }
+        return(Tensor$new(result_array))
+      }
+    }
+  )
+)
 
-#' Create a `tensor` object
+#' Create a tensor object
 #' 
-#' @param data A R vector, matrix or array.
-#' @param dims The dimension of the tensor. When `dims` is not supplied, use the dimension of the data.
+#' Convenience function to create a Tensor object
 #' 
-#' @return A \code{tensor} object.
-#' @examples 
-#' tensor(data=matrix(1:6,ncol=2),dims=c(2,3))
-#' tensor(data=matrix(c(1L,2L,3L,4L),ncol=2) )
-#' mytensor <- tensor(data=array(1:1000000,c(100,100,100)))
-#' mytensor + mytensor
+#' @param data A vector, matrix, array, or numeric value
+#' @param dims The dimensions of the tensor. If NULL, inferred from data
+#' @return A new Tensor object
 #' @export
 tensor <- function(data, dims = NULL) {
+  Tensor$new(data, dims)
+}
 
-      # Determine dimensions
-      if (is.null(dims)) {
-        dims <- if (is.vector(data)) length(data) else dim(data)
-      }
+#' Create a tensor of zeros
+#' 
+#' @param dims Dimensions of the tensor
+#' @return A new Tensor object filled with zeros
+#' @export
+zeros <- function(dims) {
+  dims <- as.integer(dims)
+  data <- array(0.0, dim = dims)
+  Tensor$new(data)
+}
 
-      # Validate that dimensions match data length
-      if (prod(dims) != length(data)) {
-        stop("Product of specified dimensions must match the number of elements in data.")
-      }
-
-      # If `data` is not double, convert it (preserves matrix/array structure)
-      if (!is.double(data)) data <- as.double(data)
-
-
-      # Convert data to array and ensure dims is integer
-      dims <- as.integer(dims)
-      data <- array(data, dim = dims)
-
-
-
-      # Instantiate a new tensor object
-      new("tensor", data = data, dims = dims)
-    }
-
-#  validation function for tensor class object
-setValidity("tensor", function(object) {
-  if (length(object@data) != prod(object@dims)) {
-    "Data length does not match the product of dimensions"
-  } else {
-    TRUE
-  }
-})
- 
-# show method for tensor class object
-setMethod("show", "tensor", function(object) {
-  cat("<tensor object>\n")
-  cat("A tensor of order", length(object@dims), "with dimensions:", paste(object@dims, collapse = " x "), "\n")
-  invisible(object)
-})
- 
-
-
-# add method for tensor objects with `+` operator
-setMethod("+", signature = c("tensor", "tensor"), function(e1, e2) {
-  # if (!all(e1@dims == e2@dims)) {
-  #   stop("Both tensors must have the same dimensions")
-  # }
-  new("tensor", data = e1@data + e2@data, dims = e1@dims)
-})
-
-## tensor add using test_add_cpp function
-setGeneric("cpp_add", function(e1, e2) standardGeneric("cpp_add"))
-
-setMethod("cpp_add", signature =  c(e1="tensor",e2="tensor") , function(e1, e2) {
-  new("tensor", data =  test_add_cpp(e1@data, e2@data), dims = e1@dims)
-})
-
-setGeneric("cpp_add2", function(e1, e2) standardGeneric("cpp_add2"))
-setMethod("cpp_add2", signature =  c(e1="tensor",e2="tensor") , function(e1, e2) {
-  new("tensor", data =  tensor_add(e1@data, e2@data), dims = e1@dims)
-})
-
-
-# S7::method(print, tensor) <- function(x, ...) {
-#     cat("<tensor object>\n")
-#     cat("A tensor of order", length(x@dims), "with dimensions:", paste(x@dims, collapse = " x "), "\n")
-#     
-#     # Reshape the data into its array form and print it
-#     # data_array <- array(x@data, dim = x@dims)
-#     # print_truncated_array(data_array)
-#     
-#     invisible(x)  # Return x invisibly for chaining if needed
-#   }
-# 
-# 
-# S7::method(generic =`+`, signature = list(i = tensor, 
-#                                           o = tensor)) <- function(e1, e2) {
-#   if (!inherits(e2, "tensor") || !all(e1@dims == e2@dims)) {
-#     stop("Both tensors must have the same dimensions")
-#   }
-#   tensor(e1@data + e2@data)
-# }
+#' Create a tensor of ones
+#' 
+#' @param dims Dimensions of the tensor
+#' @return A new Tensor object filled with ones
+#' @export
+ones <- function(dims) {
+  dims <- as.integer(dims)
+  data <- array(1.0, dim = dims)
+  Tensor$new(data)
+}

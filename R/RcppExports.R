@@ -2,42 +2,42 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 rcpp_hello_world <- function() {
-    .Call(`_tensory_rcpp_hello_world`)
+    .Call('_tensory_rcpp_hello_world', PACKAGE = 'tensory')
 }
 
 tensor_add <- function(x, y) {
-    .Call(`_tensory_tensor_add`, x, y)
+    .Call('_tensory_tensor_add', PACKAGE = 'tensory', x, y)
 }
 
 test_add_cpp <- function(x, y) {
-    .Call(`_tensory_test_add_cpp`, x, y)
+    .Call('_tensory_test_add_cpp', PACKAGE = 'tensory', x, y)
 }
 
 test_in_place_modify_cpp <- function(x) {
-    .Call(`_tensory_test_in_place_modify_cpp`, x)
+    .Call('_tensory_test_in_place_modify_cpp', PACKAGE = 'tensory', x)
 }
 
 test_roundtrip_rarray_optional <- function(x) {
-    .Call(`_tensory_test_roundtrip_rarray_optional`, x)
+    .Call('_tensory_test_roundtrip_rarray_optional', PACKAGE = 'tensory', x)
 }
 
 test_roundtrip_rtensor_optional <- function(x) {
-    .Call(`_tensory_test_roundtrip_rtensor_optional`, x)
+    .Call('_tensory_test_roundtrip_rtensor_optional', PACKAGE = 'tensory', x)
 }
 
 test_reshape_cpp <- function(x) {
-    .Call(`_tensory_test_reshape_cpp`, x)
+    .Call('_tensory_test_reshape_cpp', PACKAGE = 'tensory', x)
 }
 
 test_int_cpp <- function(x) {
-    .Call(`_tensory_test_int_cpp`, x)
+    .Call('_tensory_test_int_cpp', PACKAGE = 'tensory', x)
 }
 
 test_lgl_cpp <- function(x) {
-    .Call(`_tensory_test_lgl_cpp`, x)
+    .Call('_tensory_test_lgl_cpp', PACKAGE = 'tensory', x)
 }
 
 test_stdcomplex_cpp <- function(x) {
-    .Call(`_tensory_test_stdcomplex_cpp`, x)
+    .Call('_tensory_test_stdcomplex_cpp', PACKAGE = 'tensory', x)
 }
 
