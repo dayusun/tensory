@@ -1,0 +1,17 @@
+Package: tensory
+Type: Package
+Title: Tenosry
+Version: 1.0
+Date: 2024-11-01
+Author: Your Name
+Maintainer: Your Name <your@email.com>
+Description: `tensory` is an expermental R package to implement tensor operations and functions based on `xtensor`.
+License: MIT + file LICENSE
+Imports: 
+    S7,
+    Rcpp
+LinkingTo: Rcpp 
+RoxygenNote: 7.2.3
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
