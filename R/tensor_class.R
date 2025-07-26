@@ -11,8 +11,14 @@
 #' # Create a tensor with specific dimensions
 #' t2 <- Tensor$new(1:24, c(2, 3, 4))
 #' 
-#' # Mathematical operations
+#' # Mathematical operations using method syntax
 #' t3 <- t2$clone_tensor()$add(t2)
+#' 
+#' # Mathematical operations using operator syntax
+#' t4 <- t2 + t2
+#' t5 <- t2 * 2
+#' t6 <- 5 - t2
+#' t7 <- t2 / 3
 #' 
 #' @export
 Tensor <- R6::R6Class("Tensor",
@@ -211,7 +217,59 @@ Tensor <- R6::R6Class("Tensor",
 #' @return A new Tensor object
 #' @export
 tensor <- function(data, dims = NULL) {
+  # If dims is provided and data is a scalar, create array filled with that scalar
+  if (!is.null(dims) && is.numeric(data) && length(data) == 1) {
+    dims <- as.integer(dims)
+    total_elements <- prod(dims)
+    data <- rep(data, total_elements)
+  }
   Tensor$new(data, dims)
+}
+
+# S3 generics for arithmetic operations with Tensor objects
+#' @export
+`+.Tensor` <- function(e1, e2) {
+  if (inherits(e1, "Tensor")) {
+    return(e1$clone_tensor()$add(e2))
+  } else {
+    return(e2$clone_tensor()$add(e1))
+  }
+}
+
+#' @export
+`-.Tensor` <- function(e1, e2) {
+  if (missing(e2)) {
+    # Unary minus
+    return(e1$clone_tensor()$multiply(-1))
+  } else if (inherits(e1, "Tensor")) {
+    return(e1$clone_tensor()$subtract(e2))
+  } else {
+    # e1 is scalar, e2 is Tensor
+    # Create tensor with same dims as e2 filled with e1 value
+    temp_tensor <- tensor(e1, e2$dim())
+    return(temp_tensor$subtract(e2))
+  }
+}
+
+#' @export
+`*.Tensor` <- function(e1, e2) {
+  if (inherits(e1, "Tensor")) {
+    return(e1$clone_tensor()$multiply(e2))
+  } else {
+    return(e2$clone_tensor()$multiply(e1))
+  }
+}
+
+#' @export
+`/.Tensor` <- function(e1, e2) {
+  if (inherits(e1, "Tensor")) {
+    return(e1$clone_tensor()$divide(e2))
+  } else {
+    # e1 is scalar, e2 is Tensor
+    # Create tensor with same dims as e2 filled with e1 value
+    temp_tensor <- tensor(e1, e2$dim())
+    return(temp_tensor$divide(e2))
+  }
 }
 
 #' Create a tensor of zeros
