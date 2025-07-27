@@ -36,3 +36,4 @@ Thumbs.db
 inst/include/*/
 !inst/include/tensory.h
 Read-and-delete-me
+temp/
