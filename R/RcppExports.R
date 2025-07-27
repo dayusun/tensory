@@ -5,10 +5,6 @@ rcpp_hello_world <- function() {
     .Call(`_tensory_rcpp_hello_world`)
 }
 
-tensor_add <- function(x, y) {
-    .Call(`_tensory_tensor_add`, x, y)
-}
-
 test_add_cpp <- function(x, y) {
     .Call(`_tensory_test_add_cpp`, x, y)
 }

@@ -21,18 +21,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// tensor_add
-NumericVector tensor_add(NumericVector x, NumericVector y);
-RcppExport SEXP _tensory_tensor_add(SEXP xSEXP, SEXP ySEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type y(ySEXP);
-    rcpp_result_gen = Rcpp::wrap(tensor_add(x, y));
-    return rcpp_result_gen;
-END_RCPP
-}
 // test_add_cpp
 xt::rarray<double> test_add_cpp(xt::rarray<double>& x, xt::rarray<double>& y);
 RcppExport SEXP _tensory_test_add_cpp(SEXP xSEXP, SEXP ySEXP) {
@@ -125,7 +113,6 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_tensory_rcpp_hello_world", (DL_FUNC) &_tensory_rcpp_hello_world, 0},
-    {"_tensory_tensor_add", (DL_FUNC) &_tensory_tensor_add, 2},
     {"_tensory_test_add_cpp", (DL_FUNC) &_tensory_test_add_cpp, 2},
     {"_tensory_test_in_place_modify_cpp", (DL_FUNC) &_tensory_test_in_place_modify_cpp, 1},
     {"_tensory_test_roundtrip_rarray_optional", (DL_FUNC) &_tensory_test_roundtrip_rarray_optional, 1},
