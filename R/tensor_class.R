@@ -189,6 +189,148 @@ Tensor <- R6::R6Class("Tensor",
       return(self)
     },
     
+    #' Element-wise modulo
+    #' @param other Another Tensor or numeric value
+    #' @return Self (in-place operation)
+    modulo = function(other) {
+      if (inherits(other, "Tensor")) {
+        if (!identical(self$dims, other$dims)) {
+          stop("Tensors must have the same dimensions for element-wise modulo")
+        }
+        self$data <- self$data %% other$data
+      } else {
+        self$data <- self$data %% as.double(other)
+      }
+      return(self)
+    },
+    
+    #' Element-wise equality comparison
+    #' @param other Another Tensor or numeric value
+    #' @return Self (in-place operation)
+    equal = function(other) {
+      if (inherits(other, "Tensor")) {
+        if (!identical(self$dims, other$dims)) {
+          stop("Tensors must have the same dimensions for element-wise comparison")
+        }
+        self$data <- as.numeric(self$data == other$data)
+      } else {
+        self$data <- as.numeric(self$data == as.double(other))
+      }
+      return(self)
+    },
+    
+    #' Element-wise inequality comparison
+    #' @param other Another Tensor or numeric value
+    #' @return Self (in-place operation)
+    not_equal = function(other) {
+      if (inherits(other, "Tensor")) {
+        if (!identical(self$dims, other$dims)) {
+          stop("Tensors must have the same dimensions for element-wise comparison")
+        }
+        self$data <- as.numeric(self$data != other$data)
+      } else {
+        self$data <- as.numeric(self$data != as.double(other))
+      }
+      return(self)
+    },
+    
+    #' Element-wise less than comparison
+    #' @param other Another Tensor or numeric value
+    #' @return Self (in-place operation)
+    less_than = function(other) {
+      if (inherits(other, "Tensor")) {
+        if (!identical(self$dims, other$dims)) {
+          stop("Tensors must have the same dimensions for element-wise comparison")
+        }
+        self$data <- as.numeric(self$data < other$data)
+      } else {
+        self$data <- as.numeric(self$data < as.double(other))
+      }
+      return(self)
+    },
+    
+    #' Element-wise less than or equal comparison
+    #' @param other Another Tensor or numeric value
+    #' @return Self (in-place operation)
+    less_equal = function(other) {
+      if (inherits(other, "Tensor")) {
+        if (!identical(self$dims, other$dims)) {
+          stop("Tensors must have the same dimensions for element-wise comparison")
+        }
+        self$data <- as.numeric(self$data <= other$data)
+      } else {
+        self$data <- as.numeric(self$data <= as.double(other))
+      }
+      return(self)
+    },
+    
+    #' Element-wise greater than comparison
+    #' @param other Another Tensor or numeric value
+    #' @return Self (in-place operation)
+    greater_than = function(other) {
+      if (inherits(other, "Tensor")) {
+        if (!identical(self$dims, other$dims)) {
+          stop("Tensors must have the same dimensions for element-wise comparison")
+        }
+        self$data <- as.numeric(self$data > other$data)
+      } else {
+        self$data <- as.numeric(self$data > as.double(other))
+      }
+      return(self)
+    },
+    
+    #' Element-wise greater than or equal comparison
+    #' @param other Another Tensor or numeric value
+    #' @return Self (in-place operation)
+    greater_equal = function(other) {
+      if (inherits(other, "Tensor")) {
+        if (!identical(self$dims, other$dims)) {
+          stop("Tensors must have the same dimensions for element-wise comparison")
+        }
+        self$data <- as.numeric(self$data >= other$data)
+      } else {
+        self$data <- as.numeric(self$data >= as.double(other))
+      }
+      return(self)
+    },
+    
+    #' Element-wise logical NOT
+    #' @return Self (in-place operation)
+    logical_not = function() {
+      self$data <- as.numeric(self$data == 0)
+      return(self)
+    },
+    
+    #' Element-wise logical AND
+    #' @param other Another Tensor or numeric value
+    #' @return Self (in-place operation)
+    logical_and = function(other) {
+      if (inherits(other, "Tensor")) {
+        if (!identical(self$dims, other$dims)) {
+          stop("Tensors must have the same dimensions for element-wise logical AND")
+        }
+        self$data <- as.numeric((self$data != 0) & (other$data != 0))
+      } else {
+        self$data <- as.numeric((self$data != 0) & (as.double(other) != 0))
+      }
+      return(self)
+    },
+    
+    #' Element-wise logical OR
+    #' @param other Another Tensor or numeric value
+    #' @return Self (in-place operation)
+    logical_or = function(other) {
+      if (inherits(other, "Tensor")) {
+        if (!identical(self$dims, other$dims)) {
+          stop("Tensors must have the same dimensions for element-wise logical OR")
+        }
+        self$data <- as.numeric((self$data != 0) | (other$data != 0))
+      } else {
+        self$data <- as.numeric((self$data != 0) | (as.double(other) != 0))
+      }
+      return(self)
+    },
+    
     #' Sum along dimensions
     #' @param dims Dimensions to sum along (NULL for all)
     #' @return New Tensor with reduced dimensions
@@ -269,6 +411,119 @@ tensor <- function(data, dims = NULL) {
     # Create tensor with same dims as e2 filled with e1 value
     temp_tensor <- tensor(e1, e2$dim())
     return(temp_tensor$divide(e2))
+  }
+}
+
+#' @export
+`%%.Tensor` <- function(e1, e2) {
+  if (inherits(e1, "Tensor")) {
+    return(e1$clone_tensor()$modulo(e2))
+  } else {
+    # e1 is scalar, e2 is Tensor
+    # Create tensor with same dims as e2 filled with e1 value
+    temp_tensor <- tensor(e1, e2$dim())
+    return(temp_tensor$modulo(e2))
+  }
+}
+
+#' @export
+`==.Tensor` <- function(e1, e2) {
+  if (inherits(e1, "Tensor")) {
+    return(e1$clone_tensor()$equal(e2))
+  } else {
+    # e1 is scalar, e2 is Tensor
+    # Create tensor with same dims as e2 filled with e1 value
+    temp_tensor <- tensor(e1, e2$dim())
+    return(temp_tensor$equal(e2))
+  }
+}
+
+#' @export
+`!=.Tensor` <- function(e1, e2) {
+  if (inherits(e1, "Tensor")) {
+    return(e1$clone_tensor()$not_equal(e2))
+  } else {
+    # e1 is scalar, e2 is Tensor
+    # Create tensor with same dims as e2 filled with e1 value
+    temp_tensor <- tensor(e1, e2$dim())
+    return(temp_tensor$not_equal(e2))
+  }
+}
+
+#' @export
+`<.Tensor` <- function(e1, e2) {
+  if (inherits(e1, "Tensor")) {
+    return(e1$clone_tensor()$less_than(e2))
+  } else {
+    # e1 is scalar, e2 is Tensor
+    # Create tensor with same dims as e2 filled with e1 value
+    temp_tensor <- tensor(e1, e2$dim())
+    return(temp_tensor$less_than(e2))
+  }
+}
+
+#' @export
+`<=.Tensor` <- function(e1, e2) {
+  if (inherits(e1, "Tensor")) {
+    return(e1$clone_tensor()$less_equal(e2))
+  } else {
+    # e1 is scalar, e2 is Tensor
+    # Create tensor with same dims as e2 filled with e1 value
+    temp_tensor <- tensor(e1, e2$dim())
+    return(temp_tensor$less_equal(e2))
+  }
+}
+
+#' @export
+`>.Tensor` <- function(e1, e2) {
+  if (inherits(e1, "Tensor")) {
+    return(e1$clone_tensor()$greater_than(e2))
+  } else {
+    # e1 is scalar, e2 is Tensor
+    # Create tensor with same dims as e2 filled with e1 value
+    temp_tensor <- tensor(e1, e2$dim())
+    return(temp_tensor$greater_than(e2))
+  }
+}
+
+#' @export
+`>=.Tensor` <- function(e1, e2) {
+  if (inherits(e1, "Tensor")) {
+    return(e1$clone_tensor()$greater_equal(e2))
+  } else {
+    # e1 is scalar, e2 is Tensor
+    # Create tensor with same dims as e2 filled with e1 value
+    temp_tensor <- tensor(e1, e2$dim())
+    return(temp_tensor$greater_equal(e2))
+  }
+}
+
+#' @export
+`!.Tensor` <- function(e1) {
+  return(e1$clone_tensor()$logical_not())
+}
+
+#' @export
+`&.Tensor` <- function(e1, e2) {
+  if (inherits(e1, "Tensor")) {
+    return(e1$clone_tensor()$logical_and(e2))
+  } else {
+    # e1 is scalar, e2 is Tensor
+    # Create tensor with same dims as e2 filled with e1 value
+    temp_tensor <- tensor(e1, e2$dim())
+    return(temp_tensor$logical_and(e2))
+  }
+}
+
+#' @export
+`|.Tensor` <- function(e1, e2) {
+  if (inherits(e1, "Tensor")) {
+    return(e1$clone_tensor()$logical_or(e2))
+  } else {
+    # e1 is scalar, e2 is Tensor
+    # Create tensor with same dims as e2 filled with e1 value
+    temp_tensor <- tensor(e1, e2$dim())
+    return(temp_tensor$logical_or(e2))
   }
 }
 
