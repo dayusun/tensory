@@ -3,3 +3,4 @@
 
 // Include minimal necessary components
 #include "xtensor-r/rarray.hpp"
+#include "xtensor-r/roptional.hpp"
