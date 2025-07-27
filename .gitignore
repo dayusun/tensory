@@ -35,5 +35,6 @@ Thumbs.db
 # Other
 inst/include/*/
 !inst/include/tensory.h
+!inst/include/xtensor-r/
 Read-and-delete-me
 temp/
