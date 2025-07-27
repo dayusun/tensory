@@ -1,7 +1,8 @@
-XTL_VERSION=0.7.5
-XSIMD_VERSION=10.0.0
-XTENSOR_VERSION=0.24.6
-XTENSOR_R_VERSION=0.14.2
+XTL_VERSION=0.8.0
+XSIMD_VERSION=13.2.0
+XTENSOR_VERSION=0.27.0
+XTENSOR_R_VERSION=0.15.0
+XTENSOR_BLAS_VERSION=0.20.0
 
 # xtl
 if [ -d "./inst/include/xtl" ]
@@ -38,12 +39,22 @@ else
 fi
 
 # xtensor-r
-if [ -d "./inst/include/xtensor-r" ]
-then
-    echo "xtensor-r headers already vendored in source package"
-else
-    git clone https://github.com/xtensor-stack/xtensor-r --branch ${XTENSOR_R_VERSION}
-    cp -r xtensor-r/include/xtensor-r ./inst/include
-    rm -rf xtensor-r
-fi
+# if [ -d "./inst/include/xtensor-r" ]
+# then
+#     echo "xtensor-r headers already vendored in source package"
+# else
+#     git clone https://github.com/xtensor-stack/xtensor-r --branch ${XTENSOR_R_VERSION}
+#     cp -r xtensor-r/include/xtensor-r ./inst/include
+#     rm -rf xtensor-r
+# fi
 
+# xtensor-blas
+if [ -d "./inst/include/xtensor-blas" ]
+then
+    echo "xtensor-blas headers already vendored in source package"
+else
+    git clone https://github.com/xtensor-stack/xtensor-blas --branch ${XTENSOR_BLAS_VERSION}
+    cp -r xtensor-blas/include/xtensor-blas ./inst/include
+    cp -r xtensor-blas/include/xflens ./inst/include
+    rm -rf xtensor-blas
+fi
