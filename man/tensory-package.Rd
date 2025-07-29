@@ -41,6 +41,7 @@ enabling efficient numerical computing with multi-dimensional arrays.
   \item \code{\link{tensor}}: Create tensor objects from R data structures
   \item \code{\link{zeros}}: Create tensors filled with zeros
   \item \code{\link{ones}}: Create tensors filled with ones
+  \item \code{\link{ttm}}: Tensor times matrix operation
 }
 }
 

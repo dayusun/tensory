@@ -21,6 +21,34 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// ttm_cpp
+xt::rarray<double> ttm_cpp(const xt::rarray<double>& tensor_data, const xt::rarray<double>& matrix_data, int mode, bool transpose);
+RcppExport SEXP _tensory_ttm_cpp(SEXP tensor_dataSEXP, SEXP matrix_dataSEXP, SEXP modeSEXP, SEXP transposeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const xt::rarray<double>& >::type tensor_data(tensor_dataSEXP);
+    Rcpp::traits::input_parameter< const xt::rarray<double>& >::type matrix_data(matrix_dataSEXP);
+    Rcpp::traits::input_parameter< int >::type mode(modeSEXP);
+    Rcpp::traits::input_parameter< bool >::type transpose(transposeSEXP);
+    rcpp_result_gen = Rcpp::wrap(ttm_cpp(tensor_data, matrix_data, mode, transpose));
+    return rcpp_result_gen;
+END_RCPP
+}
+// ttm_multiple_cpp
+xt::rarray<double> ttm_multiple_cpp(const xt::rarray<double>& tensor_data, const List& matrices, const IntegerVector& modes, bool transpose);
+RcppExport SEXP _tensory_ttm_multiple_cpp(SEXP tensor_dataSEXP, SEXP matricesSEXP, SEXP modesSEXP, SEXP transposeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const xt::rarray<double>& >::type tensor_data(tensor_dataSEXP);
+    Rcpp::traits::input_parameter< const List& >::type matrices(matricesSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type modes(modesSEXP);
+    Rcpp::traits::input_parameter< bool >::type transpose(transposeSEXP);
+    rcpp_result_gen = Rcpp::wrap(ttm_multiple_cpp(tensor_data, matrices, modes, transpose));
+    return rcpp_result_gen;
+END_RCPP
+}
 // test_add_cpp
 xt::rarray<double> test_add_cpp(xt::rarray<double>& x, xt::rarray<double>& y);
 RcppExport SEXP _tensory_test_add_cpp(SEXP xSEXP, SEXP ySEXP) {
@@ -113,6 +141,8 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_tensory_rcpp_hello_world", (DL_FUNC) &_tensory_rcpp_hello_world, 0},
+    {"_tensory_ttm_cpp", (DL_FUNC) &_tensory_ttm_cpp, 4},
+    {"_tensory_ttm_multiple_cpp", (DL_FUNC) &_tensory_ttm_multiple_cpp, 4},
     {"_tensory_test_add_cpp", (DL_FUNC) &_tensory_test_add_cpp, 2},
     {"_tensory_test_in_place_modify_cpp", (DL_FUNC) &_tensory_test_in_place_modify_cpp, 1},
     {"_tensory_test_roundtrip_rarray_optional", (DL_FUNC) &_tensory_test_roundtrip_rarray_optional, 1},
