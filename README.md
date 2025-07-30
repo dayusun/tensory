@@ -40,6 +40,11 @@ library(tensory)
 - [xtensor-r](https://github.com/xtensor-stack/xtensor-r) (C++)
 - [Rcpp](https://cran.r-project.org/package=Rcpp)
 
+## TODO
+
+### Planned Improvements
+- [ ] **Convert squeeze method to xtensor implementation**: Currently the squeeze functionality in the Tensor class is implemented at the R level. Plan to migrate this to use xtensor's built-in squeeze function for better performance and consistency with the C++ backend architecture.
+
 ## License
 See [LICENSE](LICENSE) for details.
 
