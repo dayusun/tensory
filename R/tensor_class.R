@@ -129,6 +129,24 @@ Tensor <- R6::R6Class("Tensor",
       return(self)
     },
     
+    #' Squeeze the tensor by removing singleton dimensions
+    #' @return New Tensor object with singleton dimensions removed
+    squeeze = function() {
+      result_dims <- self$dims
+      new_dims <- result_dims[result_dims != 1]
+      
+      if (length(new_dims) == 0) {
+        # All dimensions were 1, result is scalar
+        return(Tensor$new(as.vector(self$data), c()))
+      } else if (length(new_dims) < length(result_dims)) {
+        # Some dimensions were 1, reshape to remove them
+        return(Tensor$new(self$data, new_dims))
+      } else {
+        # No singleton dimensions to remove
+        return(self$clone_tensor())
+      }
+    },
+    
     #' Element-wise addition
     #' @param other Another Tensor or numeric value
     #' @return Self (in-place operation)
