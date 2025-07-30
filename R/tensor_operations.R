@@ -9,13 +9,13 @@
 #' of size I1 x ... x I(k-1) x J x I(k+1) x ... x IN.
 #'
 #' The tensor times vector (ttv) operation multiplies a tensor by a vector along a specified mode,
-#' reducing the dimensionality by one. For a tensor X of size I1 x I2 x ... x IN and vector v of 
+#' reducing the dimensionality by one. For a tensor X of size I1 x I2 x ... x IN and vector v of
 #' length Ik, the result is a tensor of size I1 x ... x I(k-1) x I(k+1) x ... x IN.
 #'
 #' @param tensor A Tensor object
 #' @param matrix A matrix, vector, or list of matrices/vectors to multiply with the tensor
-#' @param mode Integer specifying which mode (dimension) to multiply. 
-#'             For single matrix/vector, defaults to 1. For multiple matrices/vectors, 
+#' @param mode Integer specifying which mode (dimension) to multiply.
+#'             For single matrix/vector, defaults to 1. For multiple matrices/vectors,
 #'             this should be a vector of modes corresponding to each matrix/vector.
 #' @param transpose Logical. If TRUE, transpose the matrix before multiplication.
 #'                  Default is FALSE. (Ignored for vectors)
@@ -24,22 +24,22 @@
 #' @examples
 #' # Create a 3D tensor
 #' t <- tensor(array(1:24, dim = c(4, 3, 2)))
-#' 
+#'
 #' # Create a matrix
 #' m <- matrix(1:8, nrow = 4, ncol = 2)
-#' 
+#'
 #' # Multiply tensor by matrix in mode 1
 #' result <- ttm(t, m, mode = 1)
-#' 
+#'
 #' # Multiple matrices
 #' m1 <- matrix(1:8, nrow = 4, ncol = 2)
 #' m2 <- matrix(1:6, nrow = 3, ncol = 2)
 #' result <- ttm(t, list(m1, m2), mode = c(1, 2))
-#' 
+#'
 #' # Vector multiplication (tensor times vector)
 #' v <- 1:4
 #' result <- ttm(t, v, mode = 1)
-#' 
+#'
 #' # Multiple vectors
 #' v1 <- 1:4
 #' v2 <- 1:3
@@ -51,142 +51,180 @@ ttm <- function(tensor, matrix, mode = 1, transpose = FALSE) {
   if (!inherits(tensor, "Tensor")) {
     stop("ttm is not implemented for this object type")
   }
-  
+
   if (is.matrix(matrix) || (is.array(matrix) && length(dim(matrix)) == 2)) {
     # Single matrix case
-    matrix_data <- matrix
-    if (!is.matrix(matrix_data)) {
-      matrix_data <- as.matrix(matrix_data)
+
+    # Validate mode (ensure it's a single value)
+    if (length(mode) != 1) {
+      stop("Mode must be a single integer for single matrix operations")
     }
-    
-    # Validate mode
+
     tensor_dims <- tensor$dim()
     if (mode < 1 || mode > length(tensor_dims)) {
       stop("Mode must be between 1 and number of tensor dimensions")
     }
-    
+
     # Validate matrix dimensions - the contracted dimension must match tensor dimension
     tensor_mode_dim <- tensor_dims[mode]
-    # When transpose=TRUE, matrix gets transposed internally in C++
-    # So we validate against what will actually be contracted
-    # transpose=FALSE: contract with matrix columns (new behavior)
-    # transpose=TRUE: contract with matrix rows of transposed matrix = matrix columns of original
-    contracted_dim <- if (transpose) ncol(matrix_data) else ncol(matrix_data)
-    
-    if (contracted_dim != tensor_mode_dim) {
-      stop(paste0("Matrix columns (", contracted_dim, ") must match tensor dimension size (", 
-                  tensor_mode_dim, ") for mode ", mode))
+
+    # Validate dimensions based on transpose flag
+    if (transpose) {
+      # When transpose=TRUE: matrix rows become the contracted dimension
+      contracted_dim <- nrow(matrix)
+      if (contracted_dim != tensor_mode_dim) {
+        stop(paste0(
+          "Matrix rows (", contracted_dim,
+          ") must match tensor dimension size (", tensor_mode_dim,
+          ") for mode ", mode, " with transpose=TRUE"
+        ))
+      }
+    } else {
+      # When transpose=FALSE: contract with matrix columns
+      contracted_dim <- ncol(matrix)
+      if (contracted_dim != tensor_mode_dim) {
+        stop(paste0(
+          "Matrix columns (", contracted_dim,
+          ") must match tensor dimension size (", tensor_mode_dim,
+          ") for mode ", mode
+        ))
+      }
     }
-    
+
     # Call C++ function for single matrix multiplication
-    result_data <- ttm_cpp(tensor$as_array(), matrix_data, mode, transpose)
+    result_data <- ttm_cpp(tensor$data, matrix, mode, transpose)
     return(Tensor$new(result_data))
-    
-  } else if (is.vector(matrix) || is.numeric(matrix)) {
+  } else if ((is.vector(matrix) || is.numeric(matrix)) && !is.list(matrix)) {
     # Single vector case (tensor times vector)
-    vector_data <- as.vector(matrix)
-    
-    # Validate mode
+
+    # Validate mode (ensure it's a single value)
+    if (length(mode) != 1) {
+      stop("Mode must be a single integer for single vector operations")
+    }
+
     tensor_dims <- tensor$dim()
     if (mode < 1 || mode > length(tensor_dims)) {
       stop("Mode must be between 1 and number of tensor dimensions")
     }
-    
+
     # Validate vector length
     tensor_mode_dim <- tensor_dims[mode]
-    if (length(vector_data) != tensor_mode_dim) {
-      stop(paste0("Vector length (", length(vector_data), ") must match tensor dimension size (", 
-                  tensor_mode_dim, ") for mode ", mode))
+    if (length(matrix) != tensor_mode_dim) {
+      stop(paste0(
+        "Vector length (", length(matrix), ") must match tensor dimension size (",
+        tensor_mode_dim, ") for mode ", mode
+      ))
     }
-    
-    # For tensor times vector, we need to convert vector to 1 x n matrix
-    # and use transpose=TRUE so that we contract with columns (the vector elements)
-    vector_matrix <- matrix(vector_data, nrow = 1, ncol = length(vector_data))
-    
-    # Call ttm with transpose=TRUE to contract with matrix columns (vector elements)
-    result_tensor <- ttm(tensor, vector_matrix, mode = mode, transpose = TRUE)
-    
-    # Squeeze the dimension that became size 1
+
+    # For tensor times vector, we need to convert vector to matrix
+    # Create row vector (1 x n) and use transpose=FALSE to contract with columns
+    vector_matrix <- matrix(matrix, nrow = 1)
+
+    # Call ttm with transpose=FALSE to contract with matrix columns (vector elements)
+    result_tensor <- ttm(tensor, vector_matrix, mode = mode, transpose = FALSE)
+
+    # Remove the singleton dimension that was introduced
     result_dims <- result_tensor$dim()
-    new_dims <- result_dims[result_dims != 1]
-    
-    if (length(new_dims) == 0) {
+    if (length(result_dims) == 1 && result_dims[1] == 1) {
       # Scalar result
-      return(Tensor$new(as.vector(result_tensor$as_array()), 1))
+      return(Tensor$new(as.vector(result_tensor$data), c()))
     } else {
-      # Reshape to remove singleton dimensions
-      return(result_tensor$reshape(new_dims))
+      # Remove singleton dimensions (dimensions of size 1)
+      new_dims <- result_dims[result_dims != 1]
+      if (length(new_dims) == 0) {
+        # All dimensions were 1, result is scalar
+        return(Tensor$new(as.vector(result_tensor$data), c()))
+      } else {
+        # Reshape to remove singleton dimensions
+        return(result_tensor$reshape(new_dims))
+      }
     }
-    
   } else if (is.list(matrix)) {
     # Multiple matrices/vectors case - integrate ttm_multiple functionality directly
-    matrices <- matrix  # Rename for clarity
-    
+
     # Validate input
-    if (!is.list(matrices)) {
-      stop("Matrices/vectors must be provided as a list")
+    if (length(matrix) == 0) {
+      stop("Empty list of matrices/vectors provided")
     }
-    
-    num_matrices <- length(matrices)
-    
+
+    num_matrices <- length(matrix)
+
     # If modes not provided, use sequential modes starting from 1
     if (missing(mode) || is.null(mode)) {
       modes <- 1:num_matrices
     } else {
       modes <- mode
     }
-    
+
     # Validate modes
     if (length(modes) != num_matrices) {
       stop("Number of modes must match number of matrices/vectors")
     }
-    
-    # Check if all elements are matrices or all are vectors
-    all_matrices <- all(sapply(matrices, function(x) is.matrix(x) || (is.array(x) && length(dim(x)) == 2)))
-    all_vectors <- all(sapply(matrices, function(x) is.vector(x) && !is.matrix(x) && !is.array(x)))
-    
-    if (all_matrices) {
-      # All matrices case
-      # Validate that all elements in matrices list are actually matrices
-      for (i in seq_along(matrices)) {
-        if (!is.matrix(matrices[[i]]) && !(is.array(matrices[[i]]) && length(dim(matrices[[i]])) == 2)) {
-          stop(paste0("Element ", i, " in matrices list is not a matrix"))
-        }
-      }
-      
-      # Call C++ function for multiple matrix multiplication
-      result_data <- ttm_multiple_cpp(tensor$as_array(), matrices, modes, transpose)
-      return(Tensor$new(result_data))
-      
-    } else if (all_vectors) {
-      # All vectors case (multiple tensor times vector)
-      # Apply each vector multiplication sequentially
-      result_tensor <- tensor$clone_tensor()
-      
-      # Apply vectors in the order they were provided
-      # Need to adjust modes as dimensions reduce
-      adjusted_modes <- modes
-      for (i in seq_along(matrices)) {
-        # Apply the current vector multiplication
-        current_mode <- adjusted_modes[i]
-        result_tensor <- ttm(result_tensor, matrices[[i]], mode = current_mode)
-        
-        # Adjust remaining modes for dimension reduction
-        if (i < length(matrices)) {
-          for (j in (i+1):length(matrices)) {
-            if (adjusted_modes[j] > current_mode) {
-              adjusted_modes[j] <- adjusted_modes[j] - 1
-            }
-          }
-        }
-      }
-      
-      return(result_tensor)
-      
-    } else {
-      stop("List must contain either all matrices or all vectors")
+
+    # Validate that modes are within valid range
+    tensor_dims <- tensor$dim()
+    if (any(modes < 1) || any(modes > length(tensor_dims))) {
+      stop("All modes must be between 1 and number of tensor dimensions")
     }
-    
+
+    # Check if all elements are matrices (vectors are not allowed in this case)
+    element_types <- sapply(matrix, function(x) {
+      if (is.matrix(x) || (is.array(x) && length(dim(x)) == 2)) {
+        "matrix"
+      } else if (is.vector(x) && !is.matrix(x) && !is.array(x)) {
+        "vector"
+      } else {
+        "invalid"
+      }
+    })
+
+    # Check for invalid types
+    if (any(element_types == "invalid")) {
+      invalid_indices <- which(element_types == "invalid")
+      stop(paste0(
+        "Invalid elements at positions: ", paste(invalid_indices, collapse = ", "),
+        ". All elements must be matrices."
+      ))
+    }
+
+    # Convert vectors to matrices if any vectors are present
+    for (i in seq_along(matrix)) {
+      if (element_types[i] == "vector") {
+        matrix[[i]] <- matrix(matrix[[i]], nrow = 1)  # Convert to row vector
+      }
+    }
+
+
+    # All matrices case - validate dimensions before calling C++
+
+    if (transpose) {
+      # If transpose is TRUE, we need to validate the number of rows in each matrix
+      # as they will be contracted with tensor dimensions
+      matrice_mode <- sapply(matrix, nrow)
+    } else {
+      matrice_mode <- sapply(matrix, ncol)
+    }
+
+    # Validate matrix dimensions for current tensor state
+    tensor_mode_dim <- tensor_dims[modes]
+
+    if (any(tensor_mode_dim != matrice_mode)) {
+      unmatched_modes_position <- which(tensor_mode_dim != matrice_mode)
+      axis_name <- if (transpose) "rows" else "columns"
+      stop(paste0(
+        "Matrix ", paste0(unmatched_modes_position, ", "), " ", axis_name, " (",
+        matrice_mode[unmatched_modes_position],
+        ") must match tensor dimension size (", tensor_mode_dim[unmatched_modes_position],
+        ") for mode ", modes[unmatched_modes_position]
+      ))
+    }
+
+
+
+    # Call C++ function for multiple matrix multiplication
+    result_data <- ttm_multiple_cpp(tensor$data, matrix, modes, transpose)    
+
+    return(Tensor$new(result_data))
   } else {
     stop("Input must be a matrix, vector, or list of matrices/vectors")
   }

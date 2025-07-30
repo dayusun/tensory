@@ -32,7 +32,7 @@ test_that("ttm multiple matrices multiplication works", {
 
 test_that("ttm transpose option works", {
   t2d <- tensor(matrix(1:12, nrow = 4, ncol = 3))
-  m <- matrix(1:8, nrow = 2, ncol = 4)  # 2x4 matrix
+  m <- matrix(1:8, nrow = 4, ncol = 2)  # 4x2 matrix
   
   # With transpose = TRUE, effective matrix becomes 4x2
   # Contract tensor dim 0 (size 4) with matrix rows (size 4 after transpose)
@@ -135,12 +135,12 @@ test_that("ttm transpose mathematical correctness", {
   t2d <- tensor(t2d_data)
   
   # Create a matrix to multiply with (3x2)
-  m <- matrix(c(1, 2, 3, 4, 5, 6), nrow = 3, ncol = 2, byrow = TRUE)
+  m <- matrix(c(1, 2, 3, 4, 5, 6), nrow = 2, ncol = 3, byrow = TRUE)
   
   # Perform TTM with transpose
   result <- ttm(t2d, m, mode = 1, transpose = TRUE)
   
-  # With transpose=TRUE, m becomes 2x3, so we contract 2 rows with tensor mode 1 (size 2)
+  # With transpose=TRUE, m becomes 3x2, so we contract 2 rows with tensor mode 1 (size 2)
   # This should work and give a 3x3 result
   expected_dims <- c(3, 3)
   expect_equal(dim(result$as_array()), expected_dims)
