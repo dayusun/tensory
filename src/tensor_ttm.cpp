@@ -70,7 +70,7 @@ xt::rarray<double> ttm_cpp(const xt::rarray<double>& tensor_data,
             const auto transposed_result = xt::transpose(temp_result, permutation);
             
             // Apply squeeze to remove singleton dimensions
-            return xt::eval(xt::squeeze(transposed_result));
+            return xt::eval(transposed_result);
             
         } else {
             // Direct computation - no copy needed
@@ -81,7 +81,7 @@ xt::rarray<double> ttm_cpp(const xt::rarray<double>& tensor_data,
             const auto transposed_result = xt::transpose(temp_result, permutation);
             
             // Apply squeeze to remove singleton dimensions
-            return xt::eval(xt::squeeze(transposed_result));
+            return xt::eval(transposed_result);
         }
         
     } catch (const std::exception& e) {

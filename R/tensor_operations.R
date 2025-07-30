@@ -223,8 +223,22 @@ ttm <- function(tensor, matrix, mode = 1, transpose = FALSE) {
 
     # Call C++ function for multiple matrix multiplication
     result_data <- ttm_multiple_cpp(tensor$data, matrix, modes, transpose)    
-
-    return(Tensor$new(result_data))
+    result_tensor <- Tensor$new(result_data)
+    
+    # Apply squeeze to remove singleton dimensions for vector operations
+    result_dims <- result_tensor$dim()
+    new_dims <- result_dims[result_dims != 1]
+    
+    if (length(new_dims) == 0) {
+      # All dimensions were 1, result is scalar
+      return(Tensor$new(as.vector(result_tensor$data), c()))
+    } else if (length(new_dims) < length(result_dims)) {
+      # Some dimensions were 1, reshape to remove them
+      return(result_tensor$reshape(new_dims))
+    } else {
+      # No singleton dimensions to remove
+      return(result_tensor)
+    }
   } else {
     stop("Input must be a matrix, vector, or list of matrices/vectors")
   }
