@@ -91,6 +91,11 @@ ttm <- function(tensor, matrix, mode = 1, transpose = FALSE) {
       }
     }
 
+    # Ensure matrix is double precision before passing to C++
+    if (storage.mode(matrix) != "double") {
+      storage.mode(matrix) <- "double"
+    }
+
     # Call C++ function for single matrix multiplication
     result_data <- ttm_cpp(tensor$data, matrix, mode, transpose)
     return(Tensor$new(result_data))
@@ -114,6 +119,11 @@ ttm <- function(tensor, matrix, mode = 1, transpose = FALSE) {
         "Vector length (", length(matrix), ") must match tensor dimension size (",
         tensor_mode_dim, ") for mode ", mode
       ))
+    }
+
+    # Ensure vector is double precision
+    if (storage.mode(matrix) != "double") {
+      storage.mode(matrix) <- "double"
     }
 
     # For tensor times vector, we need to convert vector to matrix
@@ -194,6 +204,12 @@ ttm <- function(tensor, matrix, mode = 1, transpose = FALSE) {
       }
     }
 
+    # Ensure all matrices are double precision before passing to C++
+    for (i in seq_along(matrix)) {
+      if (storage.mode(matrix[[i]]) != "double") {
+        storage.mode(matrix[[i]]) <- "double"
+      }
+    }
 
     # All matrices case - validate dimensions before calling C++
 
