@@ -1,10 +1,10 @@
 Package: tensory
 Type: Package
 Title: Tensory - Modern Tensor Operations for R
-Version: 1.0
+Version: 0.0.1
 Date: 2024-11-01
-Author: Your Name
-Maintainer: Your Name <your@email.com>
+Author: Dayu Sun
+Maintainer: Dayu Sun <dayusun@iu.edu>
 Description: `tensory` is an experimental R package to implement tensor operations and functions based on `xtensor`. Provides a modern R6-based tensor class system with MATLAB Tensor Toolbox compatibility.
 License: MIT LICENSE
 Encoding: UTF-8
