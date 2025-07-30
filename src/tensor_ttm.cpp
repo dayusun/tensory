@@ -95,6 +95,10 @@ xt::rarray<double> ttm_multiple_cpp(const xt::rarray<double>& tensor_data,
                                    const IntegerVector& modes,
                                    bool transpose = false) {
     try {
+        if (matrices.size() == 0) {
+            Rcpp::stop("Empty list of matrices provided");
+        }
+        
         // Pre-convert all matrices to avoid repeated conversions
         std::vector<xt::rarray<double>> converted_matrices;
         converted_matrices.reserve(matrices.size());
@@ -103,15 +107,69 @@ xt::rarray<double> ttm_multiple_cpp(const xt::rarray<double>& tensor_data,
             converted_matrices.emplace_back(convert_r_matrix_to_xtensor(as<NumericMatrix>(matrix)));
         }
         
-        // Start with input tensor
-        auto result = tensor_data;
-        
-        // Apply operations sequentially
-        for (std::size_t i = 0; i < converted_matrices.size(); ++i) {
-            result = ttm_cpp(result, converted_matrices[i], modes[i], transpose);
+        // Create list of modes and matrices, sorted by mode in descending order
+        std::vector<std::pair<int, size_t>> mode_index_pairs;
+        for (size_t i = 0; i < converted_matrices.size(); ++i) {
+            mode_index_pairs.emplace_back(modes[i], i);
         }
         
-        return result;
+        // Sort by mode in descending order for efficient contraction
+        std::sort(mode_index_pairs.begin(), mode_index_pairs.end(), 
+                  [](const auto& a, const auto& b) { return a.first > b.first; });
+        
+        // Perform all contractions sequentially without intermediate transposes
+        auto result = tensor_data;
+        const size_t original_rank = tensor_data.dimension();
+        
+        for (const auto& pair : mode_index_pairs) {
+            const int mode = pair.first;
+            const size_t matrix_idx = pair.second;
+            const size_t axis = static_cast<size_t>(mode - 1);
+            
+            if (transpose) {
+                result = xt::linalg::tensordot(result, converted_matrices[matrix_idx], {axis}, {0});
+            } else {
+                result = xt::linalg::tensordot(result, converted_matrices[matrix_idx], {axis}, {1});
+            }
+        }
+        
+        // Calculate final permutation to restore natural axis order
+        std::vector<int> original_modes(original_rank);
+        std::iota(original_modes.begin(), original_modes.end(), 0);
+        
+        // Get multiplied modes (0-based) in sorted order
+        std::vector<int> multiplied_modes;
+        for (int i = 0; i < modes.size(); ++i) {
+            multiplied_modes.push_back(modes[i] - 1);  // Convert to 0-based
+        }
+        std::sort(multiplied_modes.begin(), multiplied_modes.end());
+        
+        // Find remaining modes (not multiplied)
+        std::vector<int> remaining_modes;
+        std::set_difference(original_modes.begin(), original_modes.end(),
+                          multiplied_modes.begin(), multiplied_modes.end(),
+                          std::back_inserter(remaining_modes));
+        
+        // Get multiplied modes in the order they appear in result (descending)
+        std::vector<int> multiplied_modes_desc;
+        for (const auto& pair : mode_index_pairs) {
+            multiplied_modes_desc.push_back(pair.first - 1);  // Convert to 0-based
+        }
+        
+        // Current layout: (remaining_modes..., multiplied_modes_desc...)
+        std::vector<int> current_layout;
+        current_layout.insert(current_layout.end(), remaining_modes.begin(), remaining_modes.end());
+        current_layout.insert(current_layout.end(), multiplied_modes_desc.begin(), multiplied_modes_desc.end());
+        
+        // Calculate permutation to restore natural order (0, 1, 2, ...)
+        std::vector<size_t> final_permutation(original_rank);
+        for (size_t i = 0; i < original_rank; ++i) {
+            auto it = std::find(current_layout.begin(), current_layout.end(), static_cast<int>(i));
+            final_permutation[i] = std::distance(current_layout.begin(), it);
+        }
+        
+        // Apply single final transpose to restore axis order
+        return xt::eval(xt::transpose(result, final_permutation));
         
     } catch (const std::exception& e) {
         Rcpp::stop("Error in ttm_multiple_cpp: " + std::string(e.what()));
