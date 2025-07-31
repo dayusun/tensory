@@ -1,6 +1,7 @@
 ## -*- mode: makefile; -*-
 
-PKG_CXXFLAGS = -I../inst/include --std=c++2a -O3 -DNDEBUG -march=native -funroll-loops
+PKG_CXXFLAGS = -I../inst/include -O3 -DNDEBUG -march=native -funroll-loops -fconcepts
+PKG_CXXFLAGS = -I../inst/include --std=c++2a -O3 -DNDEBUG -march=native -funroll-loops 
 CXX_STD = CXX20
 # CXX_STD = CXX14
 
