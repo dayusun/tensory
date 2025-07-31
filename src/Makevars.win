@@ -1,5 +1,8 @@
 ## -*- mode: makefile; -*-
 
-PKG_CXXFLAGS = -I../inst/include --std=c++2a
+PKG_CXXFLAGS = -I../inst/include --std=c++2a -O3 -DNDEBUG -march=native -funroll-loops
 CXX_STD = CXX20
 # CXX_STD = CXX14
+
+# Link against optimized BLAS/LAPACK if available
+PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)

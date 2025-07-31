@@ -22,16 +22,16 @@ BEGIN_RCPP
 END_RCPP
 }
 // ttm_cpp
-xt::rarray<double> ttm_cpp(const xt::rarray<double>& tensor_data, const xt::rarray<double>& matrix_data, int mode, bool transpose);
-RcppExport SEXP _tensory_ttm_cpp(SEXP tensor_dataSEXP, SEXP matrix_dataSEXP, SEXP modeSEXP, SEXP transposeSEXP) {
+xt::rarray<double> ttm_cpp(const xt::rarray<double>& tensor_data, const NumericMatrix& matrix, int mode, bool transpose);
+RcppExport SEXP _tensory_ttm_cpp(SEXP tensor_dataSEXP, SEXP matrixSEXP, SEXP modeSEXP, SEXP transposeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const xt::rarray<double>& >::type tensor_data(tensor_dataSEXP);
-    Rcpp::traits::input_parameter< const xt::rarray<double>& >::type matrix_data(matrix_dataSEXP);
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type matrix(matrixSEXP);
     Rcpp::traits::input_parameter< int >::type mode(modeSEXP);
     Rcpp::traits::input_parameter< bool >::type transpose(transposeSEXP);
-    rcpp_result_gen = Rcpp::wrap(ttm_cpp(tensor_data, matrix_data, mode, transpose));
+    rcpp_result_gen = Rcpp::wrap(ttm_cpp(tensor_data, matrix, mode, transpose));
     return rcpp_result_gen;
 END_RCPP
 }

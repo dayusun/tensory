@@ -5,8 +5,8 @@ rcpp_hello_world <- function() {
     .Call(`_tensory_rcpp_hello_world`)
 }
 
-ttm_cpp <- function(tensor_data, matrix_data, mode, transpose = FALSE) {
-    .Call(`_tensory_ttm_cpp`, tensor_data, matrix_data, mode, transpose)
+ttm_cpp <- function(tensor_data, matrix, mode, transpose = FALSE) {
+    .Call(`_tensory_ttm_cpp`, tensor_data, matrix, mode, transpose)
 }
 
 ttm_multiple_cpp <- function(tensor_data, matrices, modes, transpose = FALSE) {

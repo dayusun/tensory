@@ -1,12 +1,14 @@
 #include "xtensor-r/rarray.hpp"
 #include "xtensor/containers/xtensor.hpp"
 #include "xtensor/containers/xarray.hpp"
+#include "xtensor/containers/xadapt.hpp"
 #include "xtensor/misc/xmanipulation.hpp"
 #include "xtensor-blas/xlinalg.hpp"
 #include <Rcpp.h>
 #include <vector>
 #include <numeric>
 #include <algorithm>
+#include <array>
 
 using namespace Rcpp;
 
@@ -21,6 +23,16 @@ inline xt::rarray<double> convert_r_matrix_to_xtensor(const NumericMatrix& matri
     xt::rarray<double> result = xt::zeros<double>(dims);
     std::copy(matrix.begin(), matrix.end(), result.begin());
     return result;
+}
+
+/**
+ * @brief Helper function to create zero-copy R-aware matrix view using xt::rarray
+ * @param matrix R NumericMatrix  
+ * @return xtensor rarray view that directly maps R memory with correct column-major layout
+ */
+inline auto create_matrix_view(const NumericMatrix& matrix) {
+    // Create zero-copy rarray directly from R SEXP - this preserves R's column-major layout
+    return xt::rarray<double>(SEXP(matrix));
 }
 
 /**
@@ -54,16 +66,19 @@ inline std::vector<std::size_t> create_permutation(std::size_t N, std::size_t ax
  */
 // [[Rcpp::export]]
 xt::rarray<double> ttm_cpp(const xt::rarray<double>& tensor_data, 
-                          const xt::rarray<double>& matrix_data,
+                          const NumericMatrix& matrix,
                           int mode,
                           bool transpose = false) {
     try {
         const std::size_t axis = static_cast<std::size_t>(mode - 1);
         
-        // Avoid unnecessary copies by using conditional logic
+        // Create zero-copy view of the matrix
+        auto matrix_view = create_matrix_view(matrix);
+        
+        // Use optimized zero-copy matrix view  
         if (transpose) {
             // Use transpose view - no copy needed
-            const auto temp_result = xt::linalg::tensordot(tensor_data, matrix_data, {axis}, {0});
+            const auto temp_result = xt::linalg::tensordot(tensor_data, matrix_view, {axis}, {0});
             
             // Create permutation and apply
             const auto permutation = create_permutation(temp_result.dimension(), axis);
@@ -74,7 +89,7 @@ xt::rarray<double> ttm_cpp(const xt::rarray<double>& tensor_data,
             
         } else {
             // Direct computation - no copy needed
-            const auto temp_result = xt::linalg::tensordot(tensor_data, matrix_data, {axis}, {1});
+            const auto temp_result = xt::linalg::tensordot(tensor_data, matrix_view, {axis}, {1});
             
             // Create permutation and apply
             const auto permutation = create_permutation(temp_result.dimension(), axis);
@@ -99,17 +114,17 @@ xt::rarray<double> ttm_multiple_cpp(const xt::rarray<double>& tensor_data,
             Rcpp::stop("Empty list of matrices provided");
         }
         
-        // Pre-convert all matrices to avoid repeated conversions
-        std::vector<xt::rarray<double>> converted_matrices;
-        converted_matrices.reserve(matrices.size());
+        // Create zero-copy matrix views instead of converting to xtensor
+        std::vector<decltype(create_matrix_view(std::declval<NumericMatrix>()))> matrix_views;
+        matrix_views.reserve(matrices.size());
         
         for (const auto& matrix : matrices) {
-            converted_matrices.emplace_back(convert_r_matrix_to_xtensor(as<NumericMatrix>(matrix)));
+            matrix_views.emplace_back(create_matrix_view(as<NumericMatrix>(matrix)));
         }
         
         // Create list of modes and matrices, sorted by mode in descending order
         std::vector<std::pair<int, size_t>> mode_index_pairs;
-        for (size_t i = 0; i < converted_matrices.size(); ++i) {
+        for (size_t i = 0; i < matrix_views.size(); ++i) {
             mode_index_pairs.emplace_back(modes[i], i);
         }
         
@@ -127,9 +142,9 @@ xt::rarray<double> ttm_multiple_cpp(const xt::rarray<double>& tensor_data,
             const size_t axis = static_cast<size_t>(mode - 1);
             
             if (transpose) {
-                result = xt::linalg::tensordot(result, converted_matrices[matrix_idx], {axis}, {0});
+                result = xt::linalg::tensordot(result, matrix_views[matrix_idx], {axis}, {0});
             } else {
-                result = xt::linalg::tensordot(result, converted_matrices[matrix_idx], {axis}, {1});
+                result = xt::linalg::tensordot(result, matrix_views[matrix_idx], {axis}, {1});
             }
         }
         
