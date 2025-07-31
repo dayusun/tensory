@@ -1,0 +1,178 @@
+---
+title: "performance"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{performance}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+
+## Computational Efficiency: ttm vs rTensor
+
+We compare the computational efficiency of the `ttm` function from the `tensory` package with the equivalent function in the `rTensor` package. This benchmark demonstrates the performance benefits of using `tensory` for tensor-times-matrix multiplication.
+
+```{r efficiency-comparison, message=FALSE, warning=FALSE}
+set.seed(123)
+
+# Create a random 3-mode tensor and a matrix
+X <- array(runif(50*30*50), dim = c(50, 30, 50))
+mat <- matrix(runif(70*30), nrow = 70, ncol = 30)
+
+library(bench)
+
+# Prepare rTensor object
+X_rTensor <- rTensor::as.tensor(X)
+X <- tensory::Tensor$new(X)
+
+# Benchmark ttm in tensory vs rTensor
+bm <- bench::mark(
+  tensory = tensory::ttm(X, mat, mode = 2),
+  rTensor = rTensor::ttm(X_rTensor, mat, m = 2),
+  iterations = 20,
+  check = FALSE
+)
+bm
+
+# Visualization
+library(ggplot2)
+autoplot(bm)
+```
+
+## Multiple Matrix Multiplications Benchmark
+
+Here we benchmark the performance of multiple matrix multiplications, which is a common operation in tensor decomposition algorithms and multilinear algebra.
+
+```{r multiple-matrix-benchmark, message=FALSE, warning=FALSE}
+set.seed(456)
+
+# Create a 4-mode tensor and matrices for each mode
+X <- array(runif(50*40*30*20), dim = c(50, 40, 30, 20))
+matrices <- list(
+  matrix(runif(60*50), nrow = 60, ncol = 50),  # mode 1
+  matrix(runif(45*40), nrow = 45, ncol = 40),  # mode 2
+  matrix(runif(35*30), nrow = 35, ncol = 30),  # mode 3
+  matrix(runif(25*20), nrow = 25, ncol = 20)   # mode 4
+)
+
+library(bench)
+
+# Prepare rTensor object
+X_rTensor <- rTensor::as.tensor(X)
+X <- tensory::Tensor$new(X)
+
+# Define function for multiple rTensor ttm operations
+multiple_ttm_rTensor <- function(tensor, mat_list) {
+  result <- tensor
+  for (i in seq_along(mat_list)) {
+    result <- rTensor::ttm(result, mat_list[[i]], m = i)
+  }
+  return(result)
+}
+
+# Benchmark multiple ttm operations
+bm_multiple <- bench::mark(
+  tensory = tensory::ttm(X, matrices, mode = c(1, 2, 3, 4)),
+  rTensor = multiple_ttm_rTensor(X_rTensor, matrices),
+  iterations = 10,
+  check = FALSE
+)
+bm_multiple
+
+# Visualization
+library(ggplot2)
+autoplot(bm_multiple)
+```
+
+## Memory Efficiency Comparison
+
+Let's also compare memory usage during these operations:
+
+```{r memory-benchmark, message=FALSE, warning=FALSE}
+set.seed(789)
+
+# Create a tensor and matrix for memory comparison
+X <- array(runif(30*25*20), dim = c(30, 25, 20))
+mat <- matrix(runif(35*25), nrow = 35, ncol = 25)
+
+library(bench)
+
+# Prepare rTensor object
+X_rTensor <- rTensor::as.tensor(X)
+X <- tensory::Tensor$new(X)
+
+# Memory benchmark
+bm_memory <- bench::mark(
+  tensory = tensory::ttm(X, mat, mode = 2),
+  rTensor = rTensor::ttm(X_rTensor, mat, m = 2),
+  iterations = 50,
+  check = FALSE
+)
+bm_memory
+
+# Visualization
+library(ggplot2)
+autoplot(bm_memory)
+```
+
+## Scalability Analysis
+
+Finally, let's analyze how performance scales with tensor size:
+
+```{r scalability-benchmark, message=FALSE, warning=FALSE}
+set.seed(101112)
+
+# Test different tensor sizes
+sizes <- c(20, 30, 40, 50)
+scalability_results <- data.frame()
+
+library(bench)
+
+for (size in sizes) {
+  # Create tensor of varying size
+  X <- array(runif(size^3), dim = c(size, size, size))
+  mat <- matrix(runif((size+10) * size), nrow = size+10, ncol = size)
+  
+  # Prepare rTensor object
+  X_rTensor <- rTensor::as.tensor(X)
+  X <- tensory::Tensor$new(X)
+  
+  # Benchmark
+  bm_scale <- bench::mark(
+    tensory = tensory::ttm(X, mat, mode = 2),
+    rTensor = rTensor::ttm(X_rTensor, mat, m = 2),
+    iterations = 10,
+    check = FALSE
+  )
+  
+  # Store results
+  temp_results <- data.frame(
+    size = size,
+    package = as.character(bm_scale$expression),
+    median_time = as.numeric(bm_scale$median),
+    memory = as.numeric(bm_scale$mem_alloc)
+  )
+  
+  scalability_results <- rbind(scalability_results, temp_results)
+}
+
+# Visualization
+library(ggplot2)
+ggplot(scalability_results, aes(x = size, y = median_time, color = package)) +
+  geom_line(size = 1.2) +
+  geom_point(size = 3) +
+  scale_y_log10() +
+  labs(title = "Scalability Comparison",
+       subtitle = "Performance vs Tensor Size",
+       x = "Tensor Dimension Size",
+       y = "Median Time (log scale)",
+       color = "Package") +
+  theme_minimal()
+```
