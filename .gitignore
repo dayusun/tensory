@@ -38,3 +38,4 @@ inst/include/*/
 !inst/include/xtensor-r/
 Read-and-delete-me
 temp/
+inst/doc

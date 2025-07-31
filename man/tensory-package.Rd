@@ -8,7 +8,7 @@
 \description{
 `tensory` is an experimental R package to implement tensor operations and functions based on `xtensor`. Provides a modern R6-based tensor class system with MATLAB Tensor Toolbox compatibility.
 
-`tensory` is an experimental R package to implement tensor operations and functions based on `xtensor`.
+\code{tensory} is an experimental R package to implement tensor operations and functions based on \code{xtensor}.
 }
 \details{
 The \code{tensory} package provides a modern implementation of tensor operations
@@ -19,29 +19,29 @@ enabling efficient numerical computing with multi-dimensional arrays.
 \section{Key Features}{
 
 \itemize{
-  \item R6-based Tensor class for object-oriented tensor operations
-  \item High-performance C++ backend via xtensor integration
-  \item MATLAB Tensor Toolbox compatibility for familiar syntax
-  \item Support for multi-dimensional arrays with broadcasting
-  \item Element-wise operations and mathematical functions
-  \item Memory-efficient operations with in-place modifications
+\item R6-based Tensor class for object-oriented tensor operations
+\item High-performance C++ backend via xtensor integration
+\item MATLAB Tensor Toolbox compatibility for familiar syntax
+\item Support for multi-dimensional arrays with broadcasting
+\item Element-wise operations and mathematical functions
+\item Memory-efficient operations with in-place modifications
 }
 }
 
 \section{Main Classes}{
 
 \itemize{
-  \item \code{\link{Tensor}}: The core R6 class for tensor operations
+\item \code{\link{Tensor}}: The core R6 class for tensor operations
 }
 }
 
 \section{Main Functions}{
 
 \itemize{
-  \item \code{\link{tensor}}: Create tensor objects from R data structures
-  \item \code{\link{zeros}}: Create tensors filled with zeros
-  \item \code{\link{ones}}: Create tensors filled with ones
-  \item \code{\link{ttm}}: Tensor times matrix operation
+\item \code{\link{tensor}}: Create tensor objects from R data structures
+\item \code{\link{zeros}}: Create tensors filled with zeros
+\item \code{\link{ones}}: Create tensors filled with ones
+\item \code{\link{ttm}}: Tensor times matrix operation
 }
 }
 
