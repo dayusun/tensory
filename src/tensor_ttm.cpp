@@ -5,8 +5,10 @@
 #include "xtensor/containers/xtensor.hpp"
 #include "xtensor/misc/xmanipulation.hpp"
 #include <Rcpp.h>
+#include <algorithm>
 #include <cstring>
 #include <vector>
+
 
 // Use R's BLAS interface via Fortran calls (standard R package approach)
 // Fortran name mangling
@@ -132,6 +134,25 @@ xt::rarray<double> ttm_cpp(const xt::rarray<double> &tensor_data,
       F77_NAME(dgemm)(transa_opt, transb_opt, &m_opt, &n_opt, &k_opt, &alpha,
                       mat_ptr, &lda_opt, X_base, &ldb_opt, &beta, Y_base,
                       &ldc_opt FCONE FCONE);
+    } else if (M2 == 1 && M1 > 2000) {
+      // BLOCK TILING OPTIMIZATION FOR MODE 3 (N=1)
+      // Instead of one giant dgemm, we break M1 into smaller chunks that fit in
+      // L2/L3 cache.
+      std::size_t block_size = 512; // M1 columns at a time
+
+      for (std::size_t m1_start = 0; m1_start < M1; m1_start += block_size) {
+        std::size_t current_block_size = std::min(block_size, M1 - m1_start);
+
+        // In column-major, advancing rows means simply adding m1_start
+        double *Y_ptr = Y_base + m1_start;
+        const double *X_ptr = X_base + m1_start;
+
+        int m_opt = static_cast<int>(current_block_size);
+
+        // Y(M1_block x new_dim) = X(M1_block x Ik) * Mat(Ik x new_dim)
+        F77_NAME(dgemm)(transa, transb, &m_opt, &n, &k, &alpha, X_ptr, &lda,
+                        mat_ptr, &ldb, &beta, Y_ptr, &ldc FCONE FCONE);
+      }
     } else {
       std::size_t X_stride = M1 * Ik;
       std::size_t Y_stride = M1 * new_dim;
@@ -147,7 +168,6 @@ xt::rarray<double> ttm_cpp(const xt::rarray<double> &tensor_data,
     }
 
     return xt::rarray<double>(result_tensor);
-
   } catch (const std::exception &e) {
     Rcpp::stop("Error in optimized ttm_cpp: " + std::string(e.what()));
   }
