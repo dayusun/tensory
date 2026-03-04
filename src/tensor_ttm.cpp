@@ -9,21 +9,26 @@
 #include <numeric>
 #include <algorithm>
 #include <array>
+#include <cstring>
+
+// Use R's BLAS interface via Fortran calls (standard R package approach)
+// Fortran name mangling
+#ifndef F77_NAME
+#define F77_NAME(x) x ## _
+#endif
+
+#ifndef FCONE
+#define FCONE
+#endif
+
+// Externally declare the Fortran BLAS subroutines
+extern "C" {
+    void F77_NAME(dgemm)(const char* transa, const char* transb, const int* m, const int* n, const int* k,
+                         const double* alpha, const double* a, const int* lda, const double* b, const int* ldb,
+                         const double* beta, double* c, const int* ldc FCONE FCONE);
+}
 
 using namespace Rcpp;
-
-/**
- * @brief Helper function to convert R matrix to xtensor efficiently
- * @param matrix R NumericMatrix
- * @return xtensor rarray
- */
-inline xt::rarray<double> convert_r_matrix_to_xtensor(const NumericMatrix& matrix) {
-    std::vector<size_t> dims = {static_cast<size_t>(matrix.nrow()), 
-                               static_cast<size_t>(matrix.ncol())};
-    xt::rarray<double> result = xt::zeros<double>(dims);
-    std::copy(matrix.begin(), matrix.end(), result.begin());
-    return result;
-}
 
 /**
  * @brief Helper function to create zero-copy R-aware matrix view using xt::rarray
@@ -31,30 +36,14 @@ inline xt::rarray<double> convert_r_matrix_to_xtensor(const NumericMatrix& matri
  * @return xtensor rarray view that directly maps R memory with correct column-major layout
  */
 inline auto create_matrix_view(const NumericMatrix& matrix) {
-    // Create zero-copy rarray directly from R SEXP - this preserves R's column-major layout
-    return xt::rarray<double>(SEXP(matrix));
+  // Create zero-copy rarray directly from R SEXP - this preserves R's column-major layout
+  return xt::rarray<double>(SEXP(matrix));
 }
 
-/**
- * @brief Helper function to create permutation vector for dimension reordering
- * @param N Total number of dimensions
- * @param axis Position where new dimension should be placed
- * @return Permutation vector
- */
-inline std::vector<std::size_t> create_permutation(std::size_t N, std::size_t axis) {
-    std::vector<std::size_t> permutation(N);
-    
-    // Fill indices before axis
-    std::iota(permutation.begin(), permutation.begin() + axis, 0);
-    
-    // Place new dimension (originally at position N-1) at axis position
-    permutation[axis] = N - 1;
-    
-    // Fill remaining indices, shifted down by 1
-    std::iota(permutation.begin() + axis + 1, permutation.end(), axis);
-    
-    return permutation;
-}
+
+
+
+
 
 /**
  * @brief Tensor-times-matrix operation with optional transpose
@@ -65,39 +54,107 @@ inline std::vector<std::size_t> create_permutation(std::size_t N, std::size_t ax
  * @return Resulting tensor after multiplication
  */
 // [[Rcpp::export]]
-xt::rarray<double> ttm_cpp(const xt::rarray<double>& tensor_data, 
+xt::rarray<double> ttm_cpp(const xt::rarray<double>& tensor_data,
                           const NumericMatrix& matrix,
                           int mode,
                           bool transpose = false) {
     try {
         const std::size_t axis = static_cast<std::size_t>(mode - 1);
-        
-        // Create zero-copy view of the matrix
-        auto matrix_view = create_matrix_view(matrix);
-        
-        // Use optimized zero-copy matrix view  
+        auto tensor_shape = tensor_data.shape();
+        std::size_t n_dim = tensor_data.dimension();
+
+        // Matrix dimensions
+        const int M_nrow = matrix.nrow();
+        const int M_ncol = matrix.ncol();
+
+        // Calculate contraction parameters
+        std::size_t contract_len, new_dim;
         if (transpose) {
-            // Use transpose view - no copy needed
-            const auto temp_result = xt::linalg::tensordot(tensor_data, matrix_view, {axis}, {0});
-            
-            // Create permutation and apply
-            const auto permutation = create_permutation(temp_result.dimension(), axis);
-            const auto transposed_result = xt::transpose(temp_result, permutation);
-            
-            // Apply squeeze to remove singleton dimensions
-            return xt::eval(transposed_result);
-            
+            contract_len = static_cast<std::size_t>(M_nrow);
+            new_dim = static_cast<std::size_t>(M_ncol);
         } else {
-            // Direct computation - no copy needed
-            const auto temp_result = xt::linalg::tensordot(tensor_data, matrix_view, {axis}, {1});
-            
-            // Create permutation and apply
-            const auto permutation = create_permutation(temp_result.dimension(), axis);
-            const auto transposed_result = xt::transpose(temp_result, permutation);
-            
-            // Apply squeeze to remove singleton dimensions
-            return xt::eval(transposed_result);
+            contract_len = static_cast<std::size_t>(M_ncol);
+            new_dim = static_cast<std::size_t>(M_nrow);
         }
+
+        // OPTIMIZATION 1: Create transpose permutation more efficiently
+        std::vector<std::size_t> tensor_transpose_axes;
+        tensor_transpose_axes.reserve(n_dim);
+        
+        for (std::size_t i = 0; i < n_dim; ++i) {
+            if (i < axis) {
+                tensor_transpose_axes.push_back(i + 1);
+            } else if (i == axis) {
+                tensor_transpose_axes.push_back(0);
+            } else {
+                tensor_transpose_axes.push_back(i);
+            }
+        }
+        
+        // OPTIMIZATION 2: Use auto to avoid forced layout conversion
+        auto tensor_transposed = xt::transpose(tensor_data, tensor_transpose_axes);
+
+        // Calculate keep dimensions
+        std::size_t keep_len = 1;
+        for (std::size_t i = 1; i < n_dim; ++i) {
+            keep_len *= tensor_transposed.shape()[i];
+        }
+
+        // OPTIMIZATION 3: Create contiguous tensor matrix (avoid reshape on view)
+        xt::xarray<double, xt::layout_type::column_major> tensor_matrix = tensor_transposed;
+        tensor_matrix.reshape({contract_len, keep_len});
+
+        // OPTIMIZATION 4: Pre-allocate result with correct constructor
+        std::vector<std::size_t> result_shape = {new_dim, keep_len};
+        xt::xarray<double, xt::layout_type::column_major> result_matrix(result_shape);
+
+        // OPTIMIZATION 5: Optimized BLAS parameters
+        const char* transa = transpose ? "T" : "N";
+        const char* transb = "N";
+        const int m = static_cast<int>(new_dim);
+        const int n = static_cast<int>(keep_len);
+        const int k = static_cast<int>(contract_len);
+        const double alpha = 1.0;
+        const double beta = 0.0;
+
+        // Use optimized leading dimensions
+        const int lda = M_nrow;
+        const int ldb = static_cast<int>(contract_len);
+        const int ldc = static_cast<int>(new_dim);
+
+        // BLAS multiplication
+        F77_NAME(dgemm)(transa, transb, &m, &n, &k, &alpha,
+                       REAL(matrix), &lda, tensor_matrix.data(), &ldb,
+                       &beta, result_matrix.data(), &ldc FCONE FCONE);
+
+        // OPTIMIZATION 6: Efficient result reshaping
+        std::vector<std::size_t> final_shape;
+        final_shape.reserve(n_dim);
+        final_shape.push_back(new_dim);
+        for (std::size_t i = 0; i < n_dim; ++i) {
+            if (i != axis) {
+                final_shape.push_back(tensor_shape[i]);
+            }
+        }
+        result_matrix.reshape(final_shape);
+
+        // OPTIMIZATION 7: Efficient inverse transpose with direct indexing
+        std::vector<std::size_t> inverse_axes;
+        inverse_axes.reserve(n_dim);
+        inverse_axes.push_back(axis);
+        
+        for (std::size_t i = 1; i < n_dim; ++i) {
+            if (i <= axis) {
+                inverse_axes.push_back(i - 1);
+            } else {
+                inverse_axes.push_back(i);
+            }
+        }
+
+        // Apply inverse transpose to restore original dimension order
+        auto result_final = xt::transpose(result_matrix, inverse_axes);
+        
+        return xt::rarray<double>(result_final);
         
     } catch (const std::exception& e) {
         Rcpp::stop("Error in ttm_cpp: " + std::string(e.what()));

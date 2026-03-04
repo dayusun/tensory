@@ -269,7 +269,7 @@ ttm <- function(tensor, matrix, mode = 1, transpose = FALSE) {
     }
 
     # Call C++ function for single matrix multiplication
-    result_data <- ttm_cpp(tensor$data, matrix, mode, transpose)
+    result_data <- ttm_test_cpp(tensor$data, matrix, mode, transpose)
     return(Tensor$new(result_data))
   } else if ((is.vector(matrix) || is.numeric(matrix)) && !is.list(matrix)) {
     # Single vector case (tensor times vector)
