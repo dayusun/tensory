@@ -26,7 +26,7 @@ The `tensory` package implements a highly optimized, zero-copy sliced DGEMM appr
 
 We start with a performance comparison using `bench::mark` with a large fixed-size tensor and matrix:
 
-```{r basic-example, eval=FALSE}
+```{r basic-example, warning=FALSE, message=FALSE}
 library(tensory)
 library(rTensor)
 library(bench)
