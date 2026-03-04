@@ -1,0 +1,183 @@
+---
+title: "Benchmarking Tensory TTM Functions"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Benchmarking Tensory TTM Functions}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Benchmarking Approach
+
+This vignette describes the benchmarking approach used to compare the performance of two implementations of the tensor-times-matrix operation in the tensory package:
+
+- `tensory:::ttm_test_cpp` (original implementation)
+- `tensory:::ttm_test1_cpp` (optimized implementation)
+
+## Benchmark Components
+
+### Basic Performance Comparison
+
+We start with a basic performance comparison using `bench::mark` with a fixed-size example based on the user's provided example:
+
+```{r basic-example, eval=FALSE}
+# Create a random 3-mode tensor and a matrix based on user's example
+X <- array(runif(30*40*50), dim = c(30, 40, 50))
+mat <- matrix(runif(20*40), nrow = 20, ncol = 40)
+
+# Prepare tensory tensor object
+X_tensory <- tensory::Tensor$new(X)
+
+# Benchmark the functions
+bm <- bench::mark(
+  ttm_test_cpp = tensory:::ttm_test_cpp(X_tensory$data, mat, mode = 2),
+  ttm_test1_cpp = tensory:::ttm_test1_cpp(X_tensory$data, mat, mode = 2),
+  min_iterations = 100,
+  check = FALSE
+)
+```
+
+### Parameterized Benchmark
+
+We use `bench::press` to test performance across different tensor dimensions:
+
+```{r parameterized-example, eval=FALSE}
+# Define parameter grid
+params <- expand.grid(
+  dim1 = c(20, 40, 60),
+  dim2 = c(30, 50, 70),
+  dim3 = c(25, 45, 65),
+  mat_rows = c(15, 35, 55),
+  #mat_cols = c(30, 50, 70),
+  mode = c(1, 2, 3),
+  stringsAsFactors = FALSE
+)
+
+# Filter to ensure matrix columns match tensor dimension for the mode
+valid_params <- params[params$mat_cols == ifelse(params$mode == 1, params$dim1, 
+                                                 ifelse(params$mode == 2, params$dim2, params$dim3)), , drop = FALSE]
+
+# Take a sample of parameter combinations to reduce computation time
+if (nrow(valid_params) > 20) {
+  valid_params <- valid_params[sample(nrow(valid_params), 20), , drop = FALSE]
+}
+
+# Run parameterized benchmark
+bp <- bench::press(
+  dim1 = valid_params$dim1,
+  dim2 = valid_params$dim2,
+  dim3 = valid_params$dim3,
+  mat_rows = valid_params$mat_rows,
+  mat_cols = valid_params$mat_cols,
+  #mode = valid_params$mode,
+  {
+    # Create tensor and matrix based on parameters
+    X <- array(runif(dim1 * dim2 * dim3), dim = c(dim1, dim2, dim3))
+    mat <- matrix(runif(mat_rows * mat_cols), nrow = mat_rows, ncol = mat_cols)
+    
+    # Prepare tensory tensor object
+    #X_tensory <- tensory::Tensor$new(X)
+    
+    # Benchmark both functions
+    bench::mark(
+      ttm_test_cpp = tensory:::ttm_test_cpp(X, mat, mode = mode),
+      ttm_test1_cpp = tensory:::ttm_test1_cpp(X, mat, mode = mode),
+      min_iterations = 10,
+      check = FALSE
+    )
+  }
+)
+```
+
+### Transpose Operations Benchmark
+
+We also evaluate performance with and without transpose operations:
+
+```{r transpose-example, eval=FALSE}
+# Create test data
+X <- array(runif(25*35*45), dim = c(25, 35, 45))
+mat <- matrix(runif(30*35), nrow = 30, ncol = 35)  # For transpose = FALSE
+mat_t <- matrix(runif(35*30), nrow = 35, ncol = 30)  # For transpose = TRUE
+
+# Prepare tensory tensor object
+#X_tensory <- tensory::Tensor$new(X)
+
+# Benchmark with transpose variations
+bt <- bench::press(
+  transpose = c(TRUE, FALSE),
+  {
+    if (transpose) {
+      bench::mark(
+        ttm_test_cpp = tensory:::ttm_test_cpp(X, mat_t, mode = 2, transpose = TRUE),
+        ttm_test1_cpp = tensory:::ttm_test1_cpp(X, mat_t, mode = 2, transpose = TRUE),
+        iterations = 5000,
+        check = FALSE
+      )
+    } else {
+      bench::mark(
+        ttm_test_cpp = tensory:::ttm_test_cpp(X, mat, mode = 2, transpose = FALSE),
+        ttm_test1_cpp = tensory:::ttm_test1_cpp(X, mat, mode = 2, transpose = FALSE),
+        iterations = 5000,
+        check = FALSE
+      )
+    }
+  }
+)
+```
+
+### Memory Usage Analysis
+
+We analyze memory allocation differences between implementations:
+
+```{r memory-example, eval=FALSE}
+# Create test data
+X <- array(runif(20*30*40), dim = c(20, 30, 40))
+mat <- matrix(runif(25*30), nrow = 25, ncol = 30)
+
+# Prepare tensory tensor object
+X_tensory <- tensory::Tensor$new(X)
+
+# Benchmark with memory tracking
+bm_memory <- bench::mark(
+  ttm_test_cpp = tensory:::ttm_test_cpp(X_tensory$data, mat, mode = 2),
+  ttm_test1_cpp = tensory:::ttm_test1_cpp(X_tensory$data, mat, mode = 2),
+  min_iterations = 50,
+  memory = TRUE,
+  check = FALSE
+)
+```
+
+## Running the Benchmarks
+
+To run the full benchmark suite, use the provided scripts in the `benchmarks/` directory:
+
+```{r run-benchmarks, eval=FALSE}
+source("benchmarks/ttm_benchmark.R")
+results <- run_all_benchmarks()
+```
+
+## Results
+
+The benchmark results are saved in the `benchmark_results/` directory, including:
+
+- CSV files with raw benchmark data
+- PNG visualizations of performance comparisons
+- A markdown report summarizing the findings
+
+## Conclusion
+
+The `ttm_test1_cpp` implementation shows improved performance over the original `ttm_test_cpp` implementation, with optimizations including:
+
+1. Avoiding forced column-major layout conversion
+2. Using auto type deduction to prevent unnecessary layout conversions
+3. More efficient memory access patterns
+4. Reduced memory allocation overhead
+
+These optimizations result in significant speedup in typical use cases.

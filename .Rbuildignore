@@ -2,7 +2,7 @@
 ^\.Rproj\.user$
 ^LICENSE\.md$
 ^temp$
-^benchmarks$
+^dev$
 ^\.vscode$
 ^\.gitignore$
 ^\.Rbuildignore$
