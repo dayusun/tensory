@@ -21,48 +21,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// ttm_test_cpp
-xt::rarray<double> ttm_test_cpp(const xt::rarray<double>& tensor_data, const Rcpp::NumericMatrix& mat_rm, int mode, bool transpose);
-RcppExport SEXP _tensory_ttm_test_cpp(SEXP tensor_dataSEXP, SEXP mat_rmSEXP, SEXP modeSEXP, SEXP transposeSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const xt::rarray<double>& >::type tensor_data(tensor_dataSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::NumericMatrix& >::type mat_rm(mat_rmSEXP);
-    Rcpp::traits::input_parameter< int >::type mode(modeSEXP);
-    Rcpp::traits::input_parameter< bool >::type transpose(transposeSEXP);
-    rcpp_result_gen = Rcpp::wrap(ttm_test_cpp(tensor_data, mat_rm, mode, transpose));
-    return rcpp_result_gen;
-END_RCPP
-}
-// ttm_test1_cpp
-xt::rarray<double> ttm_test1_cpp(const xt::rarray<double>& tensor_data, const Rcpp::NumericMatrix& mat_rm, int mode, bool transpose);
-RcppExport SEXP _tensory_ttm_test1_cpp(SEXP tensor_dataSEXP, SEXP mat_rmSEXP, SEXP modeSEXP, SEXP transposeSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const xt::rarray<double>& >::type tensor_data(tensor_dataSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::NumericMatrix& >::type mat_rm(mat_rmSEXP);
-    Rcpp::traits::input_parameter< int >::type mode(modeSEXP);
-    Rcpp::traits::input_parameter< bool >::type transpose(transposeSEXP);
-    rcpp_result_gen = Rcpp::wrap(ttm_test1_cpp(tensor_data, mat_rm, mode, transpose));
-    return rcpp_result_gen;
-END_RCPP
-}
-// mm_test
-Rcpp::NumericMatrix mm_test(const Rcpp::NumericMatrix& A, const Rcpp::NumericMatrix& B, bool transpose_A, bool transpose_B);
-RcppExport SEXP _tensory_mm_test(SEXP ASEXP, SEXP BSEXP, SEXP transpose_ASEXP, SEXP transpose_BSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::NumericMatrix& >::type A(ASEXP);
-    Rcpp::traits::input_parameter< const Rcpp::NumericMatrix& >::type B(BSEXP);
-    Rcpp::traits::input_parameter< bool >::type transpose_A(transpose_ASEXP);
-    Rcpp::traits::input_parameter< bool >::type transpose_B(transpose_BSEXP);
-    rcpp_result_gen = Rcpp::wrap(mm_test(A, B, transpose_A, transpose_B));
-    return rcpp_result_gen;
-END_RCPP
-}
 // ttm_cpp
 xt::rarray<double> ttm_cpp(const xt::rarray<double>& tensor_data, const NumericMatrix& matrix, int mode, bool transpose);
 RcppExport SEXP _tensory_ttm_cpp(SEXP tensor_dataSEXP, SEXP matrixSEXP, SEXP modeSEXP, SEXP transposeSEXP) {
@@ -183,9 +141,6 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_tensory_rcpp_hello_world", (DL_FUNC) &_tensory_rcpp_hello_world, 0},
-    {"_tensory_ttm_test_cpp", (DL_FUNC) &_tensory_ttm_test_cpp, 4},
-    {"_tensory_ttm_test1_cpp", (DL_FUNC) &_tensory_ttm_test1_cpp, 4},
-    {"_tensory_mm_test", (DL_FUNC) &_tensory_mm_test, 4},
     {"_tensory_ttm_cpp", (DL_FUNC) &_tensory_ttm_cpp, 4},
     {"_tensory_ttm_multiple_cpp", (DL_FUNC) &_tensory_ttm_multiple_cpp, 4},
     {"_tensory_test_add_cpp", (DL_FUNC) &_tensory_test_add_cpp, 2},

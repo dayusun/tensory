@@ -5,18 +5,6 @@ rcpp_hello_world <- function() {
     .Call(`_tensory_rcpp_hello_world`)
 }
 
-ttm_test_cpp <- function(tensor_data, mat_rm, mode, transpose = FALSE) {
-    .Call(`_tensory_ttm_test_cpp`, tensor_data, mat_rm, mode, transpose)
-}
-
-ttm_test1_cpp <- function(tensor_data, mat_rm, mode, transpose = FALSE) {
-    .Call(`_tensory_ttm_test1_cpp`, tensor_data, mat_rm, mode, transpose)
-}
-
-mm_test <- function(A, B, transpose_A = FALSE, transpose_B = FALSE) {
-    .Call(`_tensory_mm_test`, A, B, transpose_A, transpose_B)
-}
-
 ttm_cpp <- function(tensor_data, matrix, mode, transpose = FALSE) {
     .Call(`_tensory_ttm_cpp`, tensor_data, matrix, mode, transpose)
 }
