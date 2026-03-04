@@ -2,3 +2,8 @@
 ^\.Rproj\.user$
 ^LICENSE\.md$
 ^temp$
+^benchmarks$
+^\.vscode$
+^\.gitignore$
+^\.Rbuildignore$
+^Read-and-delete-me$
