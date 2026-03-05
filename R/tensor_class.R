@@ -5,36 +5,47 @@
 #'
 #' @examples
 #' # Create a tensor from a matrix
-#' t <- Tensor$new(matrix(1:6, nrow=2, ncol=3))
+#' t <- Tensor$new(matrix(1:6, nrow = 2, ncol = 3))
 #' print(t)
-#' 
+#'
 #' # Create a tensor with specific dimensions
 #' t2 <- Tensor$new(1:24, c(2, 3, 4))
-#' 
+#'
 #' # Mathematical operations using method syntax
 #' t3 <- t2$clone_tensor()$add(t2)
-#' 
+#'
 #' # Mathematical operations using operator syntax
 #' t4 <- t2 + t2
 #' t5 <- t2 * 2
 #' t6 <- 5 - t2
 #' t7 <- t2 / 3
-#' 
+#'
 #' @export
 Tensor <- R6::R6Class("Tensor",
   public = list(
     #' @field data The underlying array data
     data = NULL,
-    
+
     #' @field dims The dimensions of the tensor
     dims = NULL,
-    
+
     #' Initialize a new tensor
-    #' 
+    #'
     #' @param data A vector, matrix, array, or numeric value
     #' @param dims The dimensions of the tensor. If NULL, inferred from data
+    #' @param fast If TRUE, bypasses all checks. Used internally for performance.
     #' @return A new Tensor object
-    initialize = function(data, dims = NULL) {
+    initialize = function(data = NULL, dims = NULL, fast = FALSE) {
+      if (fast) {
+        self$data <- data
+        self$dims <- dims
+        return(invisible(self))
+      }
+
+      if (is.null(data)) {
+        return(invisible(self))
+      }
+
       # Handle different input types
       if (is.null(dims)) {
         if (is.vector(data)) {
@@ -48,74 +59,79 @@ Tensor <- R6::R6Class("Tensor",
           stop("Unsupported data type")
         }
       }
-      
+
       # Convert dims to integer
       dims <- as.integer(dims)
-      
-      # Handle scalar case
-      if (length(dims) == 1 && dims == 1 && length(data) == 1) {
-        data <- array(as.double(data), dim = 1)
+
+      if (length(dims) == 0) {
+        if (length(data) != 1) {
+          stop("Product of specified dimensions must match the number of elements in data.")
+        }
+        self$data <- as.double(data)
+        self$dims <- integer(0)
+      } else if (length(dims) == 1 && dims == 1 && length(data) == 1) {
+        # Handle 1D scalar case
+        self$data <- array(as.double(data), dim = 1)
+        self$dims <- 1L
       } else {
         # Validate that dimensions match data length
         if (prod(dims) != length(data)) {
           stop("Product of specified dimensions must match the number of elements in data.")
         }
-        
+
         # Convert data to double array
         if (!is.double(data)) data <- as.double(data)
-        data <- array(data, dim = dims)
+        self$data <- array(data, dim = dims)
+        self$dims <- dims
       }
-      
-      self$data <- data
-      self$dims <- dims
     },
-    
+
     #' Get tensor dimensions
     #' @return Integer vector of dimensions
     dim = function() {
       return(self$dims)
     },
-    
+
     #' Get number of elements
     #' @return Integer number of elements
     length = function() {
       return(length(self$data))
     },
-    
+
     #' Get number of dimensions
     #' @return Integer number of dimensions
     ndims = function() {
       return(length(self$dims))
     },
-    
+
     #' Convert to R array
     #' @return R array representation
     as_array = function() {
       return(self$data)
     },
-    
+
     #' Print tensor information
-    #' 
+    #'
     #' @return Invisible self
     print = function() {
       cat("<Tensor object>\n")
       cat("A tensor of order", self$ndims(), "with dimensions:", paste(self$dims, collapse = " x "), "\n")
       invisible(self)
     },
-    
+
     #' Show tensor (alias for print)
-    #' 
+    #'
     #' @return Invisible self
     show = function() {
       self$print()
     },
-    
+
     #' Clone the tensor
     #' @return A new Tensor object with copied data
     clone_tensor = function() {
       Tensor$new(self$data)
     },
-    
+
     #' Reshape the tensor
     #' @param new_dims New dimensions
     #' @return Self (in-place operation)
@@ -128,16 +144,16 @@ Tensor <- R6::R6Class("Tensor",
       self$dims <- new_dims
       return(self)
     },
-    
+
     #' Squeeze the tensor by removing singleton dimensions
     #' @return New Tensor object with singleton dimensions removed
     squeeze = function() {
       result_dims <- self$dims
       new_dims <- result_dims[result_dims != 1]
-      
+
       if (length(new_dims) == 0) {
         # All dimensions were 1, result is scalar
-        return(Tensor$new(as.vector(self$data), c()))
+        return(Tensor$new(as.vector(self$data), integer(0)))
       } else if (length(new_dims) < length(result_dims)) {
         # Some dimensions were 1, reshape to remove them
         return(Tensor$new(self$data, new_dims))
@@ -146,7 +162,7 @@ Tensor <- R6::R6Class("Tensor",
         return(self$clone_tensor())
       }
     },
-    
+
     #' Element-wise addition
     #' @param other Another Tensor or numeric value
     #' @return Self (in-place operation)
@@ -161,7 +177,7 @@ Tensor <- R6::R6Class("Tensor",
       }
       return(self)
     },
-    
+
     #' Element-wise subtraction
     #' @param other Another Tensor or numeric value
     #' @return Self (in-place operation)
@@ -176,7 +192,7 @@ Tensor <- R6::R6Class("Tensor",
       }
       return(self)
     },
-    
+
     #' Element-wise multiplication
     #' @param other Another Tensor or numeric value
     #' @return Self (in-place operation)
@@ -191,7 +207,7 @@ Tensor <- R6::R6Class("Tensor",
       }
       return(self)
     },
-    
+
     #' Element-wise division
     #' @param other Another Tensor or numeric value
     #' @return Self (in-place operation)
@@ -206,7 +222,7 @@ Tensor <- R6::R6Class("Tensor",
       }
       return(self)
     },
-    
+
     #' Element-wise modulo
     #' @param other Another Tensor or numeric value
     #' @return Self (in-place operation)
@@ -221,7 +237,7 @@ Tensor <- R6::R6Class("Tensor",
       }
       return(self)
     },
-    
+
     #' Element-wise equality comparison
     #' @param other Another Tensor or numeric value
     #' @return Self (in-place operation)
@@ -236,7 +252,7 @@ Tensor <- R6::R6Class("Tensor",
       }
       return(self)
     },
-    
+
     #' Element-wise inequality comparison
     #' @param other Another Tensor or numeric value
     #' @return Self (in-place operation)
@@ -251,7 +267,7 @@ Tensor <- R6::R6Class("Tensor",
       }
       return(self)
     },
-    
+
     #' Element-wise less than comparison
     #' @param other Another Tensor or numeric value
     #' @return Self (in-place operation)
@@ -266,7 +282,7 @@ Tensor <- R6::R6Class("Tensor",
       }
       return(self)
     },
-    
+
     #' Element-wise less than or equal comparison
     #' @param other Another Tensor or numeric value
     #' @return Self (in-place operation)
@@ -281,7 +297,7 @@ Tensor <- R6::R6Class("Tensor",
       }
       return(self)
     },
-    
+
     #' Element-wise greater than comparison
     #' @param other Another Tensor or numeric value
     #' @return Self (in-place operation)
@@ -296,7 +312,7 @@ Tensor <- R6::R6Class("Tensor",
       }
       return(self)
     },
-    
+
     #' Element-wise greater than or equal comparison
     #' @param other Another Tensor or numeric value
     #' @return Self (in-place operation)
@@ -311,14 +327,14 @@ Tensor <- R6::R6Class("Tensor",
       }
       return(self)
     },
-    
+
     #' Element-wise logical NOT
     #' @return Self (in-place operation)
     logical_not = function() {
       self$data <- as.numeric(self$data == 0)
       return(self)
     },
-    
+
     #' Element-wise logical AND
     #' @param other Another Tensor or numeric value
     #' @return Self (in-place operation)
@@ -333,7 +349,7 @@ Tensor <- R6::R6Class("Tensor",
       }
       return(self)
     },
-    
+
     #' Element-wise logical OR
     #' @param other Another Tensor or numeric value
     #' @return Self (in-place operation)
@@ -348,7 +364,7 @@ Tensor <- R6::R6Class("Tensor",
       }
       return(self)
     },
-    
+
     #' Sum along dimensions
     #' @param dims Dimensions to sum along (NULL for all)
     #' @return New Tensor with reduced dimensions
@@ -369,9 +385,9 @@ Tensor <- R6::R6Class("Tensor",
 )
 
 #' Create a tensor object
-#' 
+#'
 #' Convenience function to create a Tensor object
-#' 
+#'
 #' @param data A vector, matrix, array, or numeric value
 #' @param dims The dimensions of the tensor. If NULL, inferred from data
 #' @return A new Tensor object
@@ -546,7 +562,7 @@ tensor <- function(data, dims = NULL) {
 }
 
 #' Create a tensor of zeros
-#' 
+#'
 #' @param dims Dimensions of the tensor
 #' @return A new Tensor object filled with zeros
 #' @export
@@ -557,7 +573,7 @@ zeros <- function(dims) {
 }
 
 #' Create a tensor of ones
-#' 
+#'
 #' @param dims Dimensions of the tensor
 #' @return A new Tensor object filled with ones
 #' @export
