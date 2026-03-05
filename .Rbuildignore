@@ -7,3 +7,5 @@
 ^\.gitignore$
 ^\.Rbuildignore$
 ^Read-and-delete-me$
+^doc$
+^Meta$

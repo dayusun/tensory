@@ -40,3 +40,5 @@ Read-and-delete-me
 temp/
 inst/doc
 dev/
+/doc/
+/Meta/
