@@ -69,6 +69,25 @@ Because of the column-major memory layout, the computer's memory doesn't care wh
 
 Thus, any $N$-dimensional tensor operation logically collapses back down into the exact same 3-dimensional flattened problem: $M_1 \times I_k \times M_2$. We just iterate $M_2$ times, grab the contiguous $M_1 \times I_k$ memory slices, and let `dgemm` multiply them!
 
+### General Rule of Thumb for Modes:
+
+- For **Mode=1**, elements are perfectly contiguous in memory, so one massive BLAS call evaluates the entire slice set simultaneously.
+- For **Mode=3**, blocks of the tensor are contiguous individually. We loop over the $M_1$ index and execute one large BLAS call against each column block.
+- For **Mode=2** (or any middle mode), the dimensions are intertwined in a way that requires manual mapping, and BLAS stride capabilities alone cannot extract the slice shapes contiguously, requiring memory copy.
+
+## Lesson: The "C++ is faster than R" Fallacy in Math Abstraction
+
+When developing the Tensor Times Tensor (`ttt`) function, we originally prototyped it utilizing `xt::linalg::tensordot` inside our C++ `xtensor` framework. However, micro-benchmarks revealed that **the generalized C++ template took up to 18x longer than native R**.
+
+### Why did C++ lose?
+
+When writing generic mathematical abstractions (like `tensordot`), modern C++ libraries use recursive iterators, dynamic shape evaluations, and deep expression trees to map arbitrary memory. R, conversely, handles multidimensional `array` transposes via `.Internal(aperm())`.
+
+- R's internal permutation mapping is written directly in **multi-threaded C** and evaluated by native handlers hooked instantly into Fortran BLAS (`%*%`).
+- The C++ framework had to wrap R memory in metadata objects, evaluate lazy-loader trees, and query generic iterators before triggering its own Fortran BLAS links.
+
+**The Finding**: If an operation strictly rotates identical memory into standard Matrix Multiplications, R's native `.Internal` routing to hardware BLAS is essentially impossible to beat at the CPU instruction level without writing raw pointers. C++ should be reserved for explicit, handcrafted traversal loops (like our `ttm` zero-copy approach) where we bypass looping restrictions entirely, rather than just plugging into generalized abstract C++ libraries for convenience!
+
 ## Overcoming Hardware Bottlenecks: L3 CPU Cache Tiling
 
 While the zero-copy slice strategy effectively eliminates the massive overhead of tensor memory transpositions, we discovered a new hardware-level bottleneck when benchmarking massive tensors (e.g., $N = 120 \times 120 \times 120$) on Mode 3.
