@@ -11,16 +11,6 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// rcpp_hello_world
-List rcpp_hello_world();
-RcppExport SEXP _tensory_rcpp_hello_world() {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    rcpp_result_gen = Rcpp::wrap(rcpp_hello_world());
-    return rcpp_result_gen;
-END_RCPP
-}
 // ttm_cpp
 xt::rarray<double> ttm_cpp(const xt::rarray<double>& tensor_data, const NumericMatrix& matrix, int mode, bool transpose);
 RcppExport SEXP _tensory_ttm_cpp(SEXP tensor_dataSEXP, SEXP matrixSEXP, SEXP modeSEXP, SEXP transposeSEXP) {
@@ -49,108 +39,10 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// test_add_cpp
-xt::rarray<double> test_add_cpp(xt::rarray<double>& x, xt::rarray<double>& y);
-RcppExport SEXP _tensory_test_add_cpp(SEXP xSEXP, SEXP ySEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< xt::rarray<double>& >::type x(xSEXP);
-    Rcpp::traits::input_parameter< xt::rarray<double>& >::type y(ySEXP);
-    rcpp_result_gen = Rcpp::wrap(test_add_cpp(x, y));
-    return rcpp_result_gen;
-END_RCPP
-}
-// test_in_place_modify_cpp
-int test_in_place_modify_cpp(xt::rarray<double>& x);
-RcppExport SEXP _tensory_test_in_place_modify_cpp(SEXP xSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< xt::rarray<double>& >::type x(xSEXP);
-    rcpp_result_gen = Rcpp::wrap(test_in_place_modify_cpp(x));
-    return rcpp_result_gen;
-END_RCPP
-}
-// test_roundtrip_rarray_optional
-xt::rarray_optional<double> test_roundtrip_rarray_optional(xt::rarray_optional<double> x);
-RcppExport SEXP _tensory_test_roundtrip_rarray_optional(SEXP xSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< xt::rarray_optional<double> >::type x(xSEXP);
-    rcpp_result_gen = Rcpp::wrap(test_roundtrip_rarray_optional(x));
-    return rcpp_result_gen;
-END_RCPP
-}
-// test_roundtrip_rtensor_optional
-xt::rtensor_optional<double, 2> test_roundtrip_rtensor_optional(xt::rtensor_optional<double, 2> x);
-RcppExport SEXP _tensory_test_roundtrip_rtensor_optional(SEXP xSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< xt::rtensor_optional<double, 2> >::type x(xSEXP);
-    rcpp_result_gen = Rcpp::wrap(test_roundtrip_rtensor_optional(x));
-    return rcpp_result_gen;
-END_RCPP
-}
-// test_reshape_cpp
-int test_reshape_cpp(xt::rarray<double>& x);
-RcppExport SEXP _tensory_test_reshape_cpp(SEXP xSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< xt::rarray<double>& >::type x(xSEXP);
-    rcpp_result_gen = Rcpp::wrap(test_reshape_cpp(x));
-    return rcpp_result_gen;
-END_RCPP
-}
-// test_int_cpp
-int test_int_cpp(xt::rarray<int>& x);
-RcppExport SEXP _tensory_test_int_cpp(SEXP xSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< xt::rarray<int>& >::type x(xSEXP);
-    rcpp_result_gen = Rcpp::wrap(test_int_cpp(x));
-    return rcpp_result_gen;
-END_RCPP
-}
-// test_lgl_cpp
-int test_lgl_cpp(xt::rarray<rlogical>& x);
-RcppExport SEXP _tensory_test_lgl_cpp(SEXP xSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< xt::rarray<rlogical>& >::type x(xSEXP);
-    rcpp_result_gen = Rcpp::wrap(test_lgl_cpp(x));
-    return rcpp_result_gen;
-END_RCPP
-}
-// test_stdcomplex_cpp
-int test_stdcomplex_cpp(xt::rarray<std::complex<double>>& x);
-RcppExport SEXP _tensory_test_stdcomplex_cpp(SEXP xSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< xt::rarray<std::complex<double>>& >::type x(xSEXP);
-    rcpp_result_gen = Rcpp::wrap(test_stdcomplex_cpp(x));
-    return rcpp_result_gen;
-END_RCPP
-}
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_tensory_rcpp_hello_world", (DL_FUNC) &_tensory_rcpp_hello_world, 0},
     {"_tensory_ttm_cpp", (DL_FUNC) &_tensory_ttm_cpp, 4},
     {"_tensory_ttm_multiple_cpp", (DL_FUNC) &_tensory_ttm_multiple_cpp, 4},
-    {"_tensory_test_add_cpp", (DL_FUNC) &_tensory_test_add_cpp, 2},
-    {"_tensory_test_in_place_modify_cpp", (DL_FUNC) &_tensory_test_in_place_modify_cpp, 1},
-    {"_tensory_test_roundtrip_rarray_optional", (DL_FUNC) &_tensory_test_roundtrip_rarray_optional, 1},
-    {"_tensory_test_roundtrip_rtensor_optional", (DL_FUNC) &_tensory_test_roundtrip_rtensor_optional, 1},
-    {"_tensory_test_reshape_cpp", (DL_FUNC) &_tensory_test_reshape_cpp, 1},
-    {"_tensory_test_int_cpp", (DL_FUNC) &_tensory_test_int_cpp, 1},
-    {"_tensory_test_lgl_cpp", (DL_FUNC) &_tensory_test_lgl_cpp, 1},
-    {"_tensory_test_stdcomplex_cpp", (DL_FUNC) &_tensory_test_stdcomplex_cpp, 1},
     {NULL, NULL, 0}
 };
 
