@@ -220,238 +220,236 @@
 #'
 #' @export
 ttm <- function(tensor, matrix, mode = NULL, transpose = FALSE) {
-    # Manual dispatch for R6 Tensor class
-    if (!inherits(tensor, "Tensor")) {
-        stop("ttm is not implemented for this object type")
+  if (!inherits(tensor, "Tensor")) {
+    stop("ttm is not implemented for this object type")
+  }
+  UseMethod("ttm", matrix)
+}
+
+#' @export
+ttm.matrix <- function(tensor, matrix, mode = NULL, transpose = FALSE) {
+  tensor_dims <- tensor$dim()
+
+  # Handle negative modes
+  if (!is.null(mode) && all(mode < 0)) {
+    mode <- setdiff(seq_along(tensor_dims), -mode)
+    if (length(mode) == 0) {
+      stop("All modes cannot be excluded")
     }
+  } else if (!is.null(mode) && any(mode < 0)) {
+    stop("Modes must be either all positive or all negative")
+  }
 
-    tensor_dims <- tensor$dim()
+  if (is.null(mode)) mode <- 1
 
-    # Handle negative modes
-    if (!is.null(mode) && all(mode < 0)) {
-        mode <- setdiff(seq_along(tensor_dims), -mode)
-        if (length(mode) == 0) {
-            stop("All modes cannot be excluded")
-        }
-    } else if (!is.null(mode) && any(mode < 0)) {
-        stop("Modes must be either all positive or all negative")
+  # Validate mode (ensure it's a single value)
+  if (length(mode) != 1) {
+    stop("Mode must be a single integer for single matrix operations")
+  }
+
+  if (mode < 1 || mode > length(tensor_dims)) {
+    stop("Mode must be between 1 and number of tensor dimensions")
+  }
+
+  # Validate matrix dimensions - the contracted dimension must match tensor dimension
+  tensor_mode_dim <- tensor_dims[mode]
+
+  # Validate dimensions based on transpose flag
+  if (transpose) {
+    # When transpose=TRUE: matrix rows become the contracted dimension
+    contracted_dim <- nrow(matrix)
+    if (contracted_dim != tensor_mode_dim) {
+      stop(paste0(
+        "Matrix rows (", contracted_dim,
+        ") must match tensor dimension size (", tensor_mode_dim,
+        ") for mode ", mode, " with transpose=TRUE"
+      ))
     }
+  } else {
+    # When transpose=FALSE: contract with matrix columns
+    contracted_dim <- ncol(matrix)
+    if (contracted_dim != tensor_mode_dim) {
+      stop(paste0(
+        "Matrix columns (", contracted_dim,
+        ") must match tensor dimension size (", tensor_mode_dim,
+        ") for mode ", mode
+      ))
+    }
+  }
 
-    if (is.matrix(matrix) || (is.array(matrix) && length(dim(matrix)) == 2)) {
-        # Single matrix case
+  # Ensure matrix is double precision before passing to C++
+  if (storage.mode(matrix) != "double") {
+    storage.mode(matrix) <- "double"
+  }
 
-        if (is.null(mode)) mode <- 1
+  # Call C++ function for single matrix multiplication
+  result_data <- ttm_cpp(tensor$data, matrix, mode, transpose)
+  return(Tensor$new(result_data))
+}
 
-        # Validate mode (ensure it's a single value)
-        if (length(mode) != 1) {
-            stop("Mode must be a single integer for single matrix operations")
-        }
+#' @export
+ttm.array <- function(tensor, matrix, mode = NULL, transpose = FALSE) {
+  if (length(dim(matrix)) != 2) {
+    stop("ttm is not implemented for arrays with != 2 dimensions")
+  }
+  ttm.matrix(tensor, matrix, mode, transpose)
+}
 
-        if (mode < 1 || mode > length(tensor_dims)) {
-            stop("Mode must be between 1 and number of tensor dimensions")
-        }
+#' @export
+ttm.numeric <- function(tensor, matrix, mode = NULL, transpose = FALSE) {
+  tensor_dims <- tensor$dim()
 
-        # Validate matrix dimensions - the contracted dimension must match tensor dimension
-        tensor_mode_dim <- tensor_dims[mode]
+  if (!is.null(mode) && all(mode < 0)) {
+    mode <- setdiff(seq_along(tensor_dims), -mode)
+    if (length(mode) == 0) stop("All modes cannot be excluded")
+  } else if (!is.null(mode) && any(mode < 0)) {
+    stop("Modes must be either all positive or all negative")
+  }
 
-        # Validate dimensions based on transpose flag
-        if (transpose) {
-            # When transpose=TRUE: matrix rows become the contracted dimension
-            contracted_dim <- nrow(matrix)
-            if (contracted_dim != tensor_mode_dim) {
-                stop(paste0(
-                    "Matrix rows (", contracted_dim,
-                    ") must match tensor dimension size (", tensor_mode_dim,
-                    ") for mode ", mode, " with transpose=TRUE"
-                ))
-            }
-        } else {
-            # When transpose=FALSE: contract with matrix columns
-            contracted_dim <- ncol(matrix)
-            if (contracted_dim != tensor_mode_dim) {
-                stop(paste0(
-                    "Matrix columns (", contracted_dim,
-                    ") must match tensor dimension size (", tensor_mode_dim,
-                    ") for mode ", mode
-                ))
-            }
-        }
+  if (is.null(mode)) mode <- 1
 
-        # Ensure matrix is double precision before passing to C++
-        if (storage.mode(matrix) != "double") {
-            storage.mode(matrix) <- "double"
-        }
+  if (length(mode) != 1) {
+    stop("Mode must be a single integer for single vector operations")
+  }
 
-        # Call C++ function for single matrix multiplication
-        result_data <- ttm_cpp(tensor$data, matrix, mode, transpose)
-        return(Tensor$new(result_data))
-    } else if ((is.vector(matrix) || is.numeric(matrix)) && !is.list(matrix)) {
-        # Single vector case (tensor times vector)
+  if (mode < 1 || mode > length(tensor_dims)) {
+    stop("Mode must be between 1 and number of tensor dimensions")
+  }
 
-        if (is.null(mode)) mode <- 1
+  tensor_mode_dim <- tensor_dims[mode]
+  if (length(matrix) != tensor_mode_dim) {
+    stop(paste0(
+      "Vector length (", length(matrix), ") must match tensor dimension size (",
+      tensor_mode_dim, ") for mode ", mode
+    ))
+  }
 
-        # Validate mode (ensure it's a single value)
-        if (length(mode) != 1) {
-            stop("Mode must be a single integer for single vector operations")
-        }
+  if (storage.mode(matrix) != "double") {
+    storage.mode(matrix) <- "double"
+  }
 
-        if (mode < 1 || mode > length(tensor_dims)) {
-            stop("Mode must be between 1 and number of tensor dimensions")
-        }
+  vector_matrix <- base::matrix(matrix, nrow = 1)
+  result_tensor <- ttm.matrix(tensor, vector_matrix, mode = mode, transpose = FALSE)
 
-        # Validate vector length
-        tensor_mode_dim <- tensor_dims[mode]
-        if (length(matrix) != tensor_mode_dim) {
-            stop(paste0(
-                "Vector length (", length(matrix), ") must match tensor dimension size (",
-                tensor_mode_dim, ") for mode ", mode
-            ))
-        }
-
-        # Ensure vector is double precision
-        if (storage.mode(matrix) != "double") {
-            storage.mode(matrix) <- "double"
-        }
-
-        # For tensor times vector, we need to convert vector to matrix
-        # Create row vector (1 x n) and use transpose=FALSE to contract with columns
-        vector_matrix <- base::matrix(matrix, nrow = 1)
-
-        # Call ttm with transpose=FALSE to contract with matrix columns (vector elements)
-        result_tensor <- ttm(tensor, vector_matrix, mode = mode, transpose = FALSE)
-
-        # Remove the singleton dimension that was introduced
-        result_dims <- result_tensor$dim()
-        if (length(result_dims) == 1 && result_dims[1] == 1) {
-            # Scalar result
-            return(Tensor$new(as.vector(result_tensor$data), integer(0)))
-        } else {
-            # Remove singleton dimensions (dimensions of size 1)
-            new_dims <- result_dims[result_dims != 1]
-            if (length(new_dims) == 0) {
-                # All dimensions were 1, result is scalar
-                return(Tensor$new(as.vector(result_tensor$data), integer(0)))
-            } else {
-                # Reshape to remove singleton dimensions
-                return(result_tensor$reshape(new_dims))
-            }
-        }
-    } else if (is.list(matrix)) {
-        # Multiple matrices/vectors case - integrate ttm_multiple functionality directly
-
-        # Validate input
-        if (length(matrix) == 0) {
-            stop("Empty list of matrices/vectors provided")
-        }
-
-        # If modes not provided, use sequential modes starting from 1
-        if (is.null(mode)) {
-            modes <- seq_along(matrix)
-        } else {
-            modes <- mode
-        }
-
-        # List subset selection
-        if (length(matrix) == length(tensor_dims) && length(modes) != length(tensor_dims)) {
-            matrix <- matrix[modes]
-        }
-
-        num_matrices <- length(matrix)
-
-        # Validate modes
-        if (length(modes) != num_matrices) {
-            stop(paste0("Number of modes (", length(modes), ") must match number of matrices/vectors (", num_matrices, ")"))
-        }
-
-        # Validate that modes are within valid range
-        if (any(modes < 1) || any(modes > length(tensor_dims))) {
-            stop("All modes must be between 1 and number of tensor dimensions")
-        }
-
-        # Check if all elements are matrices (vectors are not allowed in this case)
-        element_types <- sapply(matrix, function(x) {
-            if (is.matrix(x) || (is.array(x) && length(dim(x)) == 2)) {
-                "matrix"
-            } else if (is.vector(x) && !is.matrix(x) && !is.array(x)) {
-                "vector"
-            } else {
-                "invalid"
-            }
-        })
-
-        # Check for invalid types
-        if (any(element_types == "invalid")) {
-            invalid_indices <- which(element_types == "invalid")
-            stop(paste0(
-                "Invalid elements at positions: ", paste(invalid_indices, collapse = ", "),
-                ". All elements must be matrices/vectors."
-            ))
-        }
-
-        # Convert vectors to matrices if any vectors are present
-        for (i in seq_along(matrix)) {
-            if (element_types[i] == "vector") {
-                matrix[[i]] <- base::matrix(matrix[[i]], nrow = 1) # Convert to row vector
-            }
-        }
-
-        # Ensure all matrices are double precision before passing to C++
-        for (i in seq_along(matrix)) {
-            if (storage.mode(matrix[[i]]) != "double") {
-                storage.mode(matrix[[i]]) <- "double"
-            }
-        }
-
-        # All matrices case - validate dimensions before calling C++
-
-        if (transpose) {
-            # If transpose is TRUE, we need to validate the number of rows in each matrix
-            # as they will be contracted with tensor dimensions
-            matrice_mode <- sapply(matrix, nrow)
-        } else {
-            matrice_mode <- sapply(matrix, ncol)
-        }
-
-        # Validate matrix dimensions for current tensor state
-        tensor_mode_dim <- tensor_dims[modes]
-
-        if (any(tensor_mode_dim != matrice_mode)) {
-            unmatched_modes_position <- which(tensor_mode_dim != matrice_mode)
-            axis_name <- if (transpose) "rows" else "columns"
-            stop(paste0(
-                "Matrix ", paste0(unmatched_modes_position, ", "), " ", axis_name, " (",
-                matrice_mode[unmatched_modes_position],
-                ") must match tensor dimension size (", tensor_mode_dim[unmatched_modes_position],
-                ") for mode ", modes[unmatched_modes_position]
-            ))
-        }
-
-        # Call C++ function for multiple matrix multiplication
-        result_data <- ttm_multiple_cpp(tensor$data, matrix, modes, transpose)
-        result_tensor <- Tensor$new(result_data)
-
-        # Apply squeeze to remove singleton dimensions for vector operations
-        # Only squeeze dimensions that correspond to original vector inputs
-        vector_modes <- modes[element_types == "vector"]
-
-        if (length(vector_modes) > 0) {
-            result_dims <- result_tensor$dim()
-            # Remove dimensions corresponding to the vector modes (which should be 1)
-            keep_dims <- setdiff(seq_along(result_dims), vector_modes)
-            new_dims <- result_dims[keep_dims]
-
-            if (length(new_dims) == 0) {
-                # All dimensions were vectors, result is scalar
-                return(Tensor$new(as.vector(result_tensor$data), integer(0)))
-            } else {
-                # Reshape to remove vector dimensions
-                return(result_tensor$reshape(new_dims))
-            }
-        } else {
-            # No vector inputs, return full tensor (even if some dims are size 1)
-            return(result_tensor)
-        }
+  result_dims <- result_tensor$dim()
+  if (length(result_dims) == 1 && result_dims[1] == 1) {
+    return(Tensor$new(as.vector(result_tensor$data), integer(0)))
+  } else {
+    new_dims <- result_dims[result_dims != 1]
+    if (length(new_dims) == 0) {
+      return(Tensor$new(as.vector(result_tensor$data), integer(0)))
     } else {
-        stop("Input must be a matrix, vector, or list of matrices/vectors")
+      return(result_tensor$reshape(new_dims))
     }
+  }
+}
+
+#' @export
+ttm.integer <- function(tensor, matrix, mode = NULL, transpose = FALSE) {
+  ttm.numeric(tensor, matrix, mode, transpose)
+}
+
+#' @export
+ttm.logical <- function(tensor, matrix, mode = NULL, transpose = FALSE) {
+  ttm.numeric(tensor, matrix, mode, transpose)
+}
+
+#' @export
+ttm.list <- function(tensor, matrix, mode = NULL, transpose = FALSE) {
+  tensor_dims <- tensor$dim()
+
+  if (length(matrix) == 0) {
+    stop("Empty list of matrices/vectors provided")
+  }
+
+  if (!is.null(mode) && all(mode < 0)) {
+    mode <- setdiff(seq_along(tensor_dims), -mode)
+    if (length(mode) == 0) stop("All modes cannot be excluded")
+  } else if (!is.null(mode) && any(mode < 0)) {
+    stop("Modes must be either all positive or all negative")
+  }
+
+  if (is.null(mode)) {
+    modes <- seq_along(matrix)
+  } else {
+    modes <- mode
+  }
+
+  if (length(matrix) == length(tensor_dims) && length(modes) != length(tensor_dims)) {
+    matrix <- matrix[modes]
+  }
+
+  num_matrices <- length(matrix)
+  if (length(modes) != num_matrices) {
+    stop(paste0("Number of modes (", length(modes), ") must match number of matrices/vectors (", num_matrices, ")"))
+  }
+
+  if (any(modes < 1) || any(modes > length(tensor_dims))) {
+    stop("All modes must be between 1 and number of tensor dimensions")
+  }
+
+  element_types <- sapply(matrix, function(x) {
+    if (is.matrix(x) || (is.array(x) && length(dim(x)) == 2)) {
+      "matrix"
+    } else if (is.vector(x) && !is.matrix(x) && !is.array(x)) {
+      "vector"
+    } else {
+      "invalid"
+    }
+  })
+
+  if (any(element_types == "invalid")) {
+    invalid_indices <- which(element_types == "invalid")
+    stop(paste0("Invalid elements at positions: ", paste(invalid_indices, collapse = ", "), ". All elements must be matrices/vectors."))
+  }
+
+  for (i in seq_along(matrix)) {
+    if (element_types[i] == "vector") {
+      matrix[[i]] <- base::matrix(matrix[[i]], nrow = 1)
+    }
+    if (storage.mode(matrix[[i]]) != "double") {
+      storage.mode(matrix[[i]]) <- "double"
+    }
+  }
+
+  if (transpose) {
+    matrice_mode <- sapply(matrix, nrow)
+  } else {
+    matrice_mode <- sapply(matrix, ncol)
+  }
+
+  tensor_mode_dim <- tensor_dims[modes]
+  if (any(tensor_mode_dim != matrice_mode)) {
+    unmatched_modes_position <- which(tensor_mode_dim != matrice_mode)
+    axis_name <- if (transpose) "rows" else "columns"
+    stop(paste0(
+      "Matrix ", paste0(unmatched_modes_position, ", "), " ", axis_name, " (",
+      matrice_mode[unmatched_modes_position],
+      ") must match tensor dimension size (", tensor_mode_dim[unmatched_modes_position],
+      ") for mode ", modes[unmatched_modes_position]
+    ))
+  }
+
+  result_data <- ttm_multiple_cpp(tensor$data, matrix, modes, transpose)
+  result_tensor <- Tensor$new(result_data)
+
+  vector_modes <- modes[element_types == "vector"]
+  if (length(vector_modes) > 0) {
+    result_dims <- result_tensor$dim()
+    keep_dims <- setdiff(seq_along(result_dims), vector_modes)
+    new_dims <- result_dims[keep_dims]
+
+    if (length(new_dims) == 0) {
+      return(Tensor$new(as.vector(result_tensor$data), integer(0)))
+    } else {
+      return(result_tensor$reshape(new_dims))
+    }
+  } else {
+    return(result_tensor)
+  }
+}
+
+#' @export
+ttm.default <- function(tensor, matrix, mode = NULL, transpose = FALSE) {
+  stop("Input must be a matrix, vector, or list of matrices/vectors")
 }
