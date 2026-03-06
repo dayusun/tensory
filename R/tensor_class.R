@@ -410,6 +410,37 @@ Tensor <- R6::R6Class("Tensor",
         }
         return(Tensor$new(result_array))
       }
+    },
+
+    #' Khatri-Rao product with another Tensor or matrix
+    #' @param other Another Tensor or matrix
+    #' @param reverse Logical indicating if reverse product should be computed
+    #' @return A matrix representing the Khatri-Rao product
+    khatri_rao = function(other, reverse = FALSE) {
+      y_data <- if (inherits(other, "Tensor")) other$data else other
+      return(tensory::khatri_rao(self$data, y_data, reverse = reverse))
+    },
+
+    #' Kronecker product with another Tensor or matrix
+    #' @param other Another Tensor or matrix
+    #' @return A new Tensor
+    kronecker = function(other) {
+      y_data <- if (inherits(other, "Tensor")) other$data else other
+      res_data <- base::kronecker(self$data, y_data)
+      return(Tensor$new(res_data))
+    },
+
+    #' Hadamard (element-wise) product
+    #' @param other Another Tensor or matrix
+    #' @return Self (in-place operation)
+    hadamard = function(other) {
+      return(self$multiply(other))
+    },
+
+    #' Frobenius norm
+    #' @return Numeric scalar
+    fnorm = function() {
+      return(sqrt(sum(self$data^2)))
     }
   )
 )
@@ -447,6 +478,22 @@ print.Tensor <- function(x, ...) {
 show.Tensor <- function(object) {
   object$show()
   invisible(object)
+}
+
+#' S3 head method for Tensor
+#' @param x A Tensor object
+#' @param ... Additional arguments
+#' @export
+head.Tensor <- function(x, ...) {
+  return(utils::head(x$data, ...))
+}
+
+#' S3 tail method for Tensor
+#' @param x A Tensor object
+#' @param ... Additional arguments
+#' @export
+tail.Tensor <- function(x, ...) {
+  return(utils::tail(x$data, ...))
 }
 
 # S3 generics for arithmetic operations with Tensor objects
