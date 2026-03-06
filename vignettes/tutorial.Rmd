@@ -31,6 +31,7 @@ First, load the package:
 if ("package:rTensor" %in% search()) {
   detach("package:rTensor", unload=TRUE, force=TRUE)
 }
+devtools::load_all(".")
 library(tensory)
 ```
 
@@ -223,6 +224,62 @@ A_contract_B <- ttt(A, B, dimsA = 2, dimsB = 1)
 A_contract_B$dim() # Result dimensions: [3, 2, 2, 2]
 ```
 
+# Advanced Mathematical Operations
+
+`tensory` implements specialized matrix and tensor operations leveraging S3 generics for multiple-dispatch (e.g., smoothly operating on pairs of matrices/tensors or even lists of matrices). Most of these operations are also available as direct R6 methods on the `Tensor` objects.
+
+## Khatri-Rao, Kronecker, and Hadamard
+
+You can easily compute these specialized products. If extending over a list of matrices, the functions recursively apply the product.
+
+```{r advanced-products}
+matA <- matrix(1:4, nrow = 2, ncol = 2)
+matB <- matrix(5:8, nrow = 2, ncol = 2)
+
+# Khatri-Rao Product (column-wise Kronecker)
+khatri_rao(matA, matB)
+
+# By default it is (matA \odot matB).
+# You can reverse this to (matB \odot matA)
+khatri_rao(matA, matB, reverse = TRUE)
+
+# Kronecker Product (extends base::kronecker)
+kronecker(list(matA, matB))
+
+# Hadamard Product (element-wise multiplication)
+hadamard(list(matA, matB))
+```
+
+## Frobenius Norm
+
+You can calculate the full Frobenius norm of a tensor directly.
+
+```{r fnorm}
+t_norm <- tensor(c(3, 4))
+fnorm(t_norm) # Output: 5
+
+# Or via R6 method
+t_norm$fnorm()
+```
+
+## Collapsing and Scaling
+
+`collapse()` reduces a tensor along specific dimensions using an accumulation function, while `t_scale()` performs dimension-aligned multiplying (broadcasting).
+
+```{r collapse-scale}
+t_dense <- tensor(1:24, c(4, 3, 2))
+
+# Collapse Mode 1 (Sum all elements across rows)
+collapse(t_dense, 1)$dim()
+
+# Collapse all modes EXCEPT Mode 3
+# Negative dimensions mean "exclude these dimensions from collapse"
+collapse(t_dense, -3)$dim()
+
+# Scale mode 3 with a specific vector
+t_scale(t_dense, c(10, 20), dims = 3)$dim()
+```
+
 # Conclusion
 
-The `tensory` package brings the flexibility of MATLAB Tensor Toolbox to the R ecosystem with heavily optimized `xtensor` bindings. You can create tensors, matricize them mathematically, and compute multi-dimensional products flawlessly.
+The `tensory` package brings the flexibility of MATLAB Tensor Toolbox to the R ecosystem with heavily optimized `xtensor` bindings and an elegant R6 object-oriented interface. You can create tensors, matricize them mathematically, apply advanced reductions and element-wise scalings, and compute multi-dimensional products flawlessly.
