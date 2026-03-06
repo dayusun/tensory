@@ -21,3 +21,11 @@ Suggests:
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 VignetteBuilder: knitr
+Collate: 
+    'RcppExports.R'
+    'tenmat_class.R'
+    'tensor_class.R'
+    'tensor_operations.R'
+    'tensor_ttm.R'
+    'tensor_ttt.R'
+    'tensory-package.R'
