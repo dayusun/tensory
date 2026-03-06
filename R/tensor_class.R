@@ -402,6 +402,23 @@ tensor <- function(data, dims = NULL) {
   Tensor$new(data, dims)
 }
 
+#' S3 print method for Tensor
+#' @param x A Tensor object
+#' @param ... Additional arguments
+#' @export
+print.Tensor <- function(x, ...) {
+  x$print()
+  invisible(x)
+}
+
+#' S3 show method for Tensor
+#' @param object A Tensor object
+#' @export
+show.Tensor <- function(object) {
+  object$show()
+  invisible(object)
+}
+
 # S3 generics for arithmetic operations with Tensor objects
 #' @export
 `+.Tensor` <- function(e1, e2) {

@@ -1,0 +1,228 @@
+---
+title: "Tensory Tutorial"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Tensory Tutorial}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Introduction
+
+Welcome to `tensory`, a modern, high-performance R package for tensor operations. `tensory` combines a user-friendly R6 class system on the frontend with a high-performance C++ `xtensor` and Fortran BLAS backend.
+
+The `tensory` package is designed to be highly compatible with the popular MATLAB Tensor Toolbox API, bringing familiar semantics to R but with a zero-copy memory integration approach natively optimized for rapid numerical computations.
+
+This tutorial covers the primary classes and operations available in the package.
+
+## Setup
+
+First, load the package:
+
+```{r setup}
+# Ensure rTensor is detached if loaded by previous vignettes during package build
+if ("package:rTensor" %in% search()) {
+  detach("package:rTensor", unload=TRUE, force=TRUE)
+}
+library(tensory)
+```
+
+# The `Tensor` Class
+
+`Tensor` is the core R6 class used for representing multi-dimensional arrays. It automatically handles dimensions and provides method and operator overloads for a fluid experience.
+
+## Creating Tensors
+
+You can create tensors from vectors, matrices, arrays, or scalars using the `tensor()` constructor function, or directly using `Tensor$new()`.
+
+```{r create-tensors}
+# From a vector
+t_vec <- tensor(1:5)
+print(dim(t_vec$as_array()))
+
+# From a matrix
+t_mat <- tensor(matrix(1:6, nrow = 2, ncol = 3))
+t_mat$print()
+
+# Specifying dimensions explicitly
+t_3d <- tensor(1:24, dims = c(2, 3, 4))
+t_3d$print()
+
+# Creating tensors of zeros or ones
+t_zeros <- zeros(c(2, 2))
+t_ones <- ones(c(3, 1, 2))
+```
+
+## Accessing Tensor Properties
+
+You can easily extract properties like dimensions or the underlying R array.
+
+```{r tensor-props}
+# Get dimensions
+t_3d$dim()
+
+# Get number of dimensions (order)
+t_3d$ndims()
+
+# Get total number of elements
+t_3d$length()
+
+# Get the underlying R array
+arr <- t_3d$as_array()
+str(arr)
+```
+
+## Reshaping and Squeezing Tensors
+
+You can reshape the tensor in-place or squeeze out singleton dimensions.
+
+```{r reshape-squeeze}
+# Reshape to a 4x6 matrix
+t_reshaped <- t_3d$clone_tensor()$reshape(c(4, 6))
+t_reshaped$dim()
+
+# Squeeze out singleton dimensions
+t_singleton <- tensor(1:6, dims = c(1, 2, 1, 3))
+t_singleton$dim()
+
+t_squeezed <- t_singleton$squeeze()
+t_squeezed$dim()
+```
+
+## Arithmetics and Overloaded Operators
+
+`tensory` implements intuitive S3 operators for element-wise arithmetic and logical operations, supporting broadcasting with scalars.
+
+```{r operators}
+# Element-wise arithmetic
+t1 <- tensor(1:4, c(2, 2))
+t2 <- tensor(c(1, 0, 0, 1), c(2, 2))
+
+t_add <- t1 + t2
+t_add$as_array()
+
+t_mul <- t1 * 10
+t_mul$as_array()
+
+t_mod <- t1 %% 2
+t_mod$as_array()
+
+# Logical and comparison operations
+t_eq <- t1 == t2
+t_eq$as_array()
+
+t_gt <- t1 > 2
+t_gt$as_array()
+
+t_not <- !t2
+t_not$as_array()
+```
+
+# The `Tenmat` Class (Matricized Tensors)
+
+A `Tenmat` represents a matricized (or unfolded) tensor. It is widely used in tensor decompositions. The rows of the matricized tensor correspond to the modes specified by `rdims`, and the columns correspond to `cdims`.
+
+## Creating Matricizations
+
+You can matricize a `Tensor` along specific dimensions using `tenmat()`.
+
+```{r create-tenmat}
+t_data <- tensor(1:24, c(2, 3, 4))
+
+# Matricize along mode 1 (rdims = 1). The rows of the matrix will correspond
+# to the 1st dimension of the tensor.
+tm1 <- tenmat(t_data, rdims = 1)
+tm1$print()
+dim(as.matrix(tm1))
+
+# Matricize along mode 3
+tm3 <- tenmat(t_data, rdims = 3)
+dim(as.matrix(tm3))
+
+# You can also use specialized column mappings:
+# "t" for transpose mapping, "fc" for forward cyclic, "bc" for backward cyclic
+tm_fc <- tenmat(t_data, rdims = 2, cdims = "fc")
+```
+
+## Matrix Operations and Interpolations
+
+The `Tenmat` objects support addition, subtraction, transposition, and standard matrix multiplication (`%*%`).
+
+```{r tenmat-ops}
+tmA <- tenmat(tensor(1:6, c(2, 3)), 1)
+tmB <- tenmat(tensor(7:12, c(3, 2)), 1)
+
+# Transpose
+tmA_t <- t(tmA)
+
+# Matrix multiplication directly yields a newly matched Tenmat
+tmC <- tmA %*% tmA_t
+tmC$print()
+
+# Easily convert back to standard R matrices or original Tensor shape
+mat_C <- as.matrix(tmC)
+t_orig <- tensory::as.tensor(tmC)
+```
+
+# Tensor Operations
+
+The core feature of `tensory` is its extremely fast tensor contractions leveraging C++ xtensor-blas optimizations.
+
+## Tensor Times Matrix (ttm)
+
+`ttm()` computes a tensor times a matrix (or matrices) or vector (or vectors) in one (or more) dimensions.
+
+```{r ttm}
+t_base <- tensor(1:24, c(4, 3, 2))
+
+# Multiply a matrix along mode 1
+# Matrix needs to have ncol equal to the size of mode 1 (which is 4)
+m1 <- matrix(1:8, nrow = 2, ncol = 4)
+res1 <- ttm(t_base, m1, mode = 1)
+res1$dim() # New dim is [2, 3, 2]
+
+# Multiply multiple matrices along different modes simultaneously
+m2 <- matrix(1:6, nrow = 2, ncol = 3)
+res2 <- ttm(t_base, list(m1, m2), mode = c(1, 2))
+res2$dim() # New dim is [2, 2, 2]
+
+# Multiply by a vector (reduces dimensionality)
+v1 <- 1:4
+res3 <- ttm(t_base, v1, mode = 1)
+res3$dim() # Dimension is reduced to [3, 2]
+```
+
+## Tensor Times Tensor (ttt)
+
+`ttt()` computes the generalized product (outer, inner, or contracted) of two tensors.
+
+```{r ttt}
+A <- tensor(1:12, c(3, 2, 2))
+B <- tensor(1:8, c(2, 2, 2))
+
+# Outer product (no dimensions specified)
+A_outer_B <- ttt(A, B)
+A_outer_B$dim() # Computes full expansion [3, 2, 2, 2, 2, 2]
+
+# Inner product (contracting over all corresponding dimensions)
+A2 <- tensor(1:12, c(3, 2, 2))
+A_inner_A2 <- ttt(A, A2, dimsA = 1:3, dimsB = 1:3)
+A_inner_A2$dim() # Scalar result
+A_inner_A2$as_array()
+
+# Contracted product along specific dimensions
+# Contract mode 2 of A with mode 1 of B
+A_contract_B <- ttt(A, B, dimsA = 2, dimsB = 1)
+A_contract_B$dim() # Result dimensions: [3, 2, 2, 2]
+```
+
+# Conclusion
+
+The `tensory` package brings the flexibility of MATLAB Tensor Toolbox to the R ecosystem with heavily optimized `xtensor` bindings. You can create tensors, matricize them mathematically, and compute multi-dimensional products flawlessly.
