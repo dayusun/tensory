@@ -238,6 +238,36 @@ Tensor <- R6::R6Class("Tensor",
       return(self)
     },
 
+    #' Element-wise integer division
+    #' @param other Another Tensor or numeric value
+    #' @return Self (in-place operation)
+    integer_divide = function(other) {
+      if (inherits(other, "Tensor")) {
+        if (!identical(self$dims, other$dims)) {
+          stop("Tensors must have the same dimensions for element-wise integer division")
+        }
+        self$data <- self$data %/% other$data
+      } else {
+        self$data <- self$data %/% as.double(other)
+      }
+      return(self)
+    },
+
+    #' Element-wise power
+    #' @param other Another Tensor or numeric value
+    #' @return Self (in-place operation)
+    power = function(other) {
+      if (inherits(other, "Tensor")) {
+        if (!identical(self$dims, other$dims)) {
+          stop("Tensors must have the same dimensions for element-wise power")
+        }
+        self$data <- self$data^other$data
+      } else {
+        self$data <- self$data^as.double(other)
+      }
+      return(self)
+    },
+
     #' Element-wise equality comparison
     #' @param other Another Tensor or numeric value
     #' @return Self (in-place operation)
@@ -422,6 +452,10 @@ show.Tensor <- function(object) {
 # S3 generics for arithmetic operations with Tensor objects
 #' @export
 `+.Tensor` <- function(e1, e2) {
+  if (missing(e2)) {
+    # Unary plus
+    return(e1$clone_tensor())
+  }
   if (inherits(e1, "Tensor")) {
     return(e1$clone_tensor()$add(e2))
   } else {
@@ -474,6 +508,28 @@ show.Tensor <- function(object) {
     # Create tensor with same dims as e2 filled with e1 value
     temp_tensor <- tensor(e1, e2$dim())
     return(temp_tensor$modulo(e2))
+  }
+}
+
+#' @export
+`%/%.Tensor` <- function(e1, e2) {
+  if (inherits(e1, "Tensor")) {
+    return(e1$clone_tensor()$integer_divide(e2))
+  } else {
+    # e1 is scalar, e2 is Tensor
+    temp_tensor <- tensor(e1, e2$dim())
+    return(temp_tensor$integer_divide(e2))
+  }
+}
+
+#' @export
+`^.Tensor` <- function(e1, e2) {
+  if (inherits(e1, "Tensor")) {
+    return(e1$clone_tensor()$power(e2))
+  } else {
+    # e1 is scalar, e2 is Tensor
+    temp_tensor <- tensor(e1, e2$dim())
+    return(temp_tensor$power(e2))
   }
 }
 
@@ -598,4 +654,35 @@ ones <- function(dims) {
   dims <- as.integer(dims)
   data <- array(1.0, dim = dims)
   Tensor$new(data)
+}
+
+# Declare globalVariables to prevent R CMD check warnings about .Generic
+if (getRversion() >= "2.15.1") utils::globalVariables(c(".Generic"))
+
+#' S3 Math group generic for Tensor
+#' @param x A Tensor object
+#' @param ... Additional arguments
+#' @export
+Math.Tensor <- function(x, ...) {
+  res <- x$clone_tensor()
+  res$data <- get(.Generic)(res$data, ...)
+  return(res)
+}
+
+#' S3 Summary group generic for Tensor
+#' @param ... Tensor objects or numeric values
+#' @param na.rm Logical indicating whether missing values should be removed
+#' @export
+Summary.Tensor <- function(..., na.rm = FALSE) {
+  # Extract data from tensors
+  args <- list(...)
+  args_data <- lapply(args, function(x) {
+    if (inherits(x, "Tensor")) x$data else x
+  })
+
+  # Call the generic function
+  res <- do.call(.Generic, c(args_data, list(na.rm = na.rm)))
+
+  # Return as a scalar Tensor
+  return(tensor(res, 1))
 }
