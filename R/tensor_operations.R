@@ -472,7 +472,9 @@ ttt <- function(tensorA, tensorB, dimsA = NULL, dimsB = dimsA) {
   if (is.null(dimsA) && is.null(dimsB)) {
     # Outer product fast path
     res_dims <- as.integer(c(dimA_full, dimB_full))
-    return(Tensor$new(data = as.double(outer(tensorA_data, tensorB_data)), dims = res_dims, fast = TRUE))
+    out_data <- as.double(outer(tensorA_data, tensorB_data))
+    dim(out_data) <- res_dims
+    return(Tensor$new(data = out_data, dims = res_dims, fast = TRUE))
   }
 
   if (is.null(dimsA) || is.null(dimsB)) stop("Both dimsA and dimsB must be specified for contracted product.")
@@ -482,7 +484,7 @@ ttt <- function(tensorA, tensorB, dimsA = NULL, dimsB = dimsA) {
     if (length(dimA_full) != length(dimB_full) || any(dimA_full[dimsA] != dimB_full[dimsB])) {
       stop("Contracted dimension sizes do not match.")
     }
-    return(as.double(sum(tensorA_data * tensorB_data)))
+    return(Tensor$new(data = as.double(sum(tensorA_data * tensorB_data)), dims = integer(0), fast = TRUE))
   }
 
   # Partial Contraction Validation
@@ -518,10 +520,12 @@ ttt <- function(tensorA, tensorB, dimsA = NULL, dimsB = dimsA) {
 
   out_dim <- c(dimA_full[remA], dimB_full[remB])
   if (length(out_dim) == 0) {
-    # Match MATLAB behavior and return scalar double
-    return(as.double(matC))
+    # Match MATLAB behavior, returning a scalar Tensor
+    return(Tensor$new(data = as.double(matC), dims = integer(0), fast = TRUE))
   }
-  dim(matC) <- out_dim
 
-  return(Tensor$new(data = as.double(matC), dims = out_dim, fast = TRUE))
+  out_data <- as.double(matC)
+  dim(out_data) <- out_dim
+
+  return(Tensor$new(data = out_data, dims = out_dim, fast = TRUE))
 }
