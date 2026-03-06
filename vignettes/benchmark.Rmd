@@ -127,6 +127,50 @@ res_outer <- bench::mark(
 plot(res_outer) + ggtitle("TTT Outer Product Performance")
 ```
 
+### 3. Tenmat (Unfolding) Performance Comparison
+
+The `tenmat` operation matricizes a tensor into a 2D matrix. This is equivalent to the `unfold` operation in `rTensor`.
+
+```{r tenmat-benchmark, warning=FALSE, message=FALSE, fig.width=7, fig.height=8}
+# Benchmark across various tensor sizes
+# Small: 10x10x10
+dimA_small <- c(10, 10, 10)
+tA_ts_small <- tensory::tensor(array(rnorm(prod(dimA_small)), dim = dimA_small))
+tA_rt_small <- rTensor::as.tensor(array(rnorm(prod(dimA_small)), dim = dimA_small))
+
+# Medium: 30x40x50
+dimA_med <- c(30, 40, 50)
+tA_ts_med <- tensory::tensor(array(rnorm(prod(dimA_med)), dim = dimA_med))
+tA_rt_med <- rTensor::as.tensor(array(rnorm(prod(dimA_med)), dim = dimA_med))
+
+# Large: 100x100x100
+dimA_large <- c(100, 100, 100)
+tA_ts_large <- tensory::tensor(array(rnorm(prod(dimA_large)), dim = dimA_large))
+tA_rt_large <- rTensor::as.tensor(array(rnorm(prod(dimA_large)), dim = dimA_large))
+
+res_unfold_small <- bench::mark(
+  tensory = tensory::tenmat(tA_ts_small, c(1, 3), 2)$data,
+  rTensor = rTensor::unfold(tA_rt_small, row_idx = c(1, 3), col_idx = 2)@data,
+  check = FALSE, iterations = 100
+)
+
+res_unfold_med <- bench::mark(
+  tensory = tensory::tenmat(tA_ts_med, c(1, 3), 2)$data,
+  rTensor = rTensor::unfold(tA_rt_med, row_idx = c(1, 3), col_idx = 2)@data,
+  check = FALSE, iterations = 50
+)
+
+res_unfold_large <- bench::mark(
+  tensory = tensory::tenmat(tA_ts_large, c(1, 3), 2)$data,
+  rTensor = rTensor::unfold(tA_rt_large, row_idx = c(1, 3), col_idx = 2)@data,
+  check = FALSE, iterations = 10
+)
+
+plot(res_unfold_small) + ggtitle("Tenmat Performance (Small Tensor 10x10x10)")
+plot(res_unfold_med) + ggtitle("Tenmat Performance (Medium Tensor 30x40x50)")
+plot(res_unfold_large) + ggtitle("Tenmat Performance (Large Tensor 100x100x100)")
+```
+
 ## Results & Conclusion
 
 The `tensory` implementation shows vastly improved performance over `rTensor` across all operations. Our optimizations include:

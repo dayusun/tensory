@@ -2,6 +2,8 @@
 trigger: always_on
 ---
 
+Look at the architecture and lession files in /doc folder
+
 # Tensory: Architecture and Design Philosophy
 
 ## Overview
