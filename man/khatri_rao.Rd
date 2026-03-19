@@ -22,3 +22,13 @@ A matrix representing the Khatri-Rao product.
 Computes the Khatri-Rao product (column-wise Kronecker product) of two matrices,
 or a list of matrices.
 }
+\examples{
+A <- matrix(1:4, nrow = 2)
+B <- matrix(5:8, nrow = 2)
+khatri_rao(A, B)
+
+# With a list of matrices
+C <- matrix(9:12, nrow = 2)
+khatri_rao(list(A, B, C))
+
+}

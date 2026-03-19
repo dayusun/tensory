@@ -132,8 +132,8 @@ result2 <- ttm(t3d, m2, mode = 2)
 print(dim(result2$as_array())) # [1] 4 3 2 (3 replaced by 3)
 
 # Example 3: Matrix with transpose
-# With transpose=TRUE, effective matrix is 4×2 (transposed from 2×4)
-m3 <- matrix(1:8, nrow = 2, ncol = 4) # 2×4 matrix
+# With transpose=TRUE, effective matrix is 2×4 (transposed from 4×2)
+m3 <- matrix(1:8, nrow = 4, ncol = 2) # 4×2 matrix
 result3 <- ttm(t3d, m3, mode = 1, transpose = TRUE)
 print(dim(result3$as_array())) # [1] 2 3 2
 

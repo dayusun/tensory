@@ -17,3 +17,14 @@ A new Tensor object
 \description{
 Convenience function to create a Tensor object
 }
+\examples{
+# Create a tensor from an array
+t1 <- tensor(array(1:24, dim = c(3, 4, 2)))
+
+# Create a tensor by specifying dimensions
+t2 <- tensor(1:24, dims = c(3, 4, 2))
+
+# Create a tensor filled with a single value
+t3 <- tensor(0, dims = c(3, 4, 2))
+
+}

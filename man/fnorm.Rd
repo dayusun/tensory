@@ -17,3 +17,8 @@ A scalar value representing the Frobenius norm.
 \description{
 Calculates the Frobenius norm of a tensor.
 }
+\examples{
+t <- tensor(array(1:24, dim = c(3, 4, 2)))
+fnorm(t)
+
+}

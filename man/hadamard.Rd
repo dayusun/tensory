@@ -19,3 +19,13 @@ A matrix representing the Hadamard product.
 \description{
 Element-wise multiplication of matrices or list of matrices.
 }
+\examples{
+A <- matrix(1:4, nrow = 2)
+B <- matrix(5:8, nrow = 2)
+hadamard(A, B)
+
+# With a list of matrices
+C <- matrix(9:12, nrow = 2)
+hadamard(list(A, B, C))
+
+}

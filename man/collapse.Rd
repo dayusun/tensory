@@ -23,3 +23,9 @@ A collapsed Tensor.
 Collapses a tensor over specified dimensions using an accumulation function
 (e.g., sum, mean, max).
 }
+\examples{
+t <- tensor(array(1:24, dim = c(3, 4, 2)))
+collapse(t, dims = 1) # Collapse the first dimension
+collapse(t, dims = c(1, 2), fun = mean) # Mean over first two dimensions
+
+}

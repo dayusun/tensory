@@ -78,6 +78,10 @@ t_3d$length()
 # Get the underlying R array
 arr <- t_3d$as_array()
 str(arr)
+
+# You can also use standard S3 methods to inspect the tensor data
+head(t_3d)
+tail(t_3d)
 ```
 
 ## Reshaping and Squeezing Tensors
@@ -194,10 +198,16 @@ m2 <- matrix(1:6, nrow = 2, ncol = 3)
 res2 <- ttm(t_base, list(m1, m2), mode = c(1, 2))
 res2$dim() # New dim is [2, 2, 2]
 
-# Multiply by a vector (reduces dimensionality)
+# Multiply by a vector (reduces dimensionality automatically)
 v1 <- 1:4
 res3 <- ttm(t_base, v1, mode = 1)
 res3$dim() # Dimension is reduced to [3, 2]
+
+# Multiply by multiple vectors (can reduce tensor to a scalar)
+v2 <- 1:3
+v3 <- 1:2
+res4 <- ttm(t_base, list(v1, v2, v3), mode = c(1, 2, 3))
+res4$as_array() # Returns a scalar value
 ```
 
 ## Tensor Times Tensor (ttt)
@@ -222,6 +232,85 @@ A_inner_A2$as_array()
 # Contract mode 2 of A with mode 1 of B
 A_contract_B <- ttt(A, B, dimsA = 2, dimsB = 1)
 A_contract_B$dim() # Result dimensions: [3, 2, 2, 2]
+```
+
+# Kruskal and Tucker Tensors
+
+The `tensory` package natively mimics MATLAB's Tensor Toolbox capabilities for working with structured tensor decompositions, specifically Kruskal (`KTensor`) and Tucker (`TTensor`) models.
+
+## KTensor (Kruskal Tensor)
+
+A Kruskal tensor is represented by a set of factor matrices and a vector of weights.
+
+```{r ktensor}
+# Define weights
+lambda <- c(1, 2, 3)
+
+# Define factor matrices
+U1 <- matrix(runif(12), nrow=4, ncol=3)
+U2 <- matrix(runif(15), nrow=5, ncol=3)
+U3 <- matrix(runif(6), nrow=2, ncol=3)
+
+k <- ktensor(lambda, list(U1, U2, U3))
+print(k)
+
+# Advanced Mode Multiplication Native Support
+# Multiply Kruskal Tensor mode 2 by a vector (reduces dimensionality sequentially)
+k_vec <- ttm(k, runif(5), mode = 2)
+k_vec$dim() # Factor 2 absorbed, yielding [4, 2]
+
+# Convert to a Dense Tensor instantly
+k_full <- as.tensor(k)
+k_full$dim() # [4, 5, 2]
+```
+
+## TTensor (Tucker Tensor)
+
+A Tucker tensor represents a dense core tensor scaled factorially by multiple matrices alongside each corresponding dimension.
+
+```{r ttensor}
+# Define core tensor
+core <- tensor(array(runif(24), dim=c(2,3,4)))
+
+# Define structural factor matrices bridging the dimensional mapping
+U1_t <- matrix(runif(10), nrow=5, ncol=2)
+U2_t <- matrix(runif(18), nrow=6, ncol=3)
+U3_t <- matrix(runif(28), nrow=7, ncol=4)
+
+t_tens <- ttensor(core, list(U1_t, U2_t, U3_t))
+print(t_tens)
+
+# Advanced Mode Multiplication Native Support
+# Multiply Tucker Tensor mode 1 by a matrix directly without instantiation
+t_mat <- matrix(runif(15), nrow=3, ncol=5)
+t_tens_mat <- ttm(t_tens, t_mat, mode = 1)
+t_tens_mat$dim() # Core factor 1 updates dimensions efficiently to [3, 6, 7]
+
+# Multiply Tucker Tensor natively across multiple modes via sequential matrices
+t_list_mats <- list(matrix(runif(12), nrow=4, ncol=5), matrix(runif(10), nrow=2, ncol=6))
+t_tens_list <- ttm(t_tens, t_list_mats, mode = c(1, 2))
+t_tens_list$dim() # Sequentially updates to [4, 2, 7] efficiently
+
+# Convert to a Dense Tensor instantly
+t_full <- as.tensor(t_tens)
+t_full$dim() # [5, 6, 7]
+```
+
+## Seamless Mathematical Dispatch Operations
+
+Because of `tensory`'s fluid S3 dispatch ecosystem, `KTensor` and `TTensor` objects play entirely nicely with standard multiplication (`ttm`, `ttt`) and base math operators by implicitly casting to dense components smoothly on-the-fly.
+
+```{r multi-dispatch}
+# Add compatible ktensor and ttensor naturally
+compat_core <- tensor(array(runif(40), dim = c(4, 5, 2)))
+compat_tens <- ttensor(compat_core, list(diag(4), diag(5), diag(2)))
+t_add <- k + compat_tens
+t_add$dim()
+
+# Generalized Outer product
+k_ttt <- ttt(k, t_tens)
+k_ttt$dim()
+
 ```
 
 # Advanced Mathematical Operations

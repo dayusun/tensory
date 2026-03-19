@@ -22,3 +22,9 @@ A scaled Tensor.
 Scales a tensor along specified dimensions. Equivalent to broadcasting
 a scaling vector or tensor for multiplication.
 }
+\examples{
+t <- tensor(array(1:24, dim = c(3, 4, 2)))
+s <- c(10, 100, 1000)
+t_scale(t, s, dims = 1) # Scale along the first dimension
+
+}

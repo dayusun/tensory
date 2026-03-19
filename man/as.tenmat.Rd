@@ -15,3 +15,8 @@ A Tenmat object
 \description{
 Convert object to Tenmat
 }
+\examples{
+t <- tensor(array(1:24, dim = c(3, 4, 2)))
+as.tenmat(t)
+
+}

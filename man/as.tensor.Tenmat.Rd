@@ -17,3 +17,9 @@ A Tensor object
 \description{
 Convert Tenmat to Tensor
 }
+\examples{
+t <- tensor(array(1:24, dim = c(3, 4, 2)))
+tm <- tenmat(t, rdims = 1)
+t2 <- as.tensor(tm)
+
+}

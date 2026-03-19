@@ -21,3 +21,14 @@ A new Tenmat object
 \description{
 Create a tenmat (tensor as matrix) object
 }
+\examples{
+t <- tensor(array(1:24, dim = c(3, 4, 2)))
+# Unfold mode 1 to rows, modes 2 and 3 to columns
+m <- tenmat(t, rdims = 1)
+print(m)
+
+# Unfold mode 2 to rows, and mode 3 and 1 to columns (forward cyclic)
+m2 <- tenmat(t, rdims = 2, cdims = "fc")
+print(m2)
+
+}

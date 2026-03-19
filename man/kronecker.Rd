@@ -23,3 +23,13 @@ The Kronecker product.
 \description{
 Extends base::kronecker to support list of matrices.
 }
+\examples{
+A <- matrix(1:4, nrow = 2)
+B <- matrix(5:8, nrow = 2)
+kronecker(A, B)
+
+# With a list of matrices
+C <- matrix(9:12, nrow = 2)
+kronecker(list(A, B, C))
+
+}
