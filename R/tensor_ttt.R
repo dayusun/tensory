@@ -26,6 +26,11 @@
 #'
 #' @export
 ttt <- function(tensorA, tensorB, dimsA = NULL, dimsB = dimsA) {
+    if (inherits(tensorA, "KTensor")) tensorA <- as.tensor.KTensor(tensorA)
+    if (inherits(tensorA, "TTensor")) tensorA <- as.tensor.TTensor(tensorA)
+    if (inherits(tensorB, "KTensor")) tensorB <- as.tensor.KTensor(tensorB)
+    if (inherits(tensorB, "TTensor")) tensorB <- as.tensor.TTensor(tensorB)
+
     if (!inherits(tensorA, "Tensor") || !inherits(tensorB, "Tensor")) stop("Both inputs to ttt must be Tensor objects")
 
     tensorA_data <- tensorA$data

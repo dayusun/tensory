@@ -59,6 +59,15 @@ test_that("Tensor cloning works", {
   expect_false(identical(t1$as_array(), t2$as_array()))
 })
 
+test_that("Tensor cloning preserves scalar tensor shape", {
+  base_tensor <- tensor(array(1:4, dim = c(2, 2)))
+  scalar <- ttt(base_tensor, base_tensor, dimsA = c(1, 2), dimsB = c(1, 2))
+
+  expect_equal(scalar$dim(), integer(0))
+  expect_equal(scalar$clone_tensor()$dim(), integer(0))
+  expect_equal((scalar + 1)$dim(), integer(0))
+})
+
 test_that("Tensor reshaping works", {
   t <- Tensor$new(1:24, c(2, 3, 4))
   expect_equal(t$dim(), c(2L, 3L, 4L))

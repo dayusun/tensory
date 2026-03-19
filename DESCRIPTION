@@ -6,11 +6,12 @@ Date: 2024-11-01
 Author: Dayu Sun
 Maintainer: Dayu Sun <dayusun@iu.edu>
 Description: `tensory` is an experimental R package to implement tensor operations and functions based on `xtensor`. Provides a modern R6-based tensor class system with MATLAB Tensor Toolbox compatibility.
-License: MIT LICENSE
+License: MIT + file LICENSE
 Encoding: UTF-8
 Imports: 
     R6,
-    Rcpp
+    Rcpp,
+    utils
 Roxygen: list(markdown = TRUE)
 LinkingTo: Rcpp 
 RoxygenNote: 7.3.3
@@ -23,9 +24,11 @@ Config/testthat/edition: 3
 VignetteBuilder: knitr
 Collate: 
     'RcppExports.R'
+    'ktensor_class.R'
     'tenmat_class.R'
     'tensor_class.R'
     'tensor_operations.R'
     'tensor_ttm.R'
     'tensor_ttt.R'
     'tensory-package.R'
+    'ttensor_class.R'

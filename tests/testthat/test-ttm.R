@@ -81,6 +81,13 @@ test_that("ttm multiple vectors multiplication works", {
   expect_equal(dim(result$as_array()), expected_dims)
 })
 
+test_that("ttm vector contraction only removes contracted modes", {
+  t3d <- tensor(array(1:6, dim = c(1, 2, 3)))
+  result <- ttm(t3d, 1:2, mode = 2)
+
+  expect_equal(dim(result$as_array()), c(1, 3))
+})
+
 test_that("ttm vector error handling works", {
   t3d <- tensor(array(1:24, dim = c(4, 3, 2)))
   v <- 1:5 # Wrong length vector
@@ -182,4 +189,16 @@ test_that("ttm multiple dispatch handles list subsetting", {
   # Modes 1 (size 5) -> 3, Mod 3 (size 3) -> 2
   expected_dims <- c(3, 4, 2, 2)
   expect_equal(dim(result$as_array()), expected_dims)
+})
+
+test_that("ttm list ignores transpose for vector entries", {
+  t3d <- tensor(array(1:24, dim = c(4, 3, 2)))
+  v1 <- 1:4
+  m3 <- matrix(1:4, nrow = 2, ncol = 2)
+
+  result <- ttm(t3d, list(v1, m3), mode = c(1, 3), transpose = TRUE)
+  expected <- ttm(ttm(t3d, v1, mode = 1), m3, mode = 2, transpose = TRUE)
+
+  expect_equal(result$dim(), expected$dim())
+  expect_equal(result$as_array(), expected$as_array())
 })

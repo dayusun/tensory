@@ -108,8 +108,8 @@
 #' print(dim(result2$as_array())) # [1] 4 3 2 (3 replaced by 3)
 #'
 #' # Example 3: Matrix with transpose
-#' # With transpose=TRUE, effective matrix is 4×2 (transposed from 2×4)
-#' m3 <- matrix(1:8, nrow = 2, ncol = 4) # 2×4 matrix
+#' # With transpose=TRUE, effective matrix is 2×4 (transposed from 4×2)
+#' m3 <- matrix(1:8, nrow = 4, ncol = 2) # 4×2 matrix
 #' result3 <- ttm(t3d, m3, mode = 1, transpose = TRUE)
 #' print(dim(result3$as_array())) # [1] 2 3 2
 #'
@@ -219,11 +219,156 @@
 #' }
 #'
 #' @export
+#' @export
 ttm <- function(tensor, matrix, mode = NULL, transpose = FALSE) {
+  if (inherits(tensor, "TTensor")) {
+    return(.ttm_tucker(tensor, matrix, mode, transpose))
+  }
+  if (inherits(tensor, "KTensor")) {
+    return(.ttm_kruskal(tensor, matrix, mode, transpose))
+  }
+
   if (!inherits(tensor, "Tensor")) {
     stop("ttm is not implemented for this object type")
   }
   UseMethod("ttm", matrix)
+}
+
+.ttm_kruskal <- function(tensor, mat, mode = NULL, transpose = FALSE) {
+  if (is.list(mat)) {
+    tensor_dims <- tensor$dim()
+    if (is.null(mode)) mode <- seq_along(mat)
+    if (length(mode) != length(mat)) stop("Length of mode and mat must match")
+
+    ord <- order(mode, decreasing = TRUE)
+    mat <- mat[ord]
+    mode <- mode[ord]
+
+    res <- tensor
+    for (i in seq_along(mat)) {
+      res <- .ttm_kruskal(res, mat[[i]], mode = mode[i], transpose = transpose)
+    }
+    return(res)
+  }
+
+  if (is.null(mode)) mode <- 1
+  if (length(mode) != 1) stop("Mode must be a single integer")
+
+  if (mode < 0) {
+    mode <- setdiff(seq_along(tensor$dim()), -mode)
+    if (length(mode) == 0) stop("All modes cannot be excluded")
+    return(.ttm_kruskal(tensor, rep(list(mat), length(mode)), mode = mode, transpose = transpose))
+  }
+
+  if (mode < 1 || mode > tensor$ndims()) stop("Mode out of bounds")
+
+  is_vector <- is.vector(mat) && !is.list(mat) && !is.matrix(mat) && !is.array(mat)
+  if (is_vector) {
+    mat <- base::matrix(mat, nrow = 1)
+    transpose <- FALSE
+  }
+
+  if (!is.matrix(mat)) {
+    if (is.array(mat) && length(dim(mat)) == 2) {
+      mat <- as.matrix(mat)
+    } else {
+      stop("mat must be a matrix, vector, or list")
+    }
+  }
+
+  tensor_mode_dim <- tensor$dim()[mode]
+  if (transpose) {
+    if (nrow(mat) != tensor_mode_dim) stop("Matrix rows must match tensor dimension")
+    new_factor <- t(mat) %*% tensor$U[[mode]]
+  } else {
+    if (ncol(mat) != tensor_mode_dim) stop("Matrix columns must match tensor dimension")
+    new_factor <- mat %*% tensor$U[[mode]]
+  }
+
+  new_U <- tensor$U
+  new_lambda <- tensor$lambda
+
+  if (is_vector) {
+    new_lambda <- new_lambda * as.vector(new_factor)
+    new_U[[mode]] <- NULL
+    if (length(new_U) == 0) {
+      return(Tensor$new(sum(new_lambda), integer(0), fast = TRUE))
+    }
+  } else {
+    new_U[[mode]] <- new_factor
+  }
+
+  res <- ktensor(new_lambda, new_U)
+  return(res)
+}
+
+.ttm_tucker <- function(tensor, mat, mode = NULL, transpose = FALSE) {
+  if (is.list(mat)) {
+    if (is.null(mode)) mode <- seq_along(mat)
+    if (length(mode) != length(mat)) stop("Length of mode and mat must match")
+
+    ord <- order(mode, decreasing = TRUE)
+    mat <- mat[ord]
+    mode <- mode[ord]
+
+    res <- tensor
+    for (i in seq_along(mat)) {
+      res <- .ttm_tucker(res, mat[[i]], mode = mode[i], transpose = transpose)
+    }
+    return(res)
+  }
+
+  if (is.null(mode)) mode <- 1
+  if (length(mode) != 1) stop("Mode must be a single integer")
+
+  if (mode < 0) {
+    mode <- setdiff(seq_along(tensor$dim()), -mode)
+    if (length(mode) == 0) stop("All modes cannot be excluded")
+    return(.ttm_tucker(tensor, rep(list(mat), length(mode)), mode = mode, transpose = transpose))
+  }
+
+  if (mode < 1 || mode > tensor$ndims()) stop("Mode out of bounds")
+
+  is_vector <- is.vector(mat) && !is.list(mat) && !is.matrix(mat) && !is.array(mat)
+  if (is_vector) {
+    mat <- base::matrix(mat, nrow = 1)
+    transpose <- FALSE
+  }
+
+  if (!is.matrix(mat)) {
+    if (is.array(mat) && length(dim(mat)) == 2) {
+      mat <- as.matrix(mat)
+    } else {
+      stop("mat must be a matrix, vector, or list")
+    }
+  }
+
+  tensor_mode_dim <- tensor$dim()[mode]
+  if (transpose) {
+    if (nrow(mat) != tensor_mode_dim) stop("Matrix rows must match tensor dimension")
+    new_factor <- t(mat) %*% tensor$U[[mode]]
+  } else {
+    if (ncol(mat) != tensor_mode_dim) stop("Matrix columns must match tensor dimension")
+    new_factor <- mat %*% tensor$U[[mode]]
+  }
+
+  new_U <- tensor$U
+  new_core <- tensor$core
+
+  if (is_vector) {
+    if (length(new_U[[mode]]) == 0) {
+      # Edge case, but just in case
+      new_U[[mode]] <- NULL
+    } else {
+      new_core <- ttm(new_core, as.vector(new_factor), mode = mode)
+      new_U[[mode]] <- NULL
+    }
+  } else {
+    new_U[[mode]] <- new_factor
+  }
+
+  res <- ttensor(new_core, new_U)
+  return(res)
 }
 
 #' @export
@@ -332,15 +477,11 @@ ttm.numeric <- function(tensor, matrix, mode = NULL, transpose = FALSE) {
   result_tensor <- ttm.matrix(tensor, vector_matrix, mode = mode, transpose = FALSE)
 
   result_dims <- result_tensor$dim()
-  if (length(result_dims) == 1 && result_dims[1] == 1) {
+  keep_dims <- setdiff(seq_along(result_dims), mode)
+  if (length(keep_dims) == 0) {
     return(Tensor$new(as.vector(result_tensor$data), integer(0)))
   } else {
-    new_dims <- result_dims[result_dims != 1]
-    if (length(new_dims) == 0) {
-      return(Tensor$new(as.vector(result_tensor$data), integer(0)))
-    } else {
-      return(result_tensor$reshape(new_dims))
-    }
+    return(result_tensor$reshape(result_dims[keep_dims]))
   }
 }
 
@@ -405,18 +546,27 @@ ttm.list <- function(tensor, matrix, mode = NULL, transpose = FALSE) {
 
   for (i in seq_along(matrix)) {
     if (element_types[i] == "vector") {
-      matrix[[i]] <- base::matrix(matrix[[i]], nrow = 1)
+      if (transpose) {
+        # Keep transpose semantics ignored for vectors while still using the shared C++ path.
+        matrix[[i]] <- base::matrix(matrix[[i]], ncol = 1)
+      } else {
+        matrix[[i]] <- base::matrix(matrix[[i]], nrow = 1)
+      }
     }
     if (storage.mode(matrix[[i]]) != "double") {
       storage.mode(matrix[[i]]) <- "double"
     }
   }
 
-  if (transpose) {
-    matrice_mode <- sapply(matrix, nrow)
-  } else {
-    matrice_mode <- sapply(matrix, ncol)
-  }
+  matrice_mode <- vapply(seq_along(matrix), function(i) {
+    if (element_types[i] == "vector") {
+      length(matrix[[i]])
+    } else if (transpose) {
+      nrow(matrix[[i]])
+    } else {
+      ncol(matrix[[i]])
+    }
+  }, integer(1))
 
   tensor_mode_dim <- tensor_dims[modes]
   if (any(tensor_mode_dim != matrice_mode)) {

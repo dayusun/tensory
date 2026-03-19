@@ -155,6 +155,17 @@ Tenmat <- R6::R6Class("Tenmat",
 #' @param cdims Dimensions to map to columns (optional). Also accepts 't', 'fc', 'bc'.
 #' @param tsize Tensor size (used internally)
 #' @return A new Tenmat object
+#'
+#' @examples
+#' t <- tensor(array(1:24, dim = c(3, 4, 2)))
+#' # Unfold mode 1 to rows, modes 2 and 3 to columns
+#' m <- tenmat(t, rdims = 1)
+#' print(m)
+#'
+#' # Unfold mode 2 to rows, and mode 3 and 1 to columns (forward cyclic)
+#' m2 <- tenmat(t, rdims = 2, cdims = "fc")
+#' print(m2)
+#'
 #' @export
 tenmat <- function(T, rdims = NULL, cdims = NULL, tsize = NULL) {
     # Empty constructor
@@ -256,6 +267,11 @@ tenmat <- function(T, rdims = NULL, cdims = NULL, tsize = NULL) {
 #'
 #' @param x Object to convert
 #' @return A Tenmat object
+#'
+#' @examples
+#' t <- tensor(array(1:24, dim = c(3, 4, 2)))
+#' as.tenmat(t)
+#'
 #' @export
 as.tenmat <- function(x) {
     if (inherits(x, "Tenmat")) {
@@ -314,6 +330,12 @@ as.double.Tenmat <- function(x, ...) {
 #' @param x A Tenmat object
 #' @param ... Additional arguments (ignored)
 #' @return A Tensor object
+#'
+#' @examples
+#' t <- tensor(array(1:24, dim = c(3, 4, 2)))
+#' tm <- tenmat(t, rdims = 1)
+#' t2 <- as.tensor(tm)
+#'
 #' @export
 as.tensor.Tenmat <- function(x, ...) {
     # Reverse the dimension mapping

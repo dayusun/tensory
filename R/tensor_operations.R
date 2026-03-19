@@ -16,6 +16,15 @@ NULL
 #' @param ... Additional arguments.
 #' @return A matrix representing the Khatri-Rao product.
 #'
+#' @examples
+#' A <- matrix(1:4, nrow = 2)
+#' B <- matrix(5:8, nrow = 2)
+#' khatri_rao(A, B)
+#'
+#' # With a list of matrices
+#' C <- matrix(9:12, nrow = 2)
+#' khatri_rao(list(A, B, C))
+#'
 #' @export
 khatri_rao <- function(x, ...) {
   UseMethod("khatri_rao")
@@ -85,6 +94,15 @@ khatri_rao.default <- function(x, ...) {
 #' @param ... Additional arguments.
 #' @return The Kronecker product.
 #'
+#' @examples
+#' A <- matrix(1:4, nrow = 2)
+#' B <- matrix(5:8, nrow = 2)
+#' kronecker(A, B)
+#'
+#' # With a list of matrices
+#' C <- matrix(9:12, nrow = 2)
+#' kronecker(list(A, B, C))
+#'
 #' @export
 kronecker <- function(X, Y = NULL, FUN = "*", make.dimnames = FALSE, ...) {
   UseMethod("kronecker")
@@ -131,6 +149,15 @@ kronecker.Tensor <- function(X, Y = NULL, FUN = "*", make.dimnames = FALSE, ...)
 #' @param ... Additional arguments.
 #' @return A matrix representing the Hadamard product.
 #'
+#' @examples
+#' A <- matrix(1:4, nrow = 2)
+#' B <- matrix(5:8, nrow = 2)
+#' hadamard(A, B)
+#'
+#' # With a list of matrices
+#' C <- matrix(9:12, nrow = 2)
+#' hadamard(list(A, B, C))
+#'
 #' @export
 hadamard <- function(x, ...) {
   UseMethod("hadamard")
@@ -175,6 +202,10 @@ hadamard.default <- function(x, ...) {
 #' @param ... Additional arguments.
 #' @return A scalar value representing the Frobenius norm.
 #'
+#' @examples
+#' t <- tensor(array(1:24, dim = c(3, 4, 2)))
+#' fnorm(t)
+#'
 #' @export
 fnorm <- function(x, ...) {
   UseMethod("fnorm")
@@ -211,6 +242,11 @@ fnorm.default <- function(x, ...) {
 #' @param fun The function to apply (default is sum).
 #' @param ... Additional arguments passed to \code{fun}.
 #' @return A collapsed Tensor.
+#'
+#' @examples
+#' t <- tensor(array(1:24, dim = c(3, 4, 2)))
+#' collapse(t, dims = 1) # Collapse the first dimension
+#' collapse(t, dims = c(1, 2), fun = mean) # Mean over first two dimensions
 #'
 #' @export
 collapse <- function(x, ...) {
@@ -271,6 +307,11 @@ collapse.default <- function(x, ...) {
 #' @param dims Dimensions to scale.
 #' @param ... Additional arguments.
 #' @return A scaled Tensor.
+#'
+#' @examples
+#' t <- tensor(array(1:24, dim = c(3, 4, 2)))
+#' s <- c(10, 100, 1000)
+#' t_scale(t, s, dims = 1) # Scale along the first dimension
 #'
 #' @export
 t_scale <- function(x, ...) {
