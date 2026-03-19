@@ -165,6 +165,57 @@ Tensor <- R6::R6Class("Tensor",
       }
     },
 
+    #' Permute tensor dimensions
+    #' @param order Permutation order
+    #' @return New Tensor object
+    permute = function(order) {
+      order <- as.integer(order)
+      if (length(order) != self$ndims() || !setequal(order, seq_len(self$ndims()))) {
+        stop("Invalid permutation order.")
+      }
+      if (identical(order, seq_len(self$ndims()))) {
+        return(self$clone_tensor())
+      }
+      Tensor$new(aperm(self$data, order), self$dims[order], fast = TRUE)
+    },
+
+    #' Count nonzero entries
+    #' @return Integer count
+    nnz = function() {
+      sum(self$data != 0)
+    },
+
+    #' Find nonzero entries
+    #' @param values Logical; include values if TRUE
+    #' @return Matrix of subscripts or list with subs and vals
+    find = function(values = FALSE) {
+      idx <- which(as.vector(self$data) != 0)
+
+      if (length(idx) == 0) {
+        subs <- matrix(integer(0), nrow = 0, ncol = length(self$dims))
+        colnames(subs) <- paste0("mode", seq_along(self$dims))
+        if (values) {
+          return(list(subs = subs, vals = numeric(0)))
+        }
+        return(subs)
+      }
+
+      subs <- arrayInd(idx, .dim = self$dims)
+      colnames(subs) <- paste0("mode", seq_along(self$dims))
+
+      if (!values) {
+        return(subs)
+      }
+
+      list(subs = subs, vals = as.vector(self$data)[idx])
+    },
+
+    #' Vectorize tensor
+    #' @return Numeric vector
+    vec = function() {
+      as.vector(self$data)
+    },
+
     #' Element-wise addition
     #' @param other Another Tensor or numeric value
     #' @return Self (in-place operation)

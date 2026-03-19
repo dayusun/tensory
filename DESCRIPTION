@@ -30,5 +30,6 @@ Collate:
     'tensor_operations.R'
     'tensor_ttm.R'
     'tensor_ttt.R'
+    'tensor_dense_methods.R'
     'tensory-package.R'
     'ttensor_class.R'
