@@ -1,12 +1,7 @@
-#include "xtensor-blas/xlinalg.hpp"
 #include "xtensor-r/rarray.hpp"
-#include "xtensor/containers/xadapt.hpp"
 #include "xtensor/containers/xarray.hpp"
-#include "xtensor/containers/xtensor.hpp"
-#include "xtensor/misc/xmanipulation.hpp"
 #include <Rcpp.h>
 #include <algorithm>
-#include <cstring>
 #include <vector>
 
 
@@ -32,19 +27,6 @@ void F77_NAME(dgemm)(const char *transa, const char *transb, const int *m,
 using namespace Rcpp;
 
 /**
- * @brief Helper function to create zero-copy R-aware matrix view using
- * xt::rarray
- * @param matrix R NumericMatrix
- * @return xtensor rarray view that directly maps R memory with correct
- * column-major layout
- */
-inline auto create_matrix_view(const NumericMatrix &matrix) {
-  // Create zero-copy rarray directly from R SEXP - this preserves R's
-  // column-major layout
-  return xt::rarray<double>(SEXP(matrix));
-}
-
-/**
  * @brief Tensor-times-matrix operation with optional transpose
  * @param tensor_data Input tensor as xtensor rarray
  * @param matrix_data Input matrix as xtensor rarray
@@ -65,12 +47,10 @@ xt::rarray<double> ttm_cpp(const xt::rarray<double> &tensor_data,
     const int M_nrow = matrix.nrow();
     const int M_ncol = matrix.ncol();
 
-    std::size_t contract_len, new_dim;
+    std::size_t new_dim;
     if (transpose) {
-      contract_len = static_cast<std::size_t>(M_nrow);
       new_dim = static_cast<std::size_t>(M_ncol);
     } else {
-      contract_len = static_cast<std::size_t>(M_ncol);
       new_dim = static_cast<std::size_t>(M_nrow);
     }
 
@@ -183,8 +163,10 @@ xt::rarray<double> ttm_multiple_cpp(const xt::rarray<double> &tensor_data,
       Rcpp::stop("Empty list of matrices provided");
     }
 
-    xt::rarray<double> result = tensor_data;
-    for (size_t i = 0; i < matrices.size(); ++i) {
+    NumericMatrix first_matrix = as<NumericMatrix>(matrices[0]);
+    xt::rarray<double> result = ttm_cpp(tensor_data, first_matrix, modes[0], transpose);
+
+    for (R_xlen_t i = 1; i < matrices.size(); ++i) {
       NumericMatrix matrix = as<NumericMatrix>(matrices[i]);
       result = ttm_cpp(result, matrix, modes[i], transpose);
     }
