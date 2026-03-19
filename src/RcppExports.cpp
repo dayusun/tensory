@@ -11,6 +11,81 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// mttkrp_cpp
+NumericMatrix mttkrp_cpp(const xt::rarray<double>& tensor_data, const List& factors, int mode);
+RcppExport SEXP _tensory_mttkrp_cpp(SEXP tensor_dataSEXP, SEXP factorsSEXP, SEXP modeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const xt::rarray<double>& >::type tensor_data(tensor_dataSEXP);
+    Rcpp::traits::input_parameter< const List& >::type factors(factorsSEXP);
+    Rcpp::traits::input_parameter< int >::type mode(modeSEXP);
+    rcpp_result_gen = Rcpp::wrap(mttkrp_cpp(tensor_data, factors, mode));
+    return rcpp_result_gen;
+END_RCPP
+}
+// mttkrps_cpp
+List mttkrps_cpp(const xt::rarray<double>& tensor_data, const List& factors);
+RcppExport SEXP _tensory_mttkrps_cpp(SEXP tensor_dataSEXP, SEXP factorsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const xt::rarray<double>& >::type tensor_data(tensor_dataSEXP);
+    Rcpp::traits::input_parameter< const List& >::type factors(factorsSEXP);
+    rcpp_result_gen = Rcpp::wrap(mttkrps_cpp(tensor_data, factors));
+    return rcpp_result_gen;
+END_RCPP
+}
+// fibers_cpp
+NumericMatrix fibers_cpp(const xt::rarray<double>& tensor_data, int mode, const IntegerMatrix& midx);
+RcppExport SEXP _tensory_fibers_cpp(SEXP tensor_dataSEXP, SEXP modeSEXP, SEXP midxSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const xt::rarray<double>& >::type tensor_data(tensor_dataSEXP);
+    Rcpp::traits::input_parameter< int >::type mode(modeSEXP);
+    Rcpp::traits::input_parameter< const IntegerMatrix& >::type midx(midxSEXP);
+    rcpp_result_gen = Rcpp::wrap(fibers_cpp(tensor_data, mode, midx));
+    return rcpp_result_gen;
+END_RCPP
+}
+// contract_cpp
+List contract_cpp(const xt::rarray<double>& tensor_data, int mode1, int mode2);
+RcppExport SEXP _tensory_contract_cpp(SEXP tensor_dataSEXP, SEXP mode1SEXP, SEXP mode2SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const xt::rarray<double>& >::type tensor_data(tensor_dataSEXP);
+    Rcpp::traits::input_parameter< int >::type mode1(mode1SEXP);
+    Rcpp::traits::input_parameter< int >::type mode2(mode2SEXP);
+    rcpp_result_gen = Rcpp::wrap(contract_cpp(tensor_data, mode1, mode2));
+    return rcpp_result_gen;
+END_RCPP
+}
+// mask_cpp
+NumericVector mask_cpp(const xt::rarray<double>& tensor_data, const xt::rarray<double>& mask_data);
+RcppExport SEXP _tensory_mask_cpp(SEXP tensor_dataSEXP, SEXP mask_dataSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const xt::rarray<double>& >::type tensor_data(tensor_dataSEXP);
+    Rcpp::traits::input_parameter< const xt::rarray<double>& >::type mask_data(mask_dataSEXP);
+    rcpp_result_gen = Rcpp::wrap(mask_cpp(tensor_data, mask_data));
+    return rcpp_result_gen;
+END_RCPP
+}
+// issymmetric_cpp
+bool issymmetric_cpp(const xt::rarray<double>& tensor_data, const List& grps);
+RcppExport SEXP _tensory_issymmetric_cpp(SEXP tensor_dataSEXP, SEXP grpsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const xt::rarray<double>& >::type tensor_data(tensor_dataSEXP);
+    Rcpp::traits::input_parameter< const List& >::type grps(grpsSEXP);
+    rcpp_result_gen = Rcpp::wrap(issymmetric_cpp(tensor_data, grps));
+    return rcpp_result_gen;
+END_RCPP
+}
 // ttm_cpp
 xt::rarray<double> ttm_cpp(const xt::rarray<double>& tensor_data, const NumericMatrix& matrix, int mode, bool transpose);
 RcppExport SEXP _tensory_ttm_cpp(SEXP tensor_dataSEXP, SEXP matrixSEXP, SEXP modeSEXP, SEXP transposeSEXP) {
@@ -41,6 +116,12 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_tensory_mttkrp_cpp", (DL_FUNC) &_tensory_mttkrp_cpp, 3},
+    {"_tensory_mttkrps_cpp", (DL_FUNC) &_tensory_mttkrps_cpp, 2},
+    {"_tensory_fibers_cpp", (DL_FUNC) &_tensory_fibers_cpp, 3},
+    {"_tensory_contract_cpp", (DL_FUNC) &_tensory_contract_cpp, 3},
+    {"_tensory_mask_cpp", (DL_FUNC) &_tensory_mask_cpp, 2},
+    {"_tensory_issymmetric_cpp", (DL_FUNC) &_tensory_issymmetric_cpp, 2},
     {"_tensory_ttm_cpp", (DL_FUNC) &_tensory_ttm_cpp, 4},
     {"_tensory_ttm_multiple_cpp", (DL_FUNC) &_tensory_ttm_multiple_cpp, 4},
     {NULL, NULL, 0}

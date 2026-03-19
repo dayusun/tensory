@@ -89,6 +89,21 @@ test_that("mttkrp matches a direct column-wise contraction", {
   expect_equal(actual, expected)
 })
 
+test_that("mttkrps returns the full sequence of mode products", {
+  x <- tensor(array(1:8, dim = c(2, 2, 2)))
+  U <- list(
+    matrix(c(1, 0, 0, 1), nrow = 2),
+    matrix(c(2, 1, 1, 2), nrow = 2),
+    matrix(c(1, 3, 2, 4), nrow = 2)
+  )
+
+  actual <- mttkrps(x, U)
+  expect_length(actual, 3)
+  expect_equal(actual[[1]], mttkrp(x, U, mode = 1))
+  expect_equal(actual[[2]], mttkrp(x, U, mode = 2))
+  expect_equal(actual[[3]], mttkrp(x, U, mode = 3))
+})
+
 test_that("contract traces over two tensor modes", {
   x <- tensor(array(1:8, dim = c(2, 2, 2)))
   actual <- contract(x, 1, 2)
@@ -102,6 +117,16 @@ test_that("mask extracts values at nonzero mask positions", {
   w <- tensor(array(c(1, 0, 0, 1, 0, 0, 1, 0), dim = c(2, 2, 2)))
 
   expect_equal(mask(x, w), c(1, 4, 7))
+})
+
+test_that("fibers extracts requested mode-k fibers", {
+  x <- tensor(array(1:8, dim = c(2, 2, 2)))
+  midx <- rbind(c(1L, 1L), c(2L, 2L))
+
+  actual <- fibers(x, mode = 2, midx = midx)
+  expected <- cbind(x$as_array()[1, , 1], x$as_array()[2, , 2])
+
+  expect_equal(actual, expected)
 })
 
 test_that("tenfun applies elementwise tensor functions", {
@@ -127,4 +152,29 @@ test_that("symmetrize averages over permutation classes", {
   expect_equal(y$as_array()[1, 2, 1], y$as_array()[2, 1, 1])
   expect_equal(y$as_array()[1, 2, 2], y$as_array()[2, 1, 2])
   expect_equal(y$as_array()[2, 1, 2], y$as_array()[2, 2, 1])
+})
+
+test_that("issymmetric detects symmetric tensors and grouped symmetry", {
+  x <- tensor(array(1:8, dim = c(2, 2, 2)))
+  y <- symmetrize(x)
+
+  expect_true(issymmetric(y))
+  expect_true(issymmetric(y, grps = c(1, 2)))
+  expect_false(issymmetric(x))
+})
+
+test_that("full, double, isequal, isscalar, scale, and transpose wrappers work", {
+  x <- tensor(array(1:4, dim = c(2, 2)))
+  y <- tensor(array(1:4, dim = c(2, 2)))
+  z <- tensor(array(1:4, dim = c(4)))
+
+  expect_equal(full(x), x$as_array())
+  expect_equal(double.Tensor(x), x$as_array())
+  expect_equal(as.double(x), as.double(x$as_array()))
+  expect_true(isequal(x, y))
+  expect_false(isequal(x, z))
+  expect_true(isscalar(tensor(5)))
+  expect_true(isscalar(ttt(x, x, dimsA = c(1, 2), dimsB = c(1, 2))))
+  expect_equal(scale(x, c(10, 20), dims = 1)$as_array(), t_scale(x, c(10, 20), dims = 1)$as_array())
+  expect_error(transpose(x), "not defined")
 })
