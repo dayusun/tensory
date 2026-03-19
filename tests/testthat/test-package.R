@@ -22,9 +22,8 @@ test_that("Basic functionality works after loading", {
 })
 
 test_that("S3 methods are properly exported", {
-  # Test that S3 operators are available
-  expect_true(exists("+.Tensor"))
-  expect_true(exists("-.Tensor"))
-  expect_true(exists("*.Tensor"))
-  expect_true(exists("/.Tensor"))
+  expect_true(is.function(getS3method("+", "Tensor", optional = TRUE)))
+  expect_true(is.function(getS3method("-", "Tensor", optional = TRUE)))
+  expect_true(is.function(getS3method("*", "Tensor", optional = TRUE)))
+  expect_true(is.function(getS3method("/", "Tensor", optional = TRUE)))
 })
