@@ -2,6 +2,7 @@
 #include "xtensor/containers/xarray.hpp"
 #include <Rcpp.h>
 #include <algorithm>
+#include <numeric>
 #include <vector>
 
 
@@ -26,6 +27,23 @@ void F77_NAME(dgemm)(const char *transa, const char *transb, const int *m,
 
 using namespace Rcpp;
 
+namespace {
+
+std::vector<std::size_t> column_major_strides(const std::vector<std::size_t> &dims) {
+  std::vector<std::size_t> strides(dims.size(), 1);
+  for (std::size_t i = 1; i < dims.size(); ++i) {
+    strides[i] = strides[i - 1] * dims[i - 1];
+  }
+  return strides;
+}
+
+std::size_t product_of_dims(const std::vector<std::size_t> &dims) {
+  return std::accumulate(dims.begin(), dims.end(), static_cast<std::size_t>(1),
+                         std::multiplies<std::size_t>());
+}
+
+} // namespace
+
 /**
  * @brief Tensor-times-matrix operation with optional transpose
  * @param tensor_data Input tensor as xtensor rarray
@@ -40,110 +58,93 @@ xt::rarray<double> ttm_cpp(const xt::rarray<double> &tensor_data,
                            bool transpose = false) {
   try {
     const std::size_t axis = static_cast<std::size_t>(mode - 1);
-    auto tensor_shape = tensor_data.shape();
-    std::size_t n_dim = tensor_data.dimension();
+    std::vector<std::size_t> tensor_shape(tensor_data.shape().begin(),
+                                          tensor_data.shape().end());
+    const std::size_t n_dim = tensor_shape.size();
 
-    // Matrix dimensions
-    const int M_nrow = matrix.nrow();
-    const int M_ncol = matrix.ncol();
-
-    std::size_t new_dim;
-    if (transpose) {
-      new_dim = static_cast<std::size_t>(M_ncol);
-    } else {
-      new_dim = static_cast<std::size_t>(M_nrow);
+    if (axis >= n_dim) {
+      Rcpp::stop("mode is out of bounds for the tensor order");
     }
 
-    // Output shape
-    std::vector<std::size_t> final_shape(tensor_shape.begin(),
-                                         tensor_shape.end());
-    final_shape[axis] = new_dim;
+    const std::size_t Ik = tensor_shape[axis];
+    const std::size_t J = transpose ? static_cast<std::size_t>(matrix.ncol())
+                                    : static_cast<std::size_t>(matrix.nrow());
 
-    // Calculate slice dimensions
-    std::size_t M1 = 1;
-    for (std::size_t i = 0; i < axis; ++i) {
-      M1 *= tensor_shape[i];
+    std::vector<std::size_t> final_shape = tensor_shape;
+    final_shape[axis] = J;
+
+    const std::size_t total_size = product_of_dims(tensor_shape);
+    const std::size_t rest = total_size / Ik;
+
+    auto input_strides = column_major_strides(tensor_shape);
+    auto output_strides = column_major_strides(final_shape);
+
+    std::vector<std::size_t> other_modes;
+    std::vector<std::size_t> other_dims;
+    other_modes.reserve(n_dim > 0 ? n_dim - 1 : 0);
+    other_dims.reserve(n_dim > 0 ? n_dim - 1 : 0);
+    for (std::size_t i = 0; i < n_dim; ++i) {
+      if (i == axis) {
+        continue;
+      }
+      other_modes.push_back(i);
+      other_dims.push_back(tensor_shape[i]);
     }
 
-    std::size_t Ik = tensor_shape[axis];
+    std::vector<double> x_mat(total_size);
+    const double *tensor_ptr = tensor_data.data();
+    const std::size_t axis_input_stride = input_strides[axis];
 
-    std::size_t M2 = 1;
-    for (std::size_t i = axis + 1; i < n_dim; ++i) {
-      M2 *= tensor_shape[i];
+    for (std::size_t rest_index = 0; rest_index < rest; ++rest_index) {
+      std::size_t tmp = rest_index;
+      std::size_t base_input = 0;
+
+      for (std::size_t p = 0; p < other_modes.size(); ++p) {
+        const std::size_t coord = tmp % other_dims[p];
+        tmp /= other_dims[p];
+        base_input += coord * input_strides[other_modes[p]];
+      }
+
+      const std::size_t column_offset = Ik * rest_index;
+      for (std::size_t k_idx = 0; k_idx < Ik; ++k_idx) {
+        x_mat[column_offset + k_idx] = tensor_ptr[base_input + k_idx * axis_input_stride];
+      }
     }
 
-    // Allocate result tensor
-    xt::xarray<double, xt::layout_type::column_major> result_tensor(
-        final_shape);
+    std::vector<double> y_mat(J * rest);
 
-    // Compute parameters for DGEMM
-    // We compute Y = X * A^T (if !transpose) or Y = X * A (if transpose)
-    // X is M1 x Ik, A is either J x Ik (if !transpose) or Ik x J (if transpose)
-    // Y is M1 x J.
-    const char *transa = "N";
-    const char *transb = transpose ? "N" : "T";
-
-    const int m = static_cast<int>(M1);
-    const int n = static_cast<int>(new_dim);
+    const char *transa = transpose ? "T" : "N";
+    const char *transb = "N";
+    const int m = static_cast<int>(J);
+    const int n = static_cast<int>(rest);
     const int k = static_cast<int>(Ik);
-
     const double alpha = 1.0;
     const double beta = 0.0;
-
-    const int lda = static_cast<int>(M1);
-    const int ldb = static_cast<int>(transpose ? Ik : new_dim);
-    const int ldc = static_cast<int>(M1);
-
-    const double *X_base = tensor_data.data();
+    const int lda = static_cast<int>(transpose ? Ik : J);
+    const int ldb = static_cast<int>(Ik);
+    const int ldc = static_cast<int>(J);
     const double *mat_ptr = REAL(matrix);
-    double *Y_base = result_tensor.data();
 
-    if (M1 == 1) {
-      // OPTIMIZATION for axis == 0: Y (J x M2) = Mat * X
-      const char *transa_opt = transpose ? "T" : "N";
-      const char *transb_opt = "N";
+    F77_NAME(dgemm)(transa, transb, &m, &n, &k, &alpha, mat_ptr, &lda,
+                    x_mat.data(), &ldb, &beta, y_mat.data(), &ldc FCONE FCONE);
 
-      int m_opt = static_cast<int>(new_dim);
-      int n_opt = static_cast<int>(M2);
-      int k_opt = static_cast<int>(Ik);
+    xt::xarray<double, xt::layout_type::column_major> result_tensor(final_shape);
+    double *result_ptr = result_tensor.data();
+    const std::size_t axis_output_stride = output_strides[axis];
 
-      int lda_opt = static_cast<int>(transpose ? Ik : new_dim);
-      int ldb_opt = static_cast<int>(Ik);
-      int ldc_opt = static_cast<int>(new_dim);
+    for (std::size_t rest_index = 0; rest_index < rest; ++rest_index) {
+      std::size_t tmp = rest_index;
+      std::size_t base_output = 0;
 
-      F77_NAME(dgemm)(transa_opt, transb_opt, &m_opt, &n_opt, &k_opt, &alpha,
-                      mat_ptr, &lda_opt, X_base, &ldb_opt, &beta, Y_base,
-                      &ldc_opt FCONE FCONE);
-    } else if (M2 == 1 && M1 > 2000) {
-      // BLOCK TILING OPTIMIZATION FOR MODE 3 (N=1)
-      // Instead of one giant dgemm, we break M1 into smaller chunks that fit in
-      // L2/L3 cache.
-      std::size_t block_size = 512; // M1 columns at a time
-
-      for (std::size_t m1_start = 0; m1_start < M1; m1_start += block_size) {
-        std::size_t current_block_size = std::min(block_size, M1 - m1_start);
-
-        // In column-major, advancing rows means simply adding m1_start
-        double *Y_ptr = Y_base + m1_start;
-        const double *X_ptr = X_base + m1_start;
-
-        int m_opt = static_cast<int>(current_block_size);
-
-        // Y(M1_block x new_dim) = X(M1_block x Ik) * Mat(Ik x new_dim)
-        F77_NAME(dgemm)(transa, transb, &m_opt, &n, &k, &alpha, X_ptr, &lda,
-                        mat_ptr, &ldb, &beta, Y_ptr, &ldc FCONE FCONE);
+      for (std::size_t p = 0; p < other_modes.size(); ++p) {
+        const std::size_t coord = tmp % other_dims[p];
+        tmp /= other_dims[p];
+        base_output += coord * output_strides[other_modes[p]];
       }
-    } else {
-      std::size_t X_stride = M1 * Ik;
-      std::size_t Y_stride = M1 * new_dim;
 
-      // Perform M2 matrix multiplications
-      for (std::size_t m2 = 0; m2 < M2; ++m2) {
-        const double *X_ptr = X_base + m2 * X_stride;
-        double *Y_ptr = Y_base + m2 * Y_stride;
-
-        F77_NAME(dgemm)(transa, transb, &m, &n, &k, &alpha, X_ptr, &lda,
-                        mat_ptr, &ldb, &beta, Y_ptr, &ldc FCONE FCONE);
+      const std::size_t column_offset = J * rest_index;
+      for (std::size_t j_idx = 0; j_idx < J; ++j_idx) {
+        result_ptr[base_output + j_idx * axis_output_stride] = y_mat[column_offset + j_idx];
       }
     }
 

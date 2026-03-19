@@ -371,6 +371,29 @@ ttm <- function(tensor, matrix, mode = NULL, transpose = FALSE) {
   return(res)
 }
 
+.ttm_matrix_base <- function(tensor, matrix, mode, transpose) {
+  tensor_dims <- tensor$dim()
+  tensor_mode_dim <- tensor_dims[mode]
+
+  effective_matrix <- if (transpose) base::t(matrix) else matrix
+  other_modes <- setdiff(seq_along(tensor_dims), mode)
+  perm <- c(mode, other_modes)
+
+  permuted <- aperm(tensor$data, perm)
+  dim(permuted) <- c(tensor_mode_dim, length(permuted) / tensor_mode_dim)
+
+  result_matrix <- effective_matrix %*% permuted
+  result_dims <- c(nrow(effective_matrix), tensor_dims[other_modes])
+
+  if (length(result_dims) == 1) {
+    return(Tensor$new(as.vector(result_matrix), dims = result_dims))
+  }
+
+  result_array <- array(as.double(result_matrix), dim = result_dims)
+  inverse_perm <- match(seq_along(tensor_dims), perm)
+  Tensor$new(aperm(result_array, inverse_perm), dims = c(result_dims[inverse_perm]), fast = TRUE)
+}
+
 #' @export
 ttm.matrix <- function(tensor, matrix, mode = NULL, transpose = FALSE) {
   tensor_dims <- tensor$dim()
@@ -427,9 +450,12 @@ ttm.matrix <- function(tensor, matrix, mode = NULL, transpose = FALSE) {
     storage.mode(matrix) <- "double"
   }
 
-  # Call C++ function for single matrix multiplication
-  result_data <- ttm_cpp(tensor$data, matrix, mode, transpose)
-  return(Tensor$new(result_data))
+  if (exists("ttm_cpp", mode = "function")) {
+    result_data <- ttm_cpp(tensor$data, matrix, mode, transpose)
+    return(Tensor$new(result_data))
+  }
+
+  .ttm_matrix_base(tensor, matrix, mode, transpose)
 }
 
 #' @export
@@ -513,10 +539,10 @@ ttm.list <- function(tensor, matrix, mode = NULL, transpose = FALSE) {
   if (is.null(mode)) {
     modes <- seq_along(matrix)
   } else {
-    modes <- mode
+    modes <- as.integer(mode)
   }
 
-  if (length(matrix) == length(tensor_dims) && length(modes) != length(tensor_dims)) {
+  if (length(modes) != length(matrix) && all(modes %in% seq_along(matrix))) {
     matrix <- matrix[modes]
   }
 
@@ -544,59 +570,41 @@ ttm.list <- function(tensor, matrix, mode = NULL, transpose = FALSE) {
     stop(paste0("Invalid elements at positions: ", paste(invalid_indices, collapse = ", "), ". All elements must be matrices/vectors."))
   }
 
-  for (i in seq_along(matrix)) {
-    if (element_types[i] == "vector") {
-      if (transpose) {
-        # Keep transpose semantics ignored for vectors while still using the shared C++ path.
-        matrix[[i]] <- base::matrix(matrix[[i]], ncol = 1)
-      } else {
-        matrix[[i]] <- base::matrix(matrix[[i]], nrow = 1)
+  ord <- order(modes, decreasing = TRUE)
+  matrix <- matrix[ord]
+  modes <- modes[ord]
+  element_types <- element_types[ord]
+
+  if (all(element_types == "matrix") && exists("ttm_multiple_cpp", mode = "function")) {
+    for (i in seq_along(matrix)) {
+      if (storage.mode(matrix[[i]]) != "double") {
+        storage.mode(matrix[[i]]) <- "double"
       }
     }
-    if (storage.mode(matrix[[i]]) != "double") {
-      storage.mode(matrix[[i]]) <- "double"
-    }
+    result_data <- ttm_multiple_cpp(tensor$data, matrix, modes, transpose)
+    return(Tensor$new(result_data))
   }
 
-  matrice_mode <- vapply(seq_along(matrix), function(i) {
+  result <- tensor
+  for (i in seq_along(matrix)) {
+    current <- matrix[[i]]
+    current_transpose <- transpose
+
     if (element_types[i] == "vector") {
-      length(matrix[[i]])
-    } else if (transpose) {
-      nrow(matrix[[i]])
+      current_transpose <- FALSE
+      if (storage.mode(current) != "double") {
+        storage.mode(current) <- "double"
+      }
     } else {
-      ncol(matrix[[i]])
+      if (storage.mode(current) != "double") {
+        storage.mode(current) <- "double"
+      }
     }
-  }, integer(1))
 
-  tensor_mode_dim <- tensor_dims[modes]
-  if (any(tensor_mode_dim != matrice_mode)) {
-    unmatched_modes_position <- which(tensor_mode_dim != matrice_mode)
-    axis_name <- if (transpose) "rows" else "columns"
-    stop(paste0(
-      "Matrix ", paste0(unmatched_modes_position, ", "), " ", axis_name, " (",
-      matrice_mode[unmatched_modes_position],
-      ") must match tensor dimension size (", tensor_mode_dim[unmatched_modes_position],
-      ") for mode ", modes[unmatched_modes_position]
-    ))
+    result <- ttm(result, current, mode = modes[i], transpose = current_transpose)
   }
 
-  result_data <- ttm_multiple_cpp(tensor$data, matrix, modes, transpose)
-  result_tensor <- Tensor$new(result_data)
-
-  vector_modes <- modes[element_types == "vector"]
-  if (length(vector_modes) > 0) {
-    result_dims <- result_tensor$dim()
-    keep_dims <- setdiff(seq_along(result_dims), vector_modes)
-    new_dims <- result_dims[keep_dims]
-
-    if (length(new_dims) == 0) {
-      return(Tensor$new(as.vector(result_tensor$data), integer(0)))
-    } else {
-      return(result_tensor$reshape(new_dims))
-    }
-  } else {
-    return(result_tensor)
-  }
+  result
 }
 
 #' @export
