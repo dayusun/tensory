@@ -33,6 +33,7 @@ Thumbs.db
 .vscode/
 
 # Other
+.Rlib/
 inst/include/*/
 !inst/include/tensory.h
 !inst/include/xtensor-r/
