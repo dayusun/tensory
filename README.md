@@ -1,11 +1,11 @@
 # tensory
 
-`tensory` is an R package for tensor algebra with a Tensor Toolbox-style interface. It provides dense tensors, matricized tensors, and decomposed tensor representations, with an R API that can use optimized C++ backends where available.
+`tensory` is an R package for tensor algebra with an API similar to the MATLAB Tensor Toolbox. It provides dense tensors, matricized tensors, and decomposed tensor representations, with an R API that can use optimized C++ backends where available.
 
 ## Features
 - Dense `Tensor` objects for multidimensional arrays
 - `Tenmat`, `KTensor`, and `TTensor` representations for unfolded and decomposed tensors
-- Tensor Toolbox-style operations such as `ttm()`, `ttt()`, `ttv()`, `mttkrp()`, `contract()`, `permute()`, and `symmetrize()`
+- Operations with names and semantics similar to the MATLAB Tensor Toolbox, such as `ttm()`, `ttt()`, `ttv()`, `mttkrp()`, `contract()`, `permute()`, and `symmetrize()`
 - Rcpp/xtensor-backed implementation hooks for performance-critical kernels
 
 ## Installation
@@ -60,6 +60,12 @@ This package is licensed under MIT. The repository also vendors third-party
 headers under `inst/include/` that are distributed under BSD-style licenses.
 See [LICENSE](LICENSE), [LICENSE.md](LICENSE.md), and
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for details.
+
+`tensory` also takes API inspiration from the MATLAB Tensor Toolbox. The
+Tensor Toolbox for MATLAB is distributed under a BSD 2-Clause license. This
+repository does not vendor Tensor Toolbox source code; if Tensor Toolbox code
+or documentation is copied in the future, its copyright and license notices
+must be retained.
 
 ## Acknowledgements
 - [xtensor](https://github.com/xtensor-stack/xtensor) and [xtensor-r](https://github.com/xtensor-stack/xtensor-r) projects

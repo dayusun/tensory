@@ -3,16 +3,17 @@
 
 #' Tensory: Modern Tensor Operations for R
 #'
-#' The \code{tensory} package provides tensor algebra tools for R with a
-#' Tensor Toolbox-style interface. It includes dense tensors, matricized
+#' The \code{tensory} package provides tensor algebra tools for R with an API
+#' similar to the MATLAB Tensor Toolbox. It includes dense tensors, matricized
 #' tensors, and decomposed tensor representations, with selected operations
 #' able to delegate to optimized C++ backends.
 #'
 #' @section Key Features:
 #' \itemize{
 #'   \item R6-based tensor classes for dense and decomposed representations
-#'   \item Tensor Toolbox-style operations such as \code{ttm()}, \code{ttt()},
-#'         \code{ttv()}, \code{permute()}, and \code{contract()}
+#'   \item Operations with names and semantics similar to the MATLAB Tensor
+#'         Toolbox such as \code{ttm()}, \code{ttt()}, \code{ttv()},
+#'         \code{permute()}, and \code{contract()}
 #'   \item Dense helpers for unfolding, vectorization, symmetry checks, and
 #'         matricized tensor products
 #'   \item Optional C++ acceleration hooks via \code{xtensor} and \code{Rcpp}
@@ -62,6 +63,6 @@
 #' @import R6
 #' @importFrom Rcpp sourceCpp
 #' @description
-#' `tensory` provides dense and decomposed tensor classes together with
-#' Tensor Toolbox-style operations for R.
+#' `tensory` provides dense and decomposed tensor classes together with an API
+#' similar to the MATLAB Tensor Toolbox for R users.
 NULL

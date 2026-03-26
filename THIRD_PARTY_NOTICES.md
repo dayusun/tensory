@@ -30,3 +30,12 @@ Official upstream license locations for the BSD 3-Clause components:
 - `xtensor-blas`: <https://github.com/xtensor-stack/xtensor-blas/blob/master/LICENSE>
 - `xtl`: <https://github.com/xtensor-stack/xtl/blob/master/LICENSE>
 - `xsimd`: <https://github.com/xtensor-stack/xsimd/blob/master/LICENSE>
+
+MATLAB Tensor Toolbox note:
+
+- `tensory` aims for an API similar to the MATLAB Tensor Toolbox.
+- The Tensor Toolbox for MATLAB is published under the BSD 2-Clause license.
+- This repository does not currently vendor Tensor Toolbox source code.
+- If any Tensor Toolbox source or documentation is incorporated in the future,
+  its original copyright notice and BSD 2-Clause license terms must be
+  preserved.
