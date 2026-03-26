@@ -4,7 +4,7 @@ Title: Tensory - Modern Tensor Operations for R
 Version: 0.0.1
 Date: 2024-11-01
 Author: Dayu Sun
-Maintainer: Dayu Sun <dayusun@iu.edu>
+Maintainer: Dayu Sun <dayu.sun@outlook.com>
 Description: Provides dense and decomposed tensor classes for R together with
     Tensor Toolbox-style operations such as matricized products, contractions,
     reshaping helpers, and symmetry utilities. Selected kernels can delegate to

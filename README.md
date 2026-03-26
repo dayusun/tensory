@@ -56,7 +56,10 @@ x_vec <- vec(x)
 - Move more dense tensor kernels, including reshape/squeeze-adjacent operations, into the xtensor-backed path where it improves performance
 
 ## License
-See [LICENSE](LICENSE) for details.
+This package is licensed under MIT. The repository also vendors third-party
+headers under `inst/include/` that are distributed under BSD-style licenses.
+See [LICENSE](LICENSE), [LICENSE.md](LICENSE.md), and
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for details.
 
 ## Acknowledgements
 - [xtensor](https://github.com/xtensor-stack/xtensor) and [xtensor-r](https://github.com/xtensor-stack/xtensor-r) projects
