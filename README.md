@@ -1,12 +1,12 @@
 # tensory
 
-`tensory` is an R package for general tensor operations, providing a fast and flexible interface for multidimensional array computations. It leverages the C++ [xtensor](https://github.com/xtensor-stack/xtensor) library to deliver high-performance numerical routines, similar to NumPy in Python, but accessible from R.
+`tensory` is an R package for tensor algebra with a Tensor Toolbox-style interface. It provides dense tensors, matricized tensors, and decomposed tensor representations, with an R API that can use optimized C++ backends where available.
 
 ## Features
-- General tensor (multidimensional array) operations in R
-- High performance via C++ backend using xtensor
-- Rcpp integration for seamless R/C++ interoperability
-- Extensible and efficient, suitable for scientific computing and data analysis
+- Dense `Tensor` objects for multidimensional arrays
+- `Tenmat`, `KTensor`, and `TTensor` representations for unfolded and decomposed tensors
+- Tensor Toolbox-style operations such as `ttm()`, `ttt()`, `ttv()`, `mttkrp()`, `contract()`, `permute()`, and `symmetrize()`
+- Rcpp/xtensor-backed implementation hooks for performance-critical kernels
 
 ## Installation
 
@@ -24,8 +24,17 @@ devtools::install_local("path/to/tensory")
 ```r
 library(tensory)
 
-# Example: Create and manipulate a tensor
-# (See package documentation for available functions)
+# Dense tensor creation
+x <- tensor(array(1:24, dim = c(2, 3, 4)))
+
+# Tensor-times-matrix and tensor-times-vector operations
+A <- matrix(runif(6), nrow = 2)
+y <- ttm(x, A, mode = 2)
+z <- ttv(x, c(1, 2), mode = 1)
+
+# Tensor reshaping helpers
+x_perm <- permute(x, c(3, 1, 2))
+x_vec <- vec(x)
 ```
 
 ## Project Structure
@@ -40,10 +49,11 @@ library(tensory)
 - [xtensor-r](https://github.com/xtensor-stack/xtensor-r) (C++)
 - [Rcpp](https://cran.r-project.org/package=Rcpp)
 
-## TODO
+## Current Priorities
 
-### Planned Improvements
-- [ ] **Convert squeeze method to xtensor implementation**: Currently the squeeze functionality in the Tensor class is implemented at the R level. Plan to migrate this to use xtensor's built-in squeeze function for better performance and consistency with the C++ backend architecture.
+- Stabilize shape semantics and keep scalar behavior consistent across dense operations
+- Complete package documentation for the full exported API surface
+- Move more dense tensor kernels, including reshape/squeeze-adjacent operations, into the xtensor-backed path where it improves performance
 
 ## License
 See [LICENSE](LICENSE) for details.
