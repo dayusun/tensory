@@ -77,7 +77,7 @@ test_that("Sum method works", {
   t1 <- tensor(1:6)
   result1 <- t1$sum()
   expect_equal(as.vector(result1$as_array()), 21)
-  expect_equal(result1$dim(), 1L)
+  expect_equal(result1$dim(), integer(0))
   
   # Test sum along specific dimensions (2D)
   mat <- matrix(1:6, nrow = 2, ncol = 3)
@@ -85,19 +85,27 @@ test_that("Sum method works", {
   
   # Sum along rows (dimension 1)
   result2 <- t2$sum(1)
-  expected2 <- tensor(apply(mat, 1, sum))
+  expected2 <- tensor(apply(mat, 2, sum))
   expect_equal(result2$as_array(), expected2$as_array())
+  expect_equal(result2$dim(), c(3L))
   
   # Sum along columns (dimension 2)
   result3 <- t2$sum(2)
-  expected3 <- tensor(apply(mat, 2, sum))
+  expected3 <- tensor(apply(mat, 1, sum))
   expect_equal(result3$as_array(), expected3$as_array())
+  expect_equal(result3$dim(), c(2L))
   
   # Test 3D sum
   arr3d <- array(1:24, dim = c(2, 3, 4))
   t3 <- tensor(arr3d)
   
   result4 <- t3$sum(1)
-  expected4 <- tensor(apply(arr3d, 1, sum))
+  expected4 <- tensor(apply(arr3d, c(2, 3), sum))
   expect_equal(result4$as_array(), expected4$as_array())
+  expect_equal(result4$dim(), c(3L, 4L))
+
+  result5 <- t3$sum(c(1, 3))
+  expected5 <- tensor(apply(arr3d, 2, sum))
+  expect_equal(result5$as_array(), expected5$as_array())
+  expect_equal(result5$dim(), c(3L))
 })

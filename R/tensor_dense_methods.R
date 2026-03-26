@@ -220,7 +220,14 @@ reshape.Tensor <- function(x, new_dims, ...) {
 
 #' @export
 reshape.default <- function(x, new_dims, ...) {
-  stats::reshape(x, ...)
+  new_dims <- as.integer(new_dims)
+  if (anyNA(new_dims) || any(new_dims < 0L)) {
+    stop("new_dims must be a non-negative integer vector.")
+  }
+  if (prod(new_dims) != length(x)) {
+    stop("Product of new_dims must match the number of elements in x.")
+  }
+  array(as.vector(x), dim = new_dims)
 }
 
 #' Squeeze Tensor

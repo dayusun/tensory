@@ -42,6 +42,11 @@ test_that("reshape and squeeze are exposed as dense functions", {
   expect_equal(y$dim(), c(6L, 4L))
   expect_equal(as.vector(y$as_array()), as.vector(x$as_array()))
 
+  base_array <- array(1:24, dim = c(2, 3, 4))
+  reshaped_array <- reshape(base_array, c(4, 6))
+  expect_equal(dim(reshaped_array), c(4L, 6L))
+  expect_equal(as.vector(reshaped_array), as.vector(base_array))
+
   z <- tensor(array(1:6, dim = c(1, 2, 1, 3)))
   expect_equal(squeeze(z)$dim(), c(2L, 3L))
 })
@@ -175,6 +180,7 @@ test_that("full, double, isequal, isscalar, scale, and transpose wrappers work",
   expect_false(isequal(x, z))
   expect_true(isscalar(tensor(5)))
   expect_true(isscalar(ttt(x, x, dimsA = c(1, 2), dimsB = c(1, 2))))
+  expect_equal(max(x)$dim(), integer(0))
   expect_equal(scale(x, c(10, 20), dims = 1)$as_array(), t_scale(x, c(10, 20), dims = 1)$as_array())
   expect_error(transpose(x), "not defined")
 })

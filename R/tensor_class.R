@@ -454,15 +454,29 @@ Tensor <- R6::R6Class("Tensor",
     sum = function(dims = NULL) {
       if (is.null(dims)) {
         result <- base::sum(self$data)
-        return(Tensor$new(result, 1))
-      } else {
-        dims <- as.integer(dims)
-        result_array <- base::apply(self$data, dims, base::sum)
-        if (is.null(dim(result_array))) {
-          result_array <- array(result_array, dim = length(result_array))
-        }
-        return(Tensor$new(result_array))
+        return(Tensor$new(result, integer(0), fast = TRUE))
       }
+
+      dims <- as.integer(dims)
+      nd <- self$ndims()
+      if (length(dims) == 0 || anyNA(dims) || any(dims < 1L) || any(dims > nd)) {
+        stop("dims must contain valid tensor dimensions to reduce.")
+      }
+      if (anyDuplicated(dims)) {
+        stop("dims must not contain duplicates.")
+      }
+
+      keep_dims <- setdiff(seq_len(nd), dims)
+      if (length(keep_dims) == 0) {
+        result <- base::sum(self$data)
+        return(Tensor$new(result, integer(0), fast = TRUE))
+      }
+
+      result_array <- base::apply(self$data, keep_dims, base::sum)
+      if (is.null(dim(result_array))) {
+        result_array <- array(result_array, dim = self$dims[keep_dims])
+      }
+      return(Tensor$new(result_array))
     },
 
     #' Khatri-Rao product with another Tensor or matrix
@@ -827,7 +841,7 @@ Summary.Tensor <- function(..., na.rm = FALSE) {
   res <- do.call(.Generic, c(args_data, list(na.rm = na.rm)))
 
   # Return as a scalar Tensor
-  return(tensor(res, 1))
+  return(Tensor$new(as.double(res), integer(0), fast = TRUE))
 }
 
 #' Convert object to Tensor
