@@ -70,17 +70,10 @@ Tensor <- R6::R6Class("Tensor",
         }
         self$data <- as.double(data)
         self$dims <- integer(0)
-      } else if (length(dims) == 1 && dims == 1 && length(data) == 1) {
-        # Handle 1D scalar case
-        self$data <- array(as.double(data), dim = 1)
-        self$dims <- 1L
       } else {
-        # Validate that dimensions match data length
         if (prod(dims) != length(data)) {
           stop("Product of specified dimensions must match the number of elements in data.")
         }
-
-        # Convert data to double array
         if (!is.double(data)) data <- as.double(data)
         self$data <- array(data, dim = dims)
         self$dims <- dims
