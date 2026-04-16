@@ -2,6 +2,7 @@
 #include "xtensor/containers/xarray.hpp"
 #include <Rcpp.h>
 #include <algorithm>
+#include <climits>
 #include <numeric>
 #include <vector>
 
@@ -112,6 +113,11 @@ xt::rarray<double> ttm_cpp(const xt::rarray<double> &tensor_data,
     }
 
     std::vector<double> y_mat(J * rest);
+
+    const std::size_t int_max = static_cast<std::size_t>(INT_MAX);
+    if (J > int_max || rest > int_max || Ik > int_max) {
+      Rcpp::stop("Tensor extents exceed BLAS 32-bit integer limit");
+    }
 
     const char *transa = transpose ? "T" : "N";
     const char *transb = "N";
