@@ -405,7 +405,7 @@ ttm.matrix <- function(tensor, matrix, mode = NULL, transpose = FALSE) {
       stop("All modes cannot be excluded")
     }
   } else if (!is.null(mode) && any(mode < 0)) {
-    stop("Modes must be either all positive or all negative")
+    stop("Mode vector must be all positive or all negative, not mixed")
   }
 
   if (is.null(mode)) mode <- 1
@@ -474,7 +474,7 @@ ttm.numeric <- function(tensor, matrix, mode = NULL, transpose = FALSE) {
     mode <- setdiff(seq_along(tensor_dims), -mode)
     if (length(mode) == 0) stop("All modes cannot be excluded")
   } else if (!is.null(mode) && any(mode < 0)) {
-    stop("Modes must be either all positive or all negative")
+    stop("Mode vector must be all positive or all negative, not mixed")
   }
 
   if (is.null(mode)) mode <- 1
@@ -533,7 +533,7 @@ ttm.list <- function(tensor, matrix, mode = NULL, transpose = FALSE) {
     mode <- setdiff(seq_along(tensor_dims), -mode)
     if (length(mode) == 0) stop("All modes cannot be excluded")
   } else if (!is.null(mode) && any(mode < 0)) {
-    stop("Modes must be either all positive or all negative")
+    stop("Mode vector must be all positive or all negative, not mixed")
   }
 
   if (is.null(mode)) {
