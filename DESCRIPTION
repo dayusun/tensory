@@ -12,6 +12,7 @@ Description: Provides dense and decomposed tensor classes for R together with
     performance.
 License: MIT + file LICENSE
 Encoding: UTF-8
+SystemRequirements: C++17
 Imports: 
     R6,
     Rcpp,
