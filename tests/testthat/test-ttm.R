@@ -202,3 +202,21 @@ test_that("ttm list ignores transpose for vector entries", {
   expect_equal(result$dim(), expected$dim())
   expect_equal(result$as_array(), expected$as_array())
 })
+
+test_that("ttm full vector contraction returns scalar tensor", {
+  # Contracting every mode with a vector should collapse to a scalar tensor
+  # with dims = integer(0), per the package's scalar-tensor convention.
+  t3d <- tensor(array(1:24, dim = c(4, 3, 2)))
+  v1 <- as.double(1:4)
+  v2 <- as.double(1:3)
+  v3 <- as.double(1:2)
+
+  result <- ttm(t3d, list(v1, v2, v3), mode = c(1, 2, 3))
+
+  expect_s3_class(result, "Tensor")
+  expect_identical(result$dim(), integer(0))
+  expect_length(result$data, 1L)
+
+  expected <- sum(t3d$data * outer(v1, outer(v2, v3)))
+  expect_equal(as.numeric(result$data), expected)
+})
