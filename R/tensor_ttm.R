@@ -359,6 +359,7 @@ ttm <- function(tensor, matrix, mode = NULL, transpose = FALSE) {
       # Edge case, but just in case
       new_U[[mode]] <- NULL
     } else {
+      if (inherits(new_core, "TTensor")) new_core <- as.tensor(new_core)
       new_core <- ttm(new_core, as.vector(new_factor), mode = mode)
       new_U[[mode]] <- NULL
     }

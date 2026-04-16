@@ -87,9 +87,10 @@ KTensor <- R6::R6Class("KTensor",
             dims <- self$dim()
             R <- length(self$lambda)
 
-            # For a scalar result
+            # For a scalar result, honor the scalar-tensor convention (dims = integer(0))
             if (length(dims) == 0) {
-                return(tensor(sum(self$lambda)))
+                value <- if (length(self$lambda) == 0) 0 else sum(self$lambda)
+                return(Tensor$new(as.double(value), integer(0), fast = TRUE))
             }
 
             # Start with an array of zeros

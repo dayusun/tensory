@@ -37,16 +37,31 @@ ttt <- function(tensorA, tensorB, dimsA = NULL, dimsB = dimsA) {
     tensorB_data <- tensorB$data
     dimA_full <- tensorA$dims
     dimB_full <- tensorB$dims
-    if (length(dimA_full) == 0) dimA_full <- length(tensorA_data)
-    if (length(dimB_full) == 0) dimB_full <- length(tensorB_data)
+    scalarA <- length(dimA_full) == 0
+    scalarB <- length(dimB_full) == 0
 
     if (is.null(dimsA) && is.null(dimsB)) {
-        # Outer product fast path
+        # Outer product fast path; preserve scalar-tensor convention (dims = integer(0))
+        if (scalarA && scalarB) {
+            return(Tensor$new(data = as.double(tensorA_data * tensorB_data),
+                              dims = integer(0), fast = TRUE))
+        }
+        if (scalarA) {
+            return(Tensor$new(data = as.double(tensorA_data) * as.double(tensorB_data),
+                              dims = as.integer(dimB_full), fast = TRUE))
+        }
+        if (scalarB) {
+            return(Tensor$new(data = as.double(tensorA_data) * as.double(tensorB_data),
+                              dims = as.integer(dimA_full), fast = TRUE))
+        }
         res_dims <- as.integer(c(dimA_full, dimB_full))
         out_data <- as.double(outer(tensorA_data, tensorB_data))
         dim(out_data) <- res_dims
         return(Tensor$new(data = out_data, dims = res_dims, fast = TRUE))
     }
+
+    if (scalarA) dimA_full <- length(tensorA_data)
+    if (scalarB) dimB_full <- length(tensorB_data)
 
     if (is.null(dimsA) || is.null(dimsB)) stop("Both dimsA and dimsB must be specified for contracted product.")
 
