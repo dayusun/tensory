@@ -40,15 +40,19 @@ The package also exports `Tenmat` (matricization), `KTensor` (Kruskal/CP), and `
 - `ttt` (tensor-times-tensor) is deliberately R-level: it uses `reshape` + `permute` + `%*%`. A prior C++ `xt::linalg::tensordot` prototype was up to 18× slower than R's native `aperm` + BLAS path, so the R implementation is the correct one. Do not rewrite `ttt` in C++ without benchmarks proving a win on representative shapes — see `doc/lesson.md` for the full reasoning.
 - All other dense helpers (`mttkrp`, `contract`, `mask`, `nvecs`, `symmetrize`, `fibers`, etc.) currently live in `R/tensor_dense_methods.R`. The architecture doc identifies these as future C++ candidates *if* benchmarks justify it; do not move them speculatively.
 
-### `ttm` C++ kernel — zero-copy slice strategy
+### `ttm` C++ kernel — current vs. target
 
-`src/tensor_ttm.cpp` deliberately avoids tensor transposes. It conceptually flattens the tensor to `M1 × Ik × M2` (where `Ik` is the contracted mode) and exploits R's column-major layout so the `M1 × Ik` block is contiguous for each `M2` slice. Three paths exist:
+`src/tensor_ttm.cpp` currently does extract → single `dgemm` → scatter:
 
-- Mode 1 (`M1 == 1`): single `dgemm` over the whole flattened tensor. Do not loop.
-- Mode 2 / middle modes: loop over `M2`, call `dgemm` per slice with `B^T`.
-- Mode N / `M2 == 1` with large `M1` (`> 2000`): explicit cache-tiling loop chunking `M1` in 512-row blocks to keep working set inside L3. Removing this tiling regresses big tensors by 30–40%.
+1. Gather every contracted-mode fiber into a contiguous `Ik × rest` buffer (`x_mat`).
+2. One `dgemm` call producing the `J × rest` result buffer (`y_mat`).
+3. Scatter back into the result tensor with the contracted dim in its original position.
 
-When editing this file, preserve the three-branch structure and the `M2 == 1 && M1 > 2000` tiling check. The threshold and block size are tuned empirically.
+This is **not** zero-copy — there are two intermediate copies plus the `xt::xarray` → `xt::rarray` allocation. Before adding optimizations, benchmark first; the current single-shot dgemm is straightforward and correct.
+
+`doc/lesson.md` describes the *target* design (per-`M2` slice loop, mode-1 single-shot fast path, `M2 == 1 && M1 > 2000` cache-tiled branch with 512-row blocks). That target is not yet in the code — treat lesson.md as design intent, not implementation reference. If you implement the slice loop, preserve the lesson's three-branch structure (mode-1 fast path, middle-mode loop, mode-N cache-tiled).
+
+`dgemm` is invoked with `transa = "T"|"N"` driven by `transpose`, `transb = "N"`, leading dims `lda = transpose ? Ik : J`, `ldb = Ik`, `ldc = J`. There is an explicit `INT_MAX` guard before casting `size_t` extents to the BLAS `int` parameters — keep it when refactoring.
 
 ### xtensor integration
 
