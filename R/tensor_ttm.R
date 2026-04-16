@@ -219,7 +219,6 @@
 #' }
 #'
 #' @export
-#' @export
 ttm <- function(tensor, matrix, mode = NULL, transpose = FALSE) {
   if (inherits(tensor, "TTensor")) {
     return(.ttm_tucker(tensor, matrix, mode, transpose))
