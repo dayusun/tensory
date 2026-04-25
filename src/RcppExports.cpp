@@ -11,6 +11,32 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// khatri_rao_pair_cpp
+NumericMatrix khatri_rao_pair_cpp(const NumericMatrix& A, const NumericMatrix& B, bool reverse);
+RcppExport SEXP _tensory_khatri_rao_pair_cpp(SEXP ASEXP, SEXP BSEXP, SEXP reverseSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type A(ASEXP);
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type B(BSEXP);
+    Rcpp::traits::input_parameter< bool >::type reverse(reverseSEXP);
+    rcpp_result_gen = Rcpp::wrap(khatri_rao_pair_cpp(A, B, reverse));
+    return rcpp_result_gen;
+END_RCPP
+}
+// mttkrp_blas_cpp
+NumericMatrix mttkrp_blas_cpp(const xt::rarray<double>& tensor_data, const List& factors, int mode);
+RcppExport SEXP _tensory_mttkrp_blas_cpp(SEXP tensor_dataSEXP, SEXP factorsSEXP, SEXP modeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const xt::rarray<double>& >::type tensor_data(tensor_dataSEXP);
+    Rcpp::traits::input_parameter< const List& >::type factors(factorsSEXP);
+    Rcpp::traits::input_parameter< int >::type mode(modeSEXP);
+    rcpp_result_gen = Rcpp::wrap(mttkrp_blas_cpp(tensor_data, factors, mode));
+    return rcpp_result_gen;
+END_RCPP
+}
 // mttkrp_cpp
 NumericMatrix mttkrp_cpp(const xt::rarray<double>& tensor_data, const List& factors, int mode);
 RcppExport SEXP _tensory_mttkrp_cpp(SEXP tensor_dataSEXP, SEXP factorsSEXP, SEXP modeSEXP) {
@@ -116,6 +142,8 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_tensory_khatri_rao_pair_cpp", (DL_FUNC) &_tensory_khatri_rao_pair_cpp, 3},
+    {"_tensory_mttkrp_blas_cpp", (DL_FUNC) &_tensory_mttkrp_blas_cpp, 3},
     {"_tensory_mttkrp_cpp", (DL_FUNC) &_tensory_mttkrp_cpp, 3},
     {"_tensory_mttkrps_cpp", (DL_FUNC) &_tensory_mttkrps_cpp, 2},
     {"_tensory_fibers_cpp", (DL_FUNC) &_tensory_fibers_cpp, 3},

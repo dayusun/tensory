@@ -12,10 +12,11 @@ Description: Provides dense and decomposed tensor classes for R together with
     performance.
 License: MIT + file LICENSE
 Encoding: UTF-8
-SystemRequirements: C++17
-Imports: 
+SystemRequirements: C++20
+Imports:
     R6,
     Rcpp,
+    stats,
     utils
 Roxygen: list(markdown = TRUE)
 LinkingTo: Rcpp 
@@ -27,14 +28,16 @@ Suggests:
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 VignetteBuilder: knitr
-Collate: 
+Collate:
     'RcppExports.R'
-    'ktensor_class.R'
-    'tenmat_class.R'
-    'tensor_class.R'
     'tensor_dense_methods.R'
+    'ktensor_class.R'
+    'tensor_class.R'
+    'cp_decomposition.R'
+    'tenmat_class.R'
     'tensor_operations.R'
     'tensor_ttm.R'
     'tensor_ttt.R'
     'tensory-package.R'
     'ttensor_class.R'
+    'tucker_decomposition.R'

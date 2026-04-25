@@ -39,20 +39,20 @@ khatri_rao.matrix <- function(x, y, reverse = FALSE, ...) {
     stop("Matrices must have the same number of columns.")
   }
 
+  if (exists("khatri_rao_pair_cpp", mode = "function")) {
+    if (storage.mode(x) != "double") storage.mode(x) <- "double"
+    if (storage.mode(y) != "double") storage.mode(y) <- "double"
+    return(khatri_rao_pair_cpp(x, y, reverse))
+  }
+
   J <- ncol(x)
   I <- nrow(x)
   K <- nrow(y)
 
   if (reverse) {
-    # y (K x J) Khatri-Rao x (I x J) = (K*I) x J
-    # For each column j, kron(y[,j], x[,j])
-    # x is duplicated K times, y elements are repeated I times
     ret <- matrix(0, nrow = I * K, ncol = J)
-    # R subset recycling happens efficiently
     ret[] <- x[rep(1:I, times = K), ] * y[rep(1:K, each = I), ]
   } else {
-    # x (I x J) Khatri-Rao y (K x J) = (I*K) x J
-    # x elements repeated K times, y is duplicated I times
     ret <- matrix(0, nrow = I * K, ncol = J)
     ret[] <- y[rep(1:K, times = I), ] * x[rep(1:I, each = K), ]
   }

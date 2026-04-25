@@ -372,6 +372,10 @@ mttkrp.Tensor <- function(x, U, mode, ...) {
     stop("mttkrp is invalid for tensors with fewer than 2 dimensions.")
   }
 
+  if (exists("mttkrp_blas_cpp", mode = "function")) {
+    return(mttkrp_blas_cpp(x$data, U, as.integer(mode)))
+  }
+
   if (exists("mttkrp_cpp", mode = "function")) {
     return(mttkrp_cpp(x$data, U, as.integer(mode)))
   }
