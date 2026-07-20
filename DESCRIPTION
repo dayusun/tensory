@@ -52,6 +52,7 @@ Collate:
     'tensor_ttm.R'
     'tensor_ttt.R'
     'tensory-package.R'
+    'tepls.R'
     'ttensor_methods.R'
     'tucker_decomposition.R'
 Config/roxygen2/version: 8.0.0
