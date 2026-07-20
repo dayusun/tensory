@@ -15,7 +15,7 @@ R package built with roxygen2 + Rcpp + testthat 3.
 - Build vignettes: `R -e 'devtools::build_vignettes()'`
 - Re-vendor xtensor / xtl / xsimd / xtensor-blas headers into `inst/include/` from upstream tags: `bash inst/tools/vendor` (only needed when bumping pinned versions inside that script; xtensor-r is intentionally not re-fetched there)
 
-The C++ kernels require a C++20 compiler. `src/Makevars` sets `CXX_STD = CXX20` plus `-O3 -march=native`; if a contributor's toolchain rejects `-march=native`, edit `Makevars` rather than overriding globally.
+The C++ kernels require a C++20 compiler. `src/Makevars` sets `CXX_STD = CXX20` plus `-funroll-loops` (optimization level comes from R's default flags, typically `-O2`). Note `pkgbuild::compile_dll()` defaults to a `-O0` debug build — pass `debug = FALSE` before benchmarking.
 
 ## Architecture
 
@@ -28,17 +28,35 @@ Public dense object is the R6 class `Tensor` (`R/tensor_class.R`) holding `$data
 
 `Tensor$new(..., fast = TRUE)` is an internal fast-path constructor that skips validation. Use it from kernels that already know shapes are correct; never expose it through public API.
 
-The package also exports `Tenmat` (matricization), `KTensor` (Kruskal/CP), and `TTensor` (Tucker), each with their own R6 class file and an `as.tensor()` method that materializes back to a dense `Tensor`. Conversion goes through `as.tensor.<class>()` S3 methods declared in `NAMESPACE`.
+The package also exports `Tenmat` (matricization), `KTensor` (Kruskal/CP), `TTensor` (Tucker), `Sptensor` (sparse, subscript/value storage) + `Sptenmat`, `SymTensor` (compact symmetric storage), `SymKTensor` (symmetric CP), and `SumTensor` (lazy sum of parts), each with their own R6 class file and an `as.tensor()` method that materializes back to a dense `Tensor`. Conversion goes through `as.tensor.<class>()` S3 methods declared in `NAMESPACE`.
+
+`ktensor()`/`ttensor()`/`sptensor()`/`sumtensor()` prepend their own class **before** `"Tensor"` in the S3 class vector. This is deliberate: specialized methods (e.g. `fnorm.KTensor`, `mttkrp.Sptensor`) win dispatch, while the `"Tensor"` operators serve as the shared entry point for mixed arithmetic — `+.Tensor` etc. branch on `Sptensor`/`SumTensor` operands (sparse-preserving fast paths live in `.sptensor_arith`; `SumTensor` appends parts). Never give these classes their own S3 arithmetic methods: two *different* methods on the two operands of a binary op is an "incompatible methods" error in R, which is exactly what the shared-`Tensor`-method design avoids.
+
+Structured (non-densifying) implementations exist for `fnorm`/`innerprod`/`nvecs`/`permute` on `KTensor` and `TTensor`, and for `fnorm`/`innerprod`/`mttkrp`/`nvecs`/`ttv`/`ttm`/`collapse`/`permute` on `Sptensor` (`.ttm_sparse` in `R/sptensor_methods.R` is dispatched from the `ttm()` generic). `cp_als` accepts an `Sptensor` natively and never densifies. When adding a new reduction, add the structured method rather than relying on the dense fallback.
 
 `DESCRIPTION` has a `Collate:` field — class files load before method files, and `tensor_operations.R` depends on the class definitions. If you add a new R file, append it to `Collate` (or rerun `devtools::document()` which will not reorder the existing list).
 
-### R / C++ split is intentional and asymmetric
+### R / C++ split and the fallback-dispatch pattern
 
-`doc/architecture.md` is the authoritative design doc. The current split:
+`doc/architecture.md` is the authoritative design doc. The split:
 
-- `ttm` (tensor-times-matrix) is the only operation with a compiled kernel — `src/tensor_ttm.cpp`, dispatched from `R/tensor_ttm.R`.
-- `ttt` (tensor-times-tensor) is deliberately R-level: it uses `reshape` + `permute` + `%*%`. A prior C++ `xt::linalg::tensordot` prototype was up to 18× slower than R's native `aperm` + BLAS path, so the R implementation is the correct one. Do not rewrite `ttt` in C++ without benchmarks proving a win on representative shapes — see `doc/lesson.md` for the full reasoning.
-- All other dense helpers (`mttkrp`, `contract`, `mask`, `nvecs`, `symmetrize`, `fibers`, etc.) currently live in `R/tensor_dense_methods.R`. The architecture doc identifies these as future C++ candidates *if* benchmarks justify it; do not move them speculatively.
+- Compiled kernels live in three `.cpp` files: `src/tensor_ttm.cpp` (`ttm_cpp`, `ttm_multiple_cpp`), `src/tensor_dense.cpp` (`mttkrp_cpp`, `mttkrps_cpp`, `fibers_cpp`, `contract_cpp`, `mask_cpp`, `issymmetric_cpp`), and `src/tensor_decomposition.cpp` (`khatri_rao_pair_cpp`, `mttkrp_blas_cpp`). Every kernel takes tensor storage as `xt::rarray<double>` wrapping R's SEXP.
+- **Every C++ kernel is optional.** The R method keeps a full pure-R implementation and delegates only when the compiled symbol is present, guarded by `if (exists("<fn>_cpp", mode = "function")) return(<fn>_cpp(...))` before the R fallback (see `R/tensor_dense_methods.R`, `R/tensor_ttm.R`, `R/tensor_operations.R`). When editing either side, keep the two paths behaviorally identical — tests run against whichever is compiled. `mttkrp` tries `mttkrp_blas_cpp` first, then `mttkrp_cpp`, then R.
+- `ttt` (tensor-times-tensor) is deliberately R-only: it uses `reshape` + `permute` + `%*%`. A prior C++ `xt::linalg::tensordot` prototype was up to 18× slower than R's native `aperm` + BLAS path, so the R implementation is the correct one. Do not rewrite `ttt` in C++ without benchmarks proving a win on representative shapes — see `doc/lesson.md`.
+- `nvecs`, `symmetrize`, and the arithmetic/operator methods remain R-only in `R/tensor_dense_methods.R` / `R/tensor_operations.R` — future C++ candidates only *if* benchmarks justify it; do not move them speculatively.
+
+### Decomposition layer
+
+`cp_als` (`R/cp_decomposition.R`), `tucker_als` + `hosvd` (`R/tucker_decomposition.R`) are R-level ALS/HOSVD drivers that call the `mttkrp`/`ttm`/`nvecs` methods (so they inherit the C++ acceleration transparently). They return `KTensor` / `TTensor` objects. `cp_als` uses `.pinv` (SVD-based pseudoinverse) and `.fixsigns_cp` for sign convention; keep the Khatri–Rao product order consistent with `mttkrp`'s mode convention when touching these.
+
+Further algorithms (all R-level, all riding on the accelerated primitives):
+
+- `R/cp_variants.R` — `cp_nmu` (nonneg multiplicative updates), `cp_apr` (Poisson CP, Chi–Kolda MU), `cp_opt`/`cp_wopt` (L-BFGS-B on the exact gradient; `cp_wopt` handles missing data via a weight tensor), `cp_arls` (uniformly sampled ALS using `fibers()`; deliberately no FFT mixing — documented divergence from MATLAB). Shared helpers: `.kr_others` (skip-mode Khatri–Rao whose row order matches `unfold(x, rdims = n)` columns — tested against `mttkrp`), `.cp_fit`, `.factors_to_vec`/`.vec_to_factors`.
+- `R/cp_sym.R` — `cp_sym` (symmetric CP via exact `ttsv`-based gradients, returns `SymKTensor`), `tucker_sym` (shared-subspace HOOI).
+- `R/gcp_opt.R` — `gcp_opt` with a loss catalog (gaussian, poisson, poisson-log, bernoulli-odds/logit, rayleigh, gamma, huber, or custom `list(f, g, lower)`).
+- `R/tensor_eigen.R` — `eig_sshopm` (adaptive SS-HOPM) and `eig_geap` (generalized eigenpairs), implemented from Kolda & Mayo (2014) Algorithms 1–2 including the exact eq. (3.3) Hessian; `ttsv(A, x, -2)` supplies `A x^{m-2}`. The Kofidis–Regalia benchmark in `test-eigen.R` pins the known eigenvalues.
+- `R/tensor_constructors.R` — `tenrand`, `teneye` (built as `symmetrize` of a delta-product tensor; property-tested via `ttsv`), `tendiag`, and `export_data`/`import_data` (MATLAB Tensor Toolbox text format).
+- KTensor post-fit utilities in `R/ktensor_methods.R`: `arrange`, `normalize`, `fixsigns`, `score` (greedy factor-match), `ncomponents`, `extract`, `redistribute`, `tovec`, `viz`.
 
 ### `ttm` C++ kernel — current vs. target
 
