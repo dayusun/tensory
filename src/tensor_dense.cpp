@@ -101,6 +101,9 @@ NumericMatrix mttkrp_cpp(const xt::rarray<double>& tensor_data, const List& fact
   if (n_dim < 2) {
     stop("mttkrp is invalid for tensors with fewer than 2 dimensions.");
   }
+  if (skip >= n_dim) {
+    stop("mode is out of bounds for the tensor order");
+  }
   if (factors.size() != static_cast<R_xlen_t>(n_dim)) {
     stop("factors must have the same length as the tensor order.");
   }
@@ -210,9 +213,33 @@ NumericVector mask_cpp(const xt::rarray<double>& tensor_data, const xt::rarray<d
   std::vector<double> out;
   out.reserve(total);
 
+  if (mask_dims == dims) {
+    // Same shape: mask and tensor share a linear index.
+    for (std::size_t i = 0; i < total; ++i) {
+      if (mask_ptr[i] != 0.0) {
+        out.push_back(data_ptr[i]);
+      }
+    }
+    return wrap(out);
+  }
+
+  // Smaller mask: a mask subscript must be re-encoded with the tensor's
+  // strides, matching the R fallback's find() + sub2ind path.
+  if (mask_dims.size() != dims.size()) {
+    stop("mask must have the same number of modes as the data tensor");
+  }
+  for (std::size_t k = 0; k < dims.size(); ++k) {
+    if (mask_dims[k] > dims[k]) {
+      stop("Mask cannot be bigger than the data tensor.");
+    }
+  }
+
+  const auto mask_strides = column_major_strides(mask_dims);
+  const auto strides = column_major_strides(dims);
   for (std::size_t i = 0; i < total; ++i) {
     if (mask_ptr[i] != 0.0) {
-      out.push_back(data_ptr[i]);
+      const std::vector<std::size_t> coord = decode_linear_index(i, mask_dims, mask_strides);
+      out.push_back(data_ptr[encode_linear_index(coord, strides)]);
     }
   }
 

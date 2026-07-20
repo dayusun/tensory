@@ -69,11 +69,12 @@ NumericMatrix khatri_rao_pair_cpp(const NumericMatrix &A,
   if (B.ncol() != R) {
     stop("Matrices must have the same number of columns.");
   }
-  NumericMatrix out(static_cast<R_xlen_t>(I) * K, R);
+  const std::size_t IK = static_cast<std::size_t>(I) * K;
+  check_blas_int(IK); // R matrix dims are int; a wrapped row count would corrupt the heap
+  NumericMatrix out(static_cast<int>(IK), R);
   const double *a_ptr = REAL(A);
   const double *b_ptr = REAL(B);
   double *o_ptr = REAL(out);
-  const std::size_t IK = static_cast<std::size_t>(I) * K;
 
   if (reverse) {
     // out row layout: (k slow, i fast) — i.e. kron(B[:,r], A[:,r])
@@ -125,11 +126,16 @@ NumericMatrix build_mttkrp_kr(const List &factors, std::size_t skip,
   const std::size_t P = product_dims(other_dims);
   NumericMatrix Z(static_cast<R_xlen_t>(P), R);
 
+  // Keep the (possibly coerced) factor matrices alive for the whole build:
+  // as<NumericMatrix> allocates a fresh SEXP when a factor is not REALSXP,
+  // and a loop-local NumericMatrix would leave mat_ptrs dangling.
+  std::vector<NumericMatrix> mats;
+  mats.reserve(N - 1);
   std::vector<const double *> mat_ptrs(N, nullptr);
   for (std::size_t k = 0; k < N; ++k) {
     if (k == skip) continue;
-    NumericMatrix Uk = as<NumericMatrix>(factors[k]);
-    mat_ptrs[k] = REAL(Uk);
+    mats.push_back(as<NumericMatrix>(factors[k]));
+    mat_ptrs[k] = REAL(mats.back());
   }
 
   double *z_ptr = REAL(Z);
@@ -196,7 +202,17 @@ NumericMatrix mttkrp_blas_cpp(const xt::rarray<double> &tensor_data,
 
   const std::size_t In = dims[skip];
   const std::size_t total = product_dims(dims);
+  if (total == 0) {
+    // Zero-extent tensor: the unfolding is empty, so V is all zeros
+    // (and In may itself be 0 — guard the division below).
+    return NumericMatrix(static_cast<int>(In), R);
+  }
   const std::size_t P = total / In;
+
+  // Validate BLAS int extents before any allocation narrows them.
+  check_blas_int(In);
+  check_blas_int(P);
+  check_blas_int(static_cast<std::size_t>(R));
 
   const auto strides = column_major_strides_dec(dims);
   const double *data_ptr = tensor_data.data();
@@ -238,10 +254,6 @@ NumericMatrix mttkrp_blas_cpp(const xt::rarray<double> &tensor_data,
   NumericMatrix Z = build_mttkrp_kr(factors, skip, N, R, dims);
 
   NumericMatrix V(static_cast<R_xlen_t>(In), R);
-
-  check_blas_int(In);
-  check_blas_int(P);
-  check_blas_int(static_cast<std::size_t>(R));
 
   const char *transa = "N";
   const char *transb = "N";

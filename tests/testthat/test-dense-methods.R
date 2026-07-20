@@ -94,6 +94,21 @@ test_that("mttkrp matches a direct column-wise contraction", {
   expect_equal(actual, expected)
 })
 
+test_that("mttkrp accepts integer-storage factor matrices", {
+  x <- tensor(array(1:8, dim = c(2, 2, 2)))
+  U_int <- list(
+    matrix(1:4, nrow = 2),
+    matrix(2:5, nrow = 2),
+    matrix(3:6, nrow = 2)
+  )
+  U_dbl <- lapply(U_int, function(m) {
+    storage.mode(m) <- "double"
+    m
+  })
+
+  expect_equal(mttkrp(x, U_int, mode = 2), mttkrp(x, U_dbl, mode = 2))
+})
+
 test_that("mttkrps returns the full sequence of mode products", {
   x <- tensor(array(1:8, dim = c(2, 2, 2)))
   U <- list(
@@ -122,6 +137,22 @@ test_that("mask extracts values at nonzero mask positions", {
   w <- tensor(array(c(1, 0, 0, 1, 0, 0, 1, 0), dim = c(2, 2, 2)))
 
   expect_equal(mask(x, w), c(1, 4, 7))
+})
+
+test_that("mask maps subscripts correctly when the mask is smaller than x", {
+  x <- tensor(array(1:9, dim = c(3, 3)))
+  w <- tensor(array(1, dim = c(2, 2)))
+
+  # mask subscripts (1,1),(2,1),(1,2),(2,2) index into the 3x3 tensor
+  expect_equal(mask(x, w), c(1, 2, 4, 5))
+
+  x3 <- tensor(array(1:24, dim = c(2, 3, 4)))
+  w3 <- tensor(array(c(1, 0, 0, 1), dim = c(1, 2, 2)))
+  subs <- rbind(c(1L, 1L, 1L), c(1L, 2L, 2L))
+  expected <- vapply(seq_len(nrow(subs)),
+                     function(i) x3$as_array()[subs[i, 1], subs[i, 2], subs[i, 3]],
+                     numeric(1))
+  expect_equal(mask(x3, w3), expected)
 })
 
 test_that("fibers extracts requested mode-k fibers", {
