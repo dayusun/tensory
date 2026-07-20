@@ -2,10 +2,24 @@
 % Please edit documentation in R/tensor_class.R
 \name{Tensor}
 \alias{Tensor}
+\alias{tensor}
 \title{R6 Tensor Class}
+\usage{
+tensor(data, dims = NULL)
+}
+\arguments{
+\item{data}{A vector, matrix, array, or numeric value}
+
+\item{dims}{The dimensions of the tensor. If NULL, inferred from data}
+}
+\value{
+A new Tensor object
+}
 \description{
 A modern tensor class for R that provides MATLAB Tensor Toolbox compatibility
 with high-performance operations via xtensor C++ backend.
+
+Convenience function to create a Tensor object
 }
 \examples{
 # Create a tensor from a matrix
@@ -24,694 +38,772 @@ t5 <- t2 * 2
 t6 <- 5 - t2
 t7 <- t2 / 3
 
+# Create a tensor from an array
+t1 <- tensor(array(1:24, dim = c(3, 4, 2)))
+
+# Create a tensor by specifying dimensions
+t2 <- tensor(1:24, dims = c(3, 4, 2))
+
+# Create a tensor filled with a single value
+t3 <- tensor(0, dims = c(3, 4, 2))
+
 }
 \section{Public fields}{
-\if{html}{\out{<div class="r6-fields">}}
-\describe{
-\item{\code{data}}{The underlying array data}
+  \if{html}{\out{<div class="r6-fields">}}
+  \describe{
+    \item{\code{data}}{The underlying array data}
 
-\item{\code{dims}}{The dimensions of the tensor
+    \item{\code{dims}}{The dimensions of the tensor
 Initialize a new tensor}
-}
-\if{html}{\out{</div>}}
+  }
+  \if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{
-\itemize{
-\item \href{#method-Tensor-new}{\code{Tensor$new()}}
-\item \href{#method-Tensor-dim}{\code{Tensor$dim()}}
-\item \href{#method-Tensor-length}{\code{Tensor$length()}}
-\item \href{#method-Tensor-ndims}{\code{Tensor$ndims()}}
-\item \href{#method-Tensor-as_array}{\code{Tensor$as_array()}}
-\item \href{#method-Tensor-print}{\code{Tensor$print()}}
-\item \href{#method-Tensor-show}{\code{Tensor$show()}}
-\item \href{#method-Tensor-clone_tensor}{\code{Tensor$clone_tensor()}}
-\item \href{#method-Tensor-reshape}{\code{Tensor$reshape()}}
-\item \href{#method-Tensor-squeeze}{\code{Tensor$squeeze()}}
-\item \href{#method-Tensor-permute}{\code{Tensor$permute()}}
-\item \href{#method-Tensor-nnz}{\code{Tensor$nnz()}}
-\item \href{#method-Tensor-find}{\code{Tensor$find()}}
-\item \href{#method-Tensor-vec}{\code{Tensor$vec()}}
-\item \href{#method-Tensor-add}{\code{Tensor$add()}}
-\item \href{#method-Tensor-subtract}{\code{Tensor$subtract()}}
-\item \href{#method-Tensor-multiply}{\code{Tensor$multiply()}}
-\item \href{#method-Tensor-divide}{\code{Tensor$divide()}}
-\item \href{#method-Tensor-modulo}{\code{Tensor$modulo()}}
-\item \href{#method-Tensor-integer_divide}{\code{Tensor$integer_divide()}}
-\item \href{#method-Tensor-power}{\code{Tensor$power()}}
-\item \href{#method-Tensor-equal}{\code{Tensor$equal()}}
-\item \href{#method-Tensor-not_equal}{\code{Tensor$not_equal()}}
-\item \href{#method-Tensor-less_than}{\code{Tensor$less_than()}}
-\item \href{#method-Tensor-less_equal}{\code{Tensor$less_equal()}}
-\item \href{#method-Tensor-greater_than}{\code{Tensor$greater_than()}}
-\item \href{#method-Tensor-greater_equal}{\code{Tensor$greater_equal()}}
-\item \href{#method-Tensor-logical_not}{\code{Tensor$logical_not()}}
-\item \href{#method-Tensor-logical_and}{\code{Tensor$logical_and()}}
-\item \href{#method-Tensor-logical_or}{\code{Tensor$logical_or()}}
-\item \href{#method-Tensor-sum}{\code{Tensor$sum()}}
-\item \href{#method-Tensor-khatri_rao}{\code{Tensor$khatri_rao()}}
-\item \href{#method-Tensor-kronecker}{\code{Tensor$kronecker()}}
-\item \href{#method-Tensor-hadamard}{\code{Tensor$hadamard()}}
-\item \href{#method-Tensor-fnorm}{\code{Tensor$fnorm()}}
-\item \href{#method-Tensor-clone}{\code{Tensor$clone()}}
-}
+  \itemize{
+    \item \href{#method-Tensor-initialize}{\code{Tensor$new()}}
+    \item \href{#method-Tensor-dim}{\code{Tensor$dim()}}
+    \item \href{#method-Tensor-length}{\code{Tensor$length()}}
+    \item \href{#method-Tensor-ndims}{\code{Tensor$ndims()}}
+    \item \href{#method-Tensor-as_array}{\code{Tensor$as_array()}}
+    \item \href{#method-Tensor-print}{\code{Tensor$print()}}
+    \item \href{#method-Tensor-show}{\code{Tensor$show()}}
+    \item \href{#method-Tensor-clone_tensor}{\code{Tensor$clone_tensor()}}
+    \item \href{#method-Tensor-reshape}{\code{Tensor$reshape()}}
+    \item \href{#method-Tensor-squeeze}{\code{Tensor$squeeze()}}
+    \item \href{#method-Tensor-permute}{\code{Tensor$permute()}}
+    \item \href{#method-Tensor-nnz}{\code{Tensor$nnz()}}
+    \item \href{#method-Tensor-find}{\code{Tensor$find()}}
+    \item \href{#method-Tensor-vec}{\code{Tensor$vec()}}
+    \item \href{#method-Tensor-add}{\code{Tensor$add()}}
+    \item \href{#method-Tensor-subtract}{\code{Tensor$subtract()}}
+    \item \href{#method-Tensor-multiply}{\code{Tensor$multiply()}}
+    \item \href{#method-Tensor-divide}{\code{Tensor$divide()}}
+    \item \href{#method-Tensor-modulo}{\code{Tensor$modulo()}}
+    \item \href{#method-Tensor-integer_divide}{\code{Tensor$integer_divide()}}
+    \item \href{#method-Tensor-power}{\code{Tensor$power()}}
+    \item \href{#method-Tensor-equal}{\code{Tensor$equal()}}
+    \item \href{#method-Tensor-not_equal}{\code{Tensor$not_equal()}}
+    \item \href{#method-Tensor-less_than}{\code{Tensor$less_than()}}
+    \item \href{#method-Tensor-less_equal}{\code{Tensor$less_equal()}}
+    \item \href{#method-Tensor-greater_than}{\code{Tensor$greater_than()}}
+    \item \href{#method-Tensor-greater_equal}{\code{Tensor$greater_equal()}}
+    \item \href{#method-Tensor-logical_not}{\code{Tensor$logical_not()}}
+    \item \href{#method-Tensor-logical_and}{\code{Tensor$logical_and()}}
+    \item \href{#method-Tensor-logical_or}{\code{Tensor$logical_or()}}
+    \item \href{#method-Tensor-sum}{\code{Tensor$sum()}}
+    \item \href{#method-Tensor-khatri_rao}{\code{Tensor$khatri_rao()}}
+    \item \href{#method-Tensor-kronecker}{\code{Tensor$kronecker()}}
+    \item \href{#method-Tensor-hadamard}{\code{Tensor$hadamard()}}
+    \item \href{#method-Tensor-fnorm}{\code{Tensor$fnorm()}}
+    \item \href{#method-Tensor-clone}{\code{Tensor$clone()}}
+  }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Tensor-new"></a>}}
-\if{latex}{\out{\hypertarget{method-Tensor-new}{}}}
-\subsection{Method \code{new()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$new(data = NULL, dims = NULL, fast = FALSE)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{data}}{A vector, matrix, array, or numeric value}
-
-\item{\code{dims}}{The dimensions of the tensor. If NULL, inferred from data}
-
-\item{\code{fast}}{If TRUE, bypasses all checks. Used internally for performance.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-A new Tensor object
+\if{html}{\out{<a id="method-Tensor-initialize"></a>}}
+\if{latex}{\out{\hypertarget{method-Tensor-initialize}{}}}
+\subsection{\code{Tensor$new()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$new(data = NULL, dims = NULL, fast = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{data}}{A vector, matrix, array, or numeric value}
+      \item{\code{dims}}{The dimensions of the tensor. If NULL, inferred from data}
+      \item{\code{fast}}{If TRUE, bypasses all checks. Used internally for performance.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A new Tensor object
 Get tensor dimensions
+  }
 }
-}
+
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-dim"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-dim}{}}}
-\subsection{Method \code{dim()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$dim()}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$dim()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$dim()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Integer vector of dimensions
+Get number of elements
+  }
 }
 
-\subsection{Returns}{
-Integer vector of dimensions
-Get number of elements
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-length"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-length}{}}}
-\subsection{Method \code{length()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$length()}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$length()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$length()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Integer number of elements
+Get number of dimensions
+  }
 }
 
-\subsection{Returns}{
-Integer number of elements
-Get number of dimensions
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-ndims"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-ndims}{}}}
-\subsection{Method \code{ndims()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$ndims()}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$ndims()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$ndims()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Integer number of dimensions
+Convert to R array
+  }
 }
 
-\subsection{Returns}{
-Integer number of dimensions
-Convert to R array
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-as_array"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-as_array}{}}}
-\subsection{Method \code{as_array()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$as_array()}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$as_array()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$as_array()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    R array representation
+Print tensor information
+  }
 }
 
-\subsection{Returns}{
-R array representation
-Print tensor information
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-print"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-print}{}}}
-\subsection{Method \code{print()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$print()}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$print()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$print()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Invisible self
+Show tensor (alias for print)
+  }
 }
 
-\subsection{Returns}{
-Invisible self
-Show tensor (alias for print)
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-show"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-show}{}}}
-\subsection{Method \code{show()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$show()}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$show()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$show()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Invisible self
+Clone the tensor
+  }
 }
 
-\subsection{Returns}{
-Invisible self
-Clone the tensor
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-clone_tensor"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-clone_tensor}{}}}
-\subsection{Method \code{clone_tensor()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$clone_tensor()}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$clone_tensor()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$clone_tensor()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A new Tensor object with copied data
+Reshape the tensor
+  }
 }
 
-\subsection{Returns}{
-A new Tensor object with copied data
-Reshape the tensor
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-reshape"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-reshape}{}}}
-\subsection{Method \code{reshape()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$reshape(new_dims)}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$reshape()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$reshape(new_dims)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{new_dims}}{New dimensions}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Self (in-place operation)
+Squeeze the tensor by removing singleton dimensions
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{new_dims}}{New dimensions}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Self (in-place operation)
-Squeeze the tensor by removing singleton dimensions
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-squeeze"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-squeeze}{}}}
-\subsection{Method \code{squeeze()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$squeeze()}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$squeeze()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$squeeze()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    New Tensor object with singleton dimensions removed
+Permute tensor dimensions
+  }
 }
 
-\subsection{Returns}{
-New Tensor object with singleton dimensions removed
-Permute tensor dimensions
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-permute"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-permute}{}}}
-\subsection{Method \code{permute()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$permute(order)}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$permute()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$permute(order)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{order}}{Permutation order}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    New Tensor object
+Count nonzero entries
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{order}}{Permutation order}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-New Tensor object
-Count nonzero entries
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-nnz"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-nnz}{}}}
-\subsection{Method \code{nnz()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$nnz()}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$nnz()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$nnz()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Integer count
+Find nonzero entries
+  }
 }
 
-\subsection{Returns}{
-Integer count
-Find nonzero entries
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-find"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-find}{}}}
-\subsection{Method \code{find()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$find(values = FALSE)}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$find()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$find(values = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{values}}{Logical; include values if TRUE}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Matrix of subscripts or list with subs and vals
+Vectorize tensor
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{values}}{Logical; include values if TRUE}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Matrix of subscripts or list with subs and vals
-Vectorize tensor
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-vec"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-vec}{}}}
-\subsection{Method \code{vec()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$vec()}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$vec()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$vec()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Numeric vector
+Element-wise addition
+  }
 }
 
-\subsection{Returns}{
-Numeric vector
-Element-wise addition
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-add"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-add}{}}}
-\subsection{Method \code{add()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$add(other)}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$add()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$add(other)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{other}}{Another Tensor or numeric value}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Self (in-place operation)
+Element-wise subtraction
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{other}}{Another Tensor or numeric value}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Self (in-place operation)
-Element-wise subtraction
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-subtract"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-subtract}{}}}
-\subsection{Method \code{subtract()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$subtract(other)}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$subtract()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$subtract(other)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{other}}{Another Tensor or numeric value}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Self (in-place operation)
+Element-wise multiplication
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{other}}{Another Tensor or numeric value}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Self (in-place operation)
-Element-wise multiplication
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-multiply"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-multiply}{}}}
-\subsection{Method \code{multiply()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$multiply(other)}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$multiply()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$multiply(other)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{other}}{Another Tensor or numeric value}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Self (in-place operation)
+Element-wise division
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{other}}{Another Tensor or numeric value}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Self (in-place operation)
-Element-wise division
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-divide"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-divide}{}}}
-\subsection{Method \code{divide()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$divide(other)}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$divide()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$divide(other)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{other}}{Another Tensor or numeric value}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Self (in-place operation)
+Element-wise modulo
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{other}}{Another Tensor or numeric value}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Self (in-place operation)
-Element-wise modulo
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-modulo"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-modulo}{}}}
-\subsection{Method \code{modulo()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$modulo(other)}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$modulo()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$modulo(other)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{other}}{Another Tensor or numeric value}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Self (in-place operation)
+Element-wise integer division
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{other}}{Another Tensor or numeric value}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Self (in-place operation)
-Element-wise integer division
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-integer_divide"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-integer_divide}{}}}
-\subsection{Method \code{integer_divide()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$integer_divide(other)}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$integer_divide()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$integer_divide(other)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{other}}{Another Tensor or numeric value}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Self (in-place operation)
+Element-wise power
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{other}}{Another Tensor or numeric value}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Self (in-place operation)
-Element-wise power
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-power"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-power}{}}}
-\subsection{Method \code{power()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$power(other)}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$power()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$power(other)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{other}}{Another Tensor or numeric value}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Self (in-place operation)
+Element-wise equality comparison
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{other}}{Another Tensor or numeric value}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Self (in-place operation)
-Element-wise equality comparison
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-equal"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-equal}{}}}
-\subsection{Method \code{equal()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$equal(other)}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$equal()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$equal(other)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{other}}{Another Tensor or numeric value}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Self (in-place operation)
+Element-wise inequality comparison
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{other}}{Another Tensor or numeric value}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Self (in-place operation)
-Element-wise inequality comparison
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-not_equal"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-not_equal}{}}}
-\subsection{Method \code{not_equal()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$not_equal(other)}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$not_equal()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$not_equal(other)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{other}}{Another Tensor or numeric value}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Self (in-place operation)
+Element-wise less than comparison
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{other}}{Another Tensor or numeric value}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Self (in-place operation)
-Element-wise less than comparison
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-less_than"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-less_than}{}}}
-\subsection{Method \code{less_than()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$less_than(other)}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$less_than()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$less_than(other)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{other}}{Another Tensor or numeric value}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Self (in-place operation)
+Element-wise less than or equal comparison
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{other}}{Another Tensor or numeric value}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Self (in-place operation)
-Element-wise less than or equal comparison
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-less_equal"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-less_equal}{}}}
-\subsection{Method \code{less_equal()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$less_equal(other)}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$less_equal()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$less_equal(other)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{other}}{Another Tensor or numeric value}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Self (in-place operation)
+Element-wise greater than comparison
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{other}}{Another Tensor or numeric value}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Self (in-place operation)
-Element-wise greater than comparison
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-greater_than"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-greater_than}{}}}
-\subsection{Method \code{greater_than()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$greater_than(other)}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$greater_than()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$greater_than(other)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{other}}{Another Tensor or numeric value}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Self (in-place operation)
+Element-wise greater than or equal comparison
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{other}}{Another Tensor or numeric value}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Self (in-place operation)
-Element-wise greater than or equal comparison
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-greater_equal"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-greater_equal}{}}}
-\subsection{Method \code{greater_equal()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$greater_equal(other)}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$greater_equal()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$greater_equal(other)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{other}}{Another Tensor or numeric value}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Self (in-place operation)
+Element-wise logical NOT
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{other}}{Another Tensor or numeric value}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Self (in-place operation)
-Element-wise logical NOT
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-logical_not"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-logical_not}{}}}
-\subsection{Method \code{logical_not()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$logical_not()}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$logical_not()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$logical_not()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Self (in-place operation)
+Element-wise logical AND
+  }
 }
 
-\subsection{Returns}{
-Self (in-place operation)
-Element-wise logical AND
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-logical_and"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-logical_and}{}}}
-\subsection{Method \code{logical_and()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$logical_and(other)}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$logical_and()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$logical_and(other)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{other}}{Another Tensor or numeric value}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Self (in-place operation)
+Element-wise logical OR
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{other}}{Another Tensor or numeric value}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Self (in-place operation)
-Element-wise logical OR
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-logical_or"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-logical_or}{}}}
-\subsection{Method \code{logical_or()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$logical_or(other)}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$logical_or()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$logical_or(other)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{other}}{Another Tensor or numeric value}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Self (in-place operation)
+Sum along dimensions
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{other}}{Another Tensor or numeric value}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Self (in-place operation)
-Sum along dimensions
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-sum"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-sum}{}}}
-\subsection{Method \code{sum()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$sum(dims = NULL)}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$sum()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$sum(dims = NULL)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{dims}}{Dimensions to sum along (NULL for all)}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    New Tensor with reduced dimensions
+Khatri-Rao product with another Tensor or matrix
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{dims}}{Dimensions to sum along (NULL for all)}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-New Tensor with reduced dimensions
-Khatri-Rao product with another Tensor or matrix
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-khatri_rao"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-khatri_rao}{}}}
-\subsection{Method \code{khatri_rao()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$khatri_rao(other, reverse = FALSE)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{other}}{Another Tensor or matrix}
-
-\item{\code{reverse}}{Logical indicating if reverse product should be computed}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-A matrix representing the Khatri-Rao product
+\subsection{\code{Tensor$khatri_rao()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$khatri_rao(other, reverse = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{other}}{Another Tensor or matrix}
+      \item{\code{reverse}}{Logical indicating if reverse product should be computed}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A matrix representing the Khatri-Rao product
 Kronecker product with another Tensor or matrix
+  }
 }
-}
+
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-kronecker"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-kronecker}{}}}
-\subsection{Method \code{kronecker()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$kronecker(other)}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$kronecker()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$kronecker(other)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{other}}{Another Tensor or matrix}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A new Tensor
+Hadamard (element-wise) product
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{other}}{Another Tensor or matrix}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-A new Tensor
-Hadamard (element-wise) product
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-hadamard"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-hadamard}{}}}
-\subsection{Method \code{hadamard()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$hadamard(other)}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$hadamard()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$hadamard(other)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{other}}{Another Tensor or matrix}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Self (in-place operation)
+Frobenius norm
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{other}}{Another Tensor or matrix}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Self (in-place operation)
-Frobenius norm
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-fnorm"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-fnorm}{}}}
-\subsection{Method \code{fnorm()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$fnorm()}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$fnorm()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$fnorm()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Numeric scalar
+  }
 }
 
-\subsection{Returns}{
-Numeric scalar
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tensor-clone"></a>}}
 \if{latex}{\out{\hypertarget{method-Tensor-clone}{}}}
-\subsection{Method \code{clone()}}{
-The objects of this class are cloneable with this method.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tensor$clone(deep = FALSE)}\if{html}{\out{</div>}}
+\subsection{\code{Tensor$clone()}}{
+  The objects of this class are cloneable with this method.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tensor$clone(deep = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{deep}}{Whether to make a deep clone.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{deep}}{Whether to make a deep clone.}
-}
-\if{html}{\out{</div>}}
-}
-}
 }

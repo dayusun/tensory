@@ -15,6 +15,8 @@ nvecs(x, mode, r = 1, flipsign = TRUE, ...)
 
 \item{flipsign}{Logical; if \code{TRUE}, flip signs so the largest-magnitude
 entry in each column is positive.}
+
+\item{...}{Additional arguments passed to methods.}
 }
 \value{
 A matrix whose columns are the leading mode-n vectors.

@@ -8,6 +8,8 @@ nnz(x, ...)
 }
 \arguments{
 \item{x}{A tensor-like object.}
+
+\item{...}{Additional arguments passed to methods.}
 }
 \value{
 Integer count of nonzero entries.

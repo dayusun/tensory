@@ -29,7 +29,7 @@ NULL
   if (!is.null(tol)) {
     return(NULL)
   }
-  pmin(dims, as.integer(dims))
+  dims
 }
 
 #' Higher-Order Singular Value Decomposition

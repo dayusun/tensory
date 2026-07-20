@@ -13,6 +13,8 @@ fibers(x, mode, midx, ...)
 
 \item{midx}{Matrix with one row per requested fiber and \code{ndims(x) - 1}
 columns containing the fixed indices for the other modes.}
+
+\item{...}{Additional arguments passed to methods.}
 }
 \value{
 A matrix of size \verb{dim(x)[mode] x nrow(midx)}.

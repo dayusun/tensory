@@ -10,3 +10,6 @@
 ^Read-and-delete-me$
 ^doc$
 ^Meta$
+^\.claude$
+^CLAUDE\.md$
+^THIRD_PARTY_NOTICES\.md$

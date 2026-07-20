@@ -8,6 +8,8 @@ isscalar(x, ...)
 }
 \arguments{
 \item{x}{An object.}
+
+\item{...}{Additional arguments passed to methods.}
 }
 \value{
 Logical scalar.

@@ -2,9 +2,12 @@
 % Please edit documentation in R/tensor_operations.R
 \name{collapse}
 \alias{collapse}
+\alias{collapse.Tensor}
 \title{Collapse Tensor}
 \usage{
 collapse(x, ...)
+
+\method{collapse}{Tensor}(x, dims, fun = sum, ...)
 }
 \arguments{
 \item{x}{A Tensor object.}

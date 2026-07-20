@@ -10,6 +10,8 @@ mttkrps(x, U, ...)
 \item{x}{A Tensor object.}
 
 \item{U}{A list of factor matrices or a \code{KTensor}.}
+
+\item{...}{Additional arguments passed to methods.}
 }
 \value{
 A list of matrices, one per mode.

@@ -10,6 +10,8 @@ isequal(x, y, ...)
 \item{x}{First object.}
 
 \item{y}{Second object.}
+
+\item{...}{Additional arguments passed to methods.}
 }
 \value{
 Logical scalar.

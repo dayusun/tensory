@@ -2,15 +2,22 @@
 % Please edit documentation in R/tensor_dense_methods.R
 \name{scale}
 \alias{scale}
+\alias{scale.Tensor}
 \title{Tensor Scaling}
 \usage{
 scale(x, ...)
+
+\method{scale}{Tensor}(x, s, dims, ...)
 }
 \arguments{
 \item{x}{A Tensor object.}
 
 \item{...}{For tensors, pass \verb{s =} and \verb{dims =}. For non-tensors, arguments
 are forwarded to \code{\link[base:scale]{base::scale()}}.}
+
+\item{s}{Scaling tensor, matrix, or vector.}
+
+\item{dims}{Modes of \code{x} that \code{s} scales along.}
 }
 \value{
 A scaled Tensor.

@@ -8,6 +8,8 @@ transpose(x, ...)
 }
 \arguments{
 \item{x}{A Tensor object.}
+
+\item{...}{Additional arguments passed to methods.}
 }
 \value{
 This function always errors for tensors.

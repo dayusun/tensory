@@ -2,9 +2,12 @@
 % Please edit documentation in R/tenmat_class.R
 \name{\%*\%}
 \alias{\%*\%}
+\alias{\%*\%.Tenmat}
 \title{S3 Matrix Multiplication Generic}
 \usage{
 x \%*\% y
+
+\method{\%*\%}{Tenmat}(x, y)
 }
 \arguments{
 \item{x}{First argument}

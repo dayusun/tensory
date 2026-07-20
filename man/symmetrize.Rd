@@ -10,6 +10,8 @@ symmetrize(x, grps = NULL, ...)
 \item{x}{A Tensor object.}
 
 \item{grps}{A vector of modes or list of mode vectors.}
+
+\item{...}{Additional arguments passed to methods.}
 }
 \value{
 A symmetrized Tensor object.

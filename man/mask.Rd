@@ -10,6 +10,8 @@ mask(x, w, ...)
 \item{x}{A Tensor object.}
 
 \item{w}{A Tensor-like mask.}
+
+\item{...}{Additional arguments passed to methods.}
 }
 \value{
 A vector of extracted values.

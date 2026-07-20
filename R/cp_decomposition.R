@@ -110,9 +110,13 @@ cp_als <- function(X, R,
                    init = "random",
                    printitn = 0L,
                    fixsigns = TRUE) {
-  X <- as.tensor(X)
-  if (!inherits(X, "Tensor")) {
-    stop("X must be a Tensor or coercible to one.")
+  # Sparse tensors are handled natively: fnorm, mttkrp, and nvecs all have
+  # Sptensor methods, so the ALS loop below never densifies.
+  if (!inherits(X, "Sptensor")) {
+    X <- as.tensor(X)
+    if (!inherits(X, "Tensor")) {
+      stop("X must be a Tensor or coercible to one.")
+    }
   }
   R <- as.integer(R)
   if (length(R) != 1L || R < 1L) {

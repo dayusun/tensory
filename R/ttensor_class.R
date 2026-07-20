@@ -99,6 +99,7 @@ TTensor <- R6::R6Class("TTensor",
 #' @param core A Tensor object representing the core
 #' @param U A list of factor matrices
 #' @return A TTensor object
+#' @rdname TTensor
 #' @export
 ttensor <- function(core = NULL, U = NULL) {
     res <- TTensor$new(core, U)

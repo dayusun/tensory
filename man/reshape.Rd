@@ -10,6 +10,8 @@ reshape(x, new_dims, ...)
 \item{x}{A tensor-like object.}
 
 \item{new_dims}{New dimensions.}
+
+\item{...}{Additional arguments passed to methods.}
 }
 \value{
 A reshaped object.

@@ -124,6 +124,7 @@ KTensor <- R6::R6Class("KTensor",
 #' @param lambda A numeric vector of weights, or list of matrices U if lambda is omitted.
 #' @param U A list of factor matrices. Let NULL if passing list as `lambda`.
 #' @return A KTensor object
+#' @rdname KTensor
 #' @export
 ktensor <- function(lambda = NULL, U = NULL) {
     if (is.list(lambda) && is.null(U)) {

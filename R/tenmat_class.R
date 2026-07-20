@@ -166,6 +166,7 @@ Tenmat <- R6::R6Class("Tenmat",
 #' m2 <- tenmat(t, rdims = 2, cdims = "fc")
 #' print(m2)
 #'
+#' @rdname Tenmat
 #' @export
 tenmat <- function(T, rdims = NULL, cdims = NULL, tsize = NULL) {
     # Empty constructor
@@ -406,6 +407,8 @@ t.Tenmat <- function(x) {
     base::`%*%`(x, y)
 }
 
+#' @rdname grapes-times-grapes
+#' @usage \method{\%*\%}{Tenmat}(x, y)
 #' @export
 `%*%.Tenmat` <- function(x, y) {
     # Handle scalar input logic

@@ -2,211 +2,257 @@
 % Please edit documentation in R/tenmat_class.R
 \name{Tenmat}
 \alias{Tenmat}
+\alias{tenmat}
 \title{R6 Tenmat Class}
+\usage{
+tenmat(T, rdims = NULL, cdims = NULL, tsize = NULL)
+}
+\arguments{
+\item{T}{A Tensor object, matrix, or Tenmat object}
+
+\item{rdims}{Dimensions to map to rows}
+
+\item{cdims}{Dimensions to map to columns (optional). Also accepts 't', 'fc', 'bc'.}
+
+\item{tsize}{Tensor size (used internally)}
+}
+\value{
+A new Tenmat object
+}
 \description{
 A class representing a matricized tensor, equivalent to MATLAB Tensor Toolbox's tenmat.
 }
-\section{Public fields}{
-\if{html}{\out{<div class="r6-fields">}}
-\describe{
-\item{\code{data}}{The underlying 2D matrix data}
+\examples{
+t <- tensor(array(1:24, dim = c(3, 4, 2)))
+# Unfold mode 1 to rows, modes 2 and 3 to columns
+m <- tenmat(t, rdims = 1)
+print(m)
 
-\item{\code{rdims}}{The modes mapped to the rows}
+# Unfold mode 2 to rows, and mode 3 and 1 to columns (forward cyclic)
+m2 <- tenmat(t, rdims = 2, cdims = "fc")
+print(m2)
 
-\item{\code{cdims}}{The modes mapped to the columns}
-
-\item{\code{tsize}}{The size of the original tensor
-Initialize a new tenmat}
 }
-\if{html}{\out{</div>}}
+\section{Public fields}{
+  \if{html}{\out{<div class="r6-fields">}}
+  \describe{
+    \item{\code{data}}{The underlying 2D matrix data}
+
+    \item{\code{rdims}}{The modes mapped to the rows}
+
+    \item{\code{cdims}}{The modes mapped to the columns}
+
+    \item{\code{tsize}}{The size of the original tensor
+Initialize a new tenmat}
+  }
+  \if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{
-\itemize{
-\item \href{#method-Tenmat-new}{\code{Tenmat$new()}}
-\item \href{#method-Tenmat-dim}{\code{Tenmat$dim()}}
-\item \href{#method-Tenmat-length}{\code{Tenmat$length()}}
-\item \href{#method-Tenmat-print}{\code{Tenmat$print()}}
-\item \href{#method-Tenmat-show}{\code{Tenmat$show()}}
-\item \href{#method-Tenmat-clone_tenmat}{\code{Tenmat$clone_tenmat()}}
-\item \href{#method-Tenmat-add}{\code{Tenmat$add()}}
-\item \href{#method-Tenmat-subtract}{\code{Tenmat$subtract()}}
-\item \href{#method-Tenmat-negate}{\code{Tenmat$negate()}}
-\item \href{#method-Tenmat-transpose}{\code{Tenmat$transpose()}}
-\item \href{#method-Tenmat-clone}{\code{Tenmat$clone()}}
-}
+  \itemize{
+    \item \href{#method-Tenmat-initialize}{\code{Tenmat$new()}}
+    \item \href{#method-Tenmat-dim}{\code{Tenmat$dim()}}
+    \item \href{#method-Tenmat-length}{\code{Tenmat$length()}}
+    \item \href{#method-Tenmat-print}{\code{Tenmat$print()}}
+    \item \href{#method-Tenmat-show}{\code{Tenmat$show()}}
+    \item \href{#method-Tenmat-clone_tenmat}{\code{Tenmat$clone_tenmat()}}
+    \item \href{#method-Tenmat-add}{\code{Tenmat$add()}}
+    \item \href{#method-Tenmat-subtract}{\code{Tenmat$subtract()}}
+    \item \href{#method-Tenmat-negate}{\code{Tenmat$negate()}}
+    \item \href{#method-Tenmat-transpose}{\code{Tenmat$transpose()}}
+    \item \href{#method-Tenmat-clone}{\code{Tenmat$clone()}}
+  }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Tenmat-new"></a>}}
-\if{latex}{\out{\hypertarget{method-Tenmat-new}{}}}
-\subsection{Method \code{new()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tenmat$new(data = NULL, rdims = NULL, cdims = NULL, tsize = NULL)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{data}}{The matrix representation}
-
-\item{\code{rdims}}{The row indices}
-
-\item{\code{cdims}}{The column indices}
-
-\item{\code{tsize}}{The size of the original tensor}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-A new Tenmat object
+\if{html}{\out{<a id="method-Tenmat-initialize"></a>}}
+\if{latex}{\out{\hypertarget{method-Tenmat-initialize}{}}}
+\subsection{\code{Tenmat$new()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tenmat$new(data = NULL, rdims = NULL, cdims = NULL, tsize = NULL)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{data}}{The matrix representation}
+      \item{\code{rdims}}{The row indices}
+      \item{\code{cdims}}{The column indices}
+      \item{\code{tsize}}{The size of the original tensor}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A new Tenmat object
 Get dimension of the underlying matrix
+  }
 }
-}
+
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tenmat-dim"></a>}}
 \if{latex}{\out{\hypertarget{method-Tenmat-dim}{}}}
-\subsection{Method \code{dim()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tenmat$dim()}\if{html}{\out{</div>}}
+\subsection{\code{Tenmat$dim()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tenmat$dim()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Integer vector of dimensions
+Get number of elements
+  }
 }
 
-\subsection{Returns}{
-Integer vector of dimensions
-Get number of elements
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tenmat-length"></a>}}
 \if{latex}{\out{\hypertarget{method-Tenmat-length}{}}}
-\subsection{Method \code{length()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tenmat$length()}\if{html}{\out{</div>}}
+\subsection{\code{Tenmat$length()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tenmat$length()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Integer number of elements
+Print tenmat information
+  }
 }
 
-\subsection{Returns}{
-Integer number of elements
-Print tenmat information
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tenmat-print"></a>}}
 \if{latex}{\out{\hypertarget{method-Tenmat-print}{}}}
-\subsection{Method \code{print()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tenmat$print()}\if{html}{\out{</div>}}
+\subsection{\code{Tenmat$print()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tenmat$print()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Invisible self
+Show tenmat (alias for print)
+  }
 }
 
-\subsection{Returns}{
-Invisible self
-Show tenmat (alias for print)
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tenmat-show"></a>}}
 \if{latex}{\out{\hypertarget{method-Tenmat-show}{}}}
-\subsection{Method \code{show()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tenmat$show()}\if{html}{\out{</div>}}
+\subsection{\code{Tenmat$show()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tenmat$show()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Invisible self
+Clone the tenmat
+  }
 }
 
-\subsection{Returns}{
-Invisible self
-Clone the tenmat
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tenmat-clone_tenmat"></a>}}
 \if{latex}{\out{\hypertarget{method-Tenmat-clone_tenmat}{}}}
-\subsection{Method \code{clone_tenmat()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tenmat$clone_tenmat()}\if{html}{\out{</div>}}
+\subsection{\code{Tenmat$clone_tenmat()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tenmat$clone_tenmat()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A new Tenmat object
+Add another Tenmat
+  }
 }
 
-\subsection{Returns}{
-A new Tenmat object
-Add another Tenmat
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tenmat-add"></a>}}
 \if{latex}{\out{\hypertarget{method-Tenmat-add}{}}}
-\subsection{Method \code{add()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tenmat$add(other)}\if{html}{\out{</div>}}
+\subsection{\code{Tenmat$add()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tenmat$add(other)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{other}}{Another Tenmat object}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A new Tenmat object
+Subtract another Tenmat
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{other}}{Another Tenmat object}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-A new Tenmat object
-Subtract another Tenmat
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tenmat-subtract"></a>}}
 \if{latex}{\out{\hypertarget{method-Tenmat-subtract}{}}}
-\subsection{Method \code{subtract()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tenmat$subtract(other)}\if{html}{\out{</div>}}
+\subsection{\code{Tenmat$subtract()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tenmat$subtract(other)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{other}}{Another Tenmat object}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A new Tenmat object
+Negate Tenmat
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{other}}{Another Tenmat object}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-A new Tenmat object
-Negate Tenmat
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tenmat-negate"></a>}}
 \if{latex}{\out{\hypertarget{method-Tenmat-negate}{}}}
-\subsection{Method \code{negate()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tenmat$negate()}\if{html}{\out{</div>}}
+\subsection{\code{Tenmat$negate()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tenmat$negate()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A new Tenmat object
+Transpose Tenmat
+  }
 }
 
-\subsection{Returns}{
-A new Tenmat object
-Transpose Tenmat
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tenmat-transpose"></a>}}
 \if{latex}{\out{\hypertarget{method-Tenmat-transpose}{}}}
-\subsection{Method \code{transpose()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tenmat$transpose()}\if{html}{\out{</div>}}
+\subsection{\code{Tenmat$transpose()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tenmat$transpose()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A new Tenmat object
+  }
 }
 
-\subsection{Returns}{
-A new Tenmat object
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tenmat-clone"></a>}}
 \if{latex}{\out{\hypertarget{method-Tenmat-clone}{}}}
-\subsection{Method \code{clone()}}{
-The objects of this class are cloneable with this method.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Tenmat$clone(deep = FALSE)}\if{html}{\out{</div>}}
+\subsection{\code{Tenmat$clone()}}{
+  The objects of this class are cloneable with this method.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Tenmat$clone(deep = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{deep}}{Whether to make a deep clone.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{deep}}{Whether to make a deep clone.}
-}
-\if{html}{\out{</div>}}
-}
-}
 }

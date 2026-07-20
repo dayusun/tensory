@@ -1,7 +1,8 @@
 # Dense tensor methods modeled after MATLAB Tensor Toolbox.
 
 .tensor_as_dense <- function(x) {
-  if (inherits(x, c("KTensor", "TTensor"))) {
+  if (inherits(x, c("KTensor", "TTensor", "SumTensor", "SymKTensor",
+                    "SymTensor", "Sptensor"))) {
     return(as.tensor(x))
   }
   if (inherits(x, "Tensor")) {
@@ -85,6 +86,7 @@ ttv <- function(tensor, vector, mode = NULL) {
 #' @param x First tensor-like object.
 #' @param y Second tensor-like object.
 #' @return Numeric scalar inner product.
+#' @param ... Additional arguments passed to methods.
 #' @export
 innerprod <- function(x, y, ...) {
   UseMethod("innerprod", x)
@@ -108,6 +110,7 @@ innerprod.Tensor <- function(x, y, ...) {
 #'
 #' @param x A tensor-like object.
 #' @return Integer count of nonzero entries.
+#' @param ... Additional arguments passed to methods.
 #' @export
 nnz <- function(x, ...) {
   UseMethod("nnz")
@@ -131,11 +134,13 @@ nnz.default <- function(x, ...) {
 #' @param values Logical; if `TRUE`, include values in the result.
 #' @return If `values = FALSE`, a matrix of subscripts. Otherwise a list with
 #'   `subs` and `vals`.
+#' @param ... Additional arguments passed to methods.
 #' @export
 find <- function(x, ...) {
   UseMethod("find")
 }
 
+#' @rdname find
 #' @export
 find.Tensor <- function(x, values = FALSE, ...) {
   idx <- which(as.vector(x$data) != 0)
@@ -176,6 +181,7 @@ find.default <- function(x, mode = "function", numeric = FALSE, simple.words = T
 #' @param x A tensor-like object.
 #' @param order Permutation of dimensions.
 #' @return A permuted Tensor object.
+#' @param ... Additional arguments passed to methods.
 #' @export
 permute <- function(x, order, ...) {
   UseMethod("permute")
@@ -208,6 +214,7 @@ permute.default <- function(x, order, ...) {
 #' @param x A tensor-like object.
 #' @param new_dims New dimensions.
 #' @return A reshaped object.
+#' @param ... Additional arguments passed to methods.
 #' @export
 reshape <- function(x, new_dims, ...) {
   UseMethod("reshape")
@@ -234,6 +241,7 @@ reshape.default <- function(x, new_dims, ...) {
 #'
 #' @param x A tensor-like object.
 #' @return Object with singleton dimensions removed.
+#' @param ... Additional arguments passed to methods.
 #' @export
 squeeze <- function(x, ...) {
   UseMethod("squeeze")
@@ -255,6 +263,7 @@ squeeze.default <- function(x, ...) {
 #' @param rdims Row modes.
 #' @param cdims Column modes. If omitted, all remaining modes are used.
 #' @return A matrix.
+#' @param ... Additional arguments passed to methods.
 #' @export
 unfold <- function(x, rdims = NULL, cdims = NULL, ...) {
   UseMethod("unfold")
@@ -280,6 +289,7 @@ unfold.default <- function(x, rdims = NULL, cdims = NULL, ...) {
 #'
 #' @param x A tensor-like object.
 #' @return A vector.
+#' @param ... Additional arguments passed to methods.
 #' @export
 vec <- function(x, ...) {
   UseMethod("vec")
@@ -305,6 +315,7 @@ vec.default <- function(x, ...) {
 #' @param flipsign Logical; if `TRUE`, flip signs so the largest-magnitude
 #'   entry in each column is positive.
 #' @return A matrix whose columns are the leading mode-n vectors.
+#' @param ... Additional arguments passed to methods.
 #' @export
 nvecs <- function(x, mode, r = 1, flipsign = TRUE, ...) {
   UseMethod("nvecs")
@@ -356,6 +367,7 @@ nvecs.default <- function(x, mode, r = 1, flipsign = TRUE, ...) {
 #' @param U A list of factor matrices or a `KTensor`.
 #' @param mode Mode to skip.
 #' @return A matrix of size `dim(x)[mode] x R`.
+#' @param ... Additional arguments passed to methods.
 #' @export
 mttkrp <- function(x, U, mode, ...) {
   UseMethod("mttkrp")
@@ -402,6 +414,7 @@ mttkrp.default <- function(x, U, mode, ...) {
 #' @param x A Tensor object.
 #' @param U A list of factor matrices or a `KTensor`.
 #' @return A list of matrices, one per mode.
+#' @param ... Additional arguments passed to methods.
 #' @export
 mttkrps <- function(x, U, ...) {
   UseMethod("mttkrps")
@@ -417,6 +430,11 @@ mttkrps.Tensor <- function(x, U, ...) {
   normalized <- .normalize_factor_list(x, U)
   x <- normalized$x
   U <- normalized$U
+
+  if (exists("mttkrp_blas_cpp", mode = "function")) {
+    return(lapply(seq_len(x$ndims()),
+                  function(mode) mttkrp_blas_cpp(x$data, U, as.integer(mode))))
+  }
 
   if (exists("mttkrps_cpp", mode = "function")) {
     return(unname(mttkrps_cpp(x$data, U)))
@@ -438,6 +456,7 @@ mttkrps.default <- function(x, U, ...) {
 #' @param i First mode.
 #' @param j Second mode.
 #' @return A Tensor object, potentially scalar.
+#' @param ... Additional arguments passed to methods.
 #' @export
 contract <- function(x, i, j, ...) {
   UseMethod("contract")
@@ -501,6 +520,7 @@ contract.default <- function(x, i, j, ...) {
 #' @param x A Tensor object.
 #' @param w A Tensor-like mask.
 #' @return A vector of extracted values.
+#' @param ... Additional arguments passed to methods.
 #' @export
 mask <- function(x, w, ...) {
   UseMethod("mask")
@@ -598,6 +618,7 @@ tenfun <- function(fun, ...) {
 #' @param midx Matrix with one row per requested fiber and `ndims(x) - 1`
 #'   columns containing the fixed indices for the other modes.
 #' @return A matrix of size `dim(x)[mode] x nrow(midx)`.
+#' @param ... Additional arguments passed to methods.
 #' @export
 fibers <- function(x, mode, midx, ...) {
   UseMethod("fibers")
@@ -648,6 +669,7 @@ fibers.default <- function(x, mode, midx, ...) {
 #' @param n Non-positive integer controlling how many leading modes remain.
 #' @return A scalar, vector, matrix, or Tensor depending on the number of
 #'   remaining modes.
+#' @param ... Additional arguments passed to methods.
 #' @export
 ttsv <- function(x, v, n = 0, ...) {
   UseMethod("ttsv")
@@ -705,7 +727,10 @@ ttsv.default <- function(x, v, n = 0, ...) {
 #'
 #' @param x A Tensor object.
 #' @param grps A vector of modes or list of mode vectors.
+#' @param tol Nonnegative tolerance for approximate symmetry (`0`, the
+#'   default, requires exact equality and uses the compiled kernel).
 #' @return Logical scalar.
+#' @param ... Additional arguments passed to methods.
 #' @export
 issymmetric <- function(x, grps = NULL, ...) {
   UseMethod("issymmetric")
@@ -736,12 +761,13 @@ issymmetric <- function(x, grps = NULL, ...) {
   grps
 }
 
+#' @rdname issymmetric
 #' @export
-issymmetric.Tensor <- function(x, grps = NULL, ...) {
+issymmetric.Tensor <- function(x, grps = NULL, tol = 0, ...) {
   x <- .tensor_as_dense(x)
   grps <- .normalize_symmetry_groups(x, grps)
 
-  if (exists("issymmetric_cpp", mode = "function")) {
+  if (tol == 0 && exists("issymmetric_cpp", mode = "function")) {
     return(issymmetric_cpp(x$data, grps))
   }
 
@@ -754,7 +780,8 @@ issymmetric.Tensor <- function(x, grps = NULL, ...) {
     class_subs <- subs
     class_subs[, grp] <- t(apply(subs[, grp, drop = FALSE], 1, sort))
     class_idx <- .tensor_sub2ind(class_subs, x$dim())
-    if (any(as.vector(x$data) != as.vector(x$data)[class_idx])) {
+    diffs <- abs(as.vector(x$data) - as.vector(x$data)[class_idx])
+    if (any(diffs > tol)) {
       return(FALSE)
     }
   }
@@ -774,6 +801,7 @@ issymmetric.default <- function(x, grps = NULL, ...) {
 #' @param x A Tensor object.
 #' @param grps A vector of modes or list of mode vectors.
 #' @return A symmetrized Tensor object.
+#' @param ... Additional arguments passed to methods.
 #' @export
 symmetrize <- function(x, grps = NULL, ...) {
   UseMethod("symmetrize")
@@ -831,6 +859,7 @@ symmetrize.default <- function(x, grps = NULL, ...) {
 #'
 #' @param x A Tensor object.
 #' @return A base R array.
+#' @param ... Additional arguments passed to methods.
 #' @export
 full <- function(x, ...) {
   UseMethod("full")
@@ -867,6 +896,7 @@ as.double.Tensor <- function(x, ...) {
 #' @param x First object.
 #' @param y Second object.
 #' @return Logical scalar.
+#' @param ... Additional arguments passed to methods.
 #' @export
 isequal <- function(x, y, ...) {
   UseMethod("isequal", x)
@@ -891,6 +921,7 @@ isequal.default <- function(x, y, ...) {
 #'
 #' @param x An object.
 #' @return Logical scalar.
+#' @param ... Additional arguments passed to methods.
 #' @export
 isscalar <- function(x, ...) {
   UseMethod("isscalar")
@@ -911,6 +942,8 @@ isscalar.default <- function(x, ...) {
 #' Alias for [t_scale()] with Tensor Toolbox naming.
 #'
 #' @param x A Tensor object.
+#' @param s Scaling tensor, matrix, or vector.
+#' @param dims Modes of `x` that `s` scales along.
 #' @param ... For tensors, pass `s =` and `dims =`. For non-tensors, arguments
 #'   are forwarded to [base::scale()].
 #' @return A scaled Tensor.
@@ -919,6 +952,7 @@ scale <- function(x, ...) {
   UseMethod("scale")
 }
 
+#' @rdname scale
 #' @export
 scale.Tensor <- function(x, s, dims, ...) {
   t_scale(x, s = s, dims = dims, ...)
@@ -935,6 +969,7 @@ scale.default <- function(x, ...) {
 #'
 #' @param x A Tensor object.
 #' @return This function always errors for tensors.
+#' @param ... Additional arguments passed to methods.
 #' @export
 transpose <- function(x, ...) {
   UseMethod("transpose")

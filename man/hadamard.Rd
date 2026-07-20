@@ -2,9 +2,12 @@
 % Please edit documentation in R/tensor_operations.R
 \name{hadamard}
 \alias{hadamard}
+\alias{hadamard.matrix}
 \title{Hadamard Product}
 \usage{
 hadamard(x, ...)
+
+\method{hadamard}{matrix}(x, y, ...)
 }
 \arguments{
 \item{x}{A matrix or list of matrices.}

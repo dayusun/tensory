@@ -2,12 +2,17 @@
 % Please edit documentation in R/tensor_dense_methods.R
 \name{find}
 \alias{find}
+\alias{find.Tensor}
 \title{Find Nonzero Entries}
 \usage{
 find(x, ...)
+
+\method{find}{Tensor}(x, values = FALSE, ...)
 }
 \arguments{
 \item{x}{A tensor-like object.}
+
+\item{...}{Additional arguments passed to methods.}
 
 \item{values}{Logical; if \code{TRUE}, include values in the result.}
 }

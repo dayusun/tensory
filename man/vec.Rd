@@ -8,6 +8,8 @@ vec(x, ...)
 }
 \arguments{
 \item{x}{A tensor-like object.}
+
+\item{...}{Additional arguments passed to methods.}
 }
 \value{
 A vector.

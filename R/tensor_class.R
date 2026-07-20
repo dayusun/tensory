@@ -523,6 +523,7 @@ Tensor <- R6::R6Class("Tensor",
 #' # Create a tensor filled with a single value
 #' t3 <- tensor(0, dims = c(3, 4, 2))
 #'
+#' @rdname Tensor
 #' @export
 tensor <- function(data, dims = NULL) {
   # If dims is provided and data is a scalar, create array filled with that scalar
@@ -574,8 +575,16 @@ tail.Tensor <- function(x, ...) {
     # Unary plus
     return(e1$clone_tensor())
   }
-  if (inherits(e1, c("KTensor", "TTensor"))) e1 <- as.tensor(e1)
-  if (inherits(e2, c("KTensor", "TTensor"))) e2 <- as.tensor(e2)
+  if (inherits(e1, "SumTensor") || inherits(e2, "SumTensor")) {
+    # Adding to an implicit sum appends a part rather than materializing.
+    return(.sumtensor_plus(e1, e2))
+  }
+  if (inherits(e1, "Sptensor") || inherits(e2, "Sptensor")) {
+    sp <- .sptensor_arith(e1, e2, "+")
+    if (!is.null(sp)) return(sp)
+  }
+  if (inherits(e1, c("KTensor", "TTensor", "Sptensor"))) e1 <- as.tensor(e1)
+  if (inherits(e2, c("KTensor", "TTensor", "Sptensor"))) e2 <- as.tensor(e2)
 
   if (inherits(e1, "Tensor")) {
     return(e1$clone_tensor()$add(e2))
@@ -586,8 +595,17 @@ tail.Tensor <- function(x, ...) {
 
 #' @export
 `-.Tensor` <- function(e1, e2) {
-  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor"))) e1 <- as.tensor(e1)
-  if (!missing(e2) && inherits(e2, c("KTensor", "TTensor"))) e2 <- as.tensor(e2)
+  if (missing(e2) && inherits(e1, "Sptensor")) {
+    # Unary minus keeps sparsity.
+    return(sptensor(e1$subs, -e1$vals, e1$dims))
+  }
+  if (!missing(e2) &&
+      (inherits(e1, "Sptensor") || inherits(e2, "Sptensor"))) {
+    sp <- .sptensor_arith(e1, e2, "-")
+    if (!is.null(sp)) return(sp)
+  }
+  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor", "Sptensor"))) e1 <- as.tensor(e1)
+  if (!missing(e2) && inherits(e2, c("KTensor", "TTensor", "Sptensor"))) e2 <- as.tensor(e2)
   if (missing(e2)) {
     # Unary minus
     return(e1$clone_tensor()$multiply(-1))
@@ -603,8 +621,12 @@ tail.Tensor <- function(x, ...) {
 
 #' @export
 `*.Tensor` <- function(e1, e2) {
-  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor"))) e1 <- as.tensor(e1)
-  if (!missing(e2) && inherits(e2, c("KTensor", "TTensor"))) e2 <- as.tensor(e2)
+  if (inherits(e1, "Sptensor") || inherits(e2, "Sptensor")) {
+    sp <- .sptensor_arith(e1, e2, "*")
+    if (!is.null(sp)) return(sp)
+  }
+  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor", "Sptensor"))) e1 <- as.tensor(e1)
+  if (!missing(e2) && inherits(e2, c("KTensor", "TTensor", "Sptensor"))) e2 <- as.tensor(e2)
   if (inherits(e1, "Tensor")) {
     return(e1$clone_tensor()$multiply(e2))
   } else {
@@ -614,8 +636,12 @@ tail.Tensor <- function(x, ...) {
 
 #' @export
 `/.Tensor` <- function(e1, e2) {
-  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor"))) e1 <- as.tensor(e1)
-  if (!missing(e2) && inherits(e2, c("KTensor", "TTensor"))) e2 <- as.tensor(e2)
+  if (inherits(e1, "Sptensor") || inherits(e2, "Sptensor")) {
+    sp <- .sptensor_arith(e1, e2, "/")
+    if (!is.null(sp)) return(sp)
+  }
+  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor", "Sptensor"))) e1 <- as.tensor(e1)
+  if (!missing(e2) && inherits(e2, c("KTensor", "TTensor", "Sptensor"))) e2 <- as.tensor(e2)
   if (inherits(e1, "Tensor")) {
     return(e1$clone_tensor()$divide(e2))
   } else {
@@ -628,8 +654,8 @@ tail.Tensor <- function(x, ...) {
 
 #' @export
 `%%.Tensor` <- function(e1, e2) {
-  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor"))) e1 <- as.tensor(e1)
-  if (!missing(e2) && inherits(e2, c("KTensor", "TTensor"))) e2 <- as.tensor(e2)
+  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor", "Sptensor"))) e1 <- as.tensor(e1)
+  if (!missing(e2) && inherits(e2, c("KTensor", "TTensor", "Sptensor"))) e2 <- as.tensor(e2)
   if (inherits(e1, "Tensor")) {
     return(e1$clone_tensor()$modulo(e2))
   } else {
@@ -642,8 +668,8 @@ tail.Tensor <- function(x, ...) {
 
 #' @export
 `%/%.Tensor` <- function(e1, e2) {
-  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor"))) e1 <- as.tensor(e1)
-  if (!missing(e2) && inherits(e2, c("KTensor", "TTensor"))) e2 <- as.tensor(e2)
+  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor", "Sptensor"))) e1 <- as.tensor(e1)
+  if (!missing(e2) && inherits(e2, c("KTensor", "TTensor", "Sptensor"))) e2 <- as.tensor(e2)
   if (inherits(e1, "Tensor")) {
     return(e1$clone_tensor()$integer_divide(e2))
   } else {
@@ -655,8 +681,12 @@ tail.Tensor <- function(x, ...) {
 
 #' @export
 `^.Tensor` <- function(e1, e2) {
-  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor"))) e1 <- as.tensor(e1)
-  if (!missing(e2) && inherits(e2, c("KTensor", "TTensor"))) e2 <- as.tensor(e2)
+  if (inherits(e1, "Sptensor") || inherits(e2, "Sptensor")) {
+    sp <- .sptensor_arith(e1, e2, "^")
+    if (!is.null(sp)) return(sp)
+  }
+  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor", "Sptensor"))) e1 <- as.tensor(e1)
+  if (!missing(e2) && inherits(e2, c("KTensor", "TTensor", "Sptensor"))) e2 <- as.tensor(e2)
   if (inherits(e1, "Tensor")) {
     return(e1$clone_tensor()$power(e2))
   } else {
@@ -668,8 +698,8 @@ tail.Tensor <- function(x, ...) {
 
 #' @export
 `==.Tensor` <- function(e1, e2) {
-  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor"))) e1 <- as.tensor(e1)
-  if (!missing(e2) && inherits(e2, c("KTensor", "TTensor"))) e2 <- as.tensor(e2)
+  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor", "Sptensor"))) e1 <- as.tensor(e1)
+  if (!missing(e2) && inherits(e2, c("KTensor", "TTensor", "Sptensor"))) e2 <- as.tensor(e2)
   if (inherits(e1, "Tensor")) {
     return(e1$clone_tensor()$equal(e2))
   } else {
@@ -682,8 +712,8 @@ tail.Tensor <- function(x, ...) {
 
 #' @export
 `!=.Tensor` <- function(e1, e2) {
-  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor"))) e1 <- as.tensor(e1)
-  if (!missing(e2) && inherits(e2, c("KTensor", "TTensor"))) e2 <- as.tensor(e2)
+  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor", "Sptensor"))) e1 <- as.tensor(e1)
+  if (!missing(e2) && inherits(e2, c("KTensor", "TTensor", "Sptensor"))) e2 <- as.tensor(e2)
   if (inherits(e1, "Tensor")) {
     return(e1$clone_tensor()$not_equal(e2))
   } else {
@@ -696,8 +726,8 @@ tail.Tensor <- function(x, ...) {
 
 #' @export
 `<.Tensor` <- function(e1, e2) {
-  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor"))) e1 <- as.tensor(e1)
-  if (!missing(e2) && inherits(e2, c("KTensor", "TTensor"))) e2 <- as.tensor(e2)
+  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor", "Sptensor"))) e1 <- as.tensor(e1)
+  if (!missing(e2) && inherits(e2, c("KTensor", "TTensor", "Sptensor"))) e2 <- as.tensor(e2)
   if (inherits(e1, "Tensor")) {
     return(e1$clone_tensor()$less_than(e2))
   } else {
@@ -710,8 +740,8 @@ tail.Tensor <- function(x, ...) {
 
 #' @export
 `<=.Tensor` <- function(e1, e2) {
-  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor"))) e1 <- as.tensor(e1)
-  if (!missing(e2) && inherits(e2, c("KTensor", "TTensor"))) e2 <- as.tensor(e2)
+  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor", "Sptensor"))) e1 <- as.tensor(e1)
+  if (!missing(e2) && inherits(e2, c("KTensor", "TTensor", "Sptensor"))) e2 <- as.tensor(e2)
   if (inherits(e1, "Tensor")) {
     return(e1$clone_tensor()$less_equal(e2))
   } else {
@@ -724,8 +754,8 @@ tail.Tensor <- function(x, ...) {
 
 #' @export
 `>.Tensor` <- function(e1, e2) {
-  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor"))) e1 <- as.tensor(e1)
-  if (!missing(e2) && inherits(e2, c("KTensor", "TTensor"))) e2 <- as.tensor(e2)
+  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor", "Sptensor"))) e1 <- as.tensor(e1)
+  if (!missing(e2) && inherits(e2, c("KTensor", "TTensor", "Sptensor"))) e2 <- as.tensor(e2)
   if (inherits(e1, "Tensor")) {
     return(e1$clone_tensor()$greater_than(e2))
   } else {
@@ -738,8 +768,8 @@ tail.Tensor <- function(x, ...) {
 
 #' @export
 `>=.Tensor` <- function(e1, e2) {
-  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor"))) e1 <- as.tensor(e1)
-  if (!missing(e2) && inherits(e2, c("KTensor", "TTensor"))) e2 <- as.tensor(e2)
+  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor", "Sptensor"))) e1 <- as.tensor(e1)
+  if (!missing(e2) && inherits(e2, c("KTensor", "TTensor", "Sptensor"))) e2 <- as.tensor(e2)
   if (inherits(e1, "Tensor")) {
     return(e1$clone_tensor()$greater_equal(e2))
   } else {
@@ -752,14 +782,14 @@ tail.Tensor <- function(x, ...) {
 
 #' @export
 `!.Tensor` <- function(e1) {
-  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor"))) e1 <- as.tensor(e1)
+  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor", "Sptensor"))) e1 <- as.tensor(e1)
   return(e1$clone_tensor()$logical_not())
 }
 
 #' @export
 `&.Tensor` <- function(e1, e2) {
-  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor"))) e1 <- as.tensor(e1)
-  if (!missing(e2) && inherits(e2, c("KTensor", "TTensor"))) e2 <- as.tensor(e2)
+  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor", "Sptensor"))) e1 <- as.tensor(e1)
+  if (!missing(e2) && inherits(e2, c("KTensor", "TTensor", "Sptensor"))) e2 <- as.tensor(e2)
   if (inherits(e1, "Tensor")) {
     return(e1$clone_tensor()$logical_and(e2))
   } else {
@@ -772,8 +802,8 @@ tail.Tensor <- function(x, ...) {
 
 #' @export
 `|.Tensor` <- function(e1, e2) {
-  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor"))) e1 <- as.tensor(e1)
-  if (!missing(e2) && inherits(e2, c("KTensor", "TTensor"))) e2 <- as.tensor(e2)
+  if (!missing(e1) && inherits(e1, c("KTensor", "TTensor", "Sptensor"))) e1 <- as.tensor(e1)
+  if (!missing(e2) && inherits(e2, c("KTensor", "TTensor", "Sptensor"))) e2 <- as.tensor(e2)
   if (inherits(e1, "Tensor")) {
     return(e1$clone_tensor()$logical_or(e2))
   } else {

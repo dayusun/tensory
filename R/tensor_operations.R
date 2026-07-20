@@ -30,6 +30,7 @@ khatri_rao <- function(x, ...) {
   UseMethod("khatri_rao")
 }
 
+#' @rdname khatri_rao
 #' @export
 khatri_rao.matrix <- function(x, y, reverse = FALSE, ...) {
   if (!is.matrix(x) || !is.matrix(y)) {
@@ -163,6 +164,7 @@ hadamard <- function(x, ...) {
   UseMethod("hadamard")
 }
 
+#' @rdname hadamard
 #' @export
 hadamard.matrix <- function(x, y, ...) {
   if (any(dim(x) != dim(y))) {
@@ -253,6 +255,7 @@ collapse <- function(x, ...) {
   UseMethod("collapse")
 }
 
+#' @rdname collapse
 #' @export
 collapse.Tensor <- function(x, dims, fun = sum, ...) {
   tensor_dims <- x$dim()
@@ -318,6 +321,7 @@ t_scale <- function(x, ...) {
   UseMethod("t_scale")
 }
 
+#' @rdname t_scale
 #' @export
 t_scale.Tensor <- function(x, s, dims, ...) {
   # Input shapes

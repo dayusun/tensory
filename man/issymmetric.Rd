@@ -2,14 +2,22 @@
 % Please edit documentation in R/tensor_dense_methods.R
 \name{issymmetric}
 \alias{issymmetric}
+\alias{issymmetric.Tensor}
 \title{Check Tensor Symmetry}
 \usage{
 issymmetric(x, grps = NULL, ...)
+
+\method{issymmetric}{Tensor}(x, grps = NULL, tol = 0, ...)
 }
 \arguments{
 \item{x}{A Tensor object.}
 
 \item{grps}{A vector of modes or list of mode vectors.}
+
+\item{...}{Additional arguments passed to methods.}
+
+\item{tol}{Nonnegative tolerance for approximate symmetry (\code{0}, the
+default, requires exact equality and uses the compiled kernel).}
 }
 \value{
 Logical scalar.

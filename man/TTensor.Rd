@@ -2,127 +2,150 @@
 % Please edit documentation in R/ttensor_class.R
 \name{TTensor}
 \alias{TTensor}
+\alias{ttensor}
 \title{R6 Class for Tucker Tensors (TTensor)}
+\usage{
+ttensor(core = NULL, U = NULL)
+}
+\arguments{
+\item{core}{A Tensor object representing the core}
+
+\item{U}{A list of factor matrices}
+}
+\value{
+A TTensor object
+}
 \description{
 A class representing Tucker tensors (TTensor).
 A Tucker tensor is a core tensor multiplied by a matrix along each mode.
 }
 \section{Public fields}{
-\if{html}{\out{<div class="r6-fields">}}
-\describe{
-\item{\code{core}}{The core Tensor object}
+  \if{html}{\out{<div class="r6-fields">}}
+  \describe{
+    \item{\code{core}}{The core Tensor object}
 
-\item{\code{U}}{List of factor matrices}
-}
-\if{html}{\out{</div>}}
+    \item{\code{U}}{List of factor matrices}
+  }
+  \if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{
-\itemize{
-\item \href{#method-TTensor-new}{\code{TTensor$new()}}
-\item \href{#method-TTensor-dim}{\code{TTensor$dim()}}
-\item \href{#method-TTensor-ndims}{\code{TTensor$ndims()}}
-\item \href{#method-TTensor-print}{\code{TTensor$print()}}
-\item \href{#method-TTensor-full}{\code{TTensor$full()}}
-\item \href{#method-TTensor-clone}{\code{TTensor$clone()}}
-}
+  \itemize{
+    \item \href{#method-TTensor-initialize}{\code{TTensor$new()}}
+    \item \href{#method-TTensor-dim}{\code{TTensor$dim()}}
+    \item \href{#method-TTensor-ndims}{\code{TTensor$ndims()}}
+    \item \href{#method-TTensor-print}{\code{TTensor$print()}}
+    \item \href{#method-TTensor-full}{\code{TTensor$full()}}
+    \item \href{#method-TTensor-clone}{\code{TTensor$clone()}}
+  }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-TTensor-new"></a>}}
-\if{latex}{\out{\hypertarget{method-TTensor-new}{}}}
-\subsection{Method \code{new()}}{
-Initialize a new TTensor
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{TTensor$new(core = NULL, U = NULL)}\if{html}{\out{</div>}}
+\if{html}{\out{<a id="method-TTensor-initialize"></a>}}
+\if{latex}{\out{\hypertarget{method-TTensor-initialize}{}}}
+\subsection{\code{TTensor$new()}}{
+  Initialize a new TTensor
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{TTensor$new(core = NULL, U = NULL)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{core}}{A Tensor object representing the core}
+      \item{\code{U}}{A list of factor matrices}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A new TTensor object
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{core}}{A Tensor object representing the core}
-
-\item{\code{U}}{A list of factor matrices}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-A new TTensor object
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-TTensor-dim"></a>}}
 \if{latex}{\out{\hypertarget{method-TTensor-dim}{}}}
-\subsection{Method \code{dim()}}{
-Get dimensions of the tensor
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{TTensor$dim()}\if{html}{\out{</div>}}
+\subsection{\code{TTensor$dim()}}{
+  Get dimensions of the tensor
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{TTensor$dim()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Integer vector of dimensions
+  }
 }
 
-\subsection{Returns}{
-Integer vector of dimensions
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-TTensor-ndims"></a>}}
 \if{latex}{\out{\hypertarget{method-TTensor-ndims}{}}}
-\subsection{Method \code{ndims()}}{
-Get number of dimensions
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{TTensor$ndims()}\if{html}{\out{</div>}}
+\subsection{\code{TTensor$ndims()}}{
+  Get number of dimensions
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{TTensor$ndims()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Integer number of dimensions
+  }
 }
 
-\subsection{Returns}{
-Integer number of dimensions
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-TTensor-print"></a>}}
 \if{latex}{\out{\hypertarget{method-TTensor-print}{}}}
-\subsection{Method \code{print()}}{
-Print the TTensor object
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{TTensor$print(...)}\if{html}{\out{</div>}}
+\subsection{\code{TTensor$print()}}{
+  Print the TTensor object
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{TTensor$print(...)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{...}}{Additional arguments}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Invisible self
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{...}}{Additional arguments}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Invisible self
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-TTensor-full"></a>}}
 \if{latex}{\out{\hypertarget{method-TTensor-full}{}}}
-\subsection{Method \code{full()}}{
-Convert Tucker tensor to dense Tensor
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{TTensor$full()}\if{html}{\out{</div>}}
+\subsection{\code{TTensor$full()}}{
+  Convert Tucker tensor to dense Tensor
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{TTensor$full()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A new Tensor object representing the full dense tensor
+  }
 }
 
-\subsection{Returns}{
-A new Tensor object representing the full dense tensor
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-TTensor-clone"></a>}}
 \if{latex}{\out{\hypertarget{method-TTensor-clone}{}}}
-\subsection{Method \code{clone()}}{
-The objects of this class are cloneable with this method.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{TTensor$clone(deep = FALSE)}\if{html}{\out{</div>}}
+\subsection{\code{TTensor$clone()}}{
+  The objects of this class are cloneable with this method.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{TTensor$clone(deep = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{deep}}{Whether to make a deep clone.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{deep}}{Whether to make a deep clone.}
-}
-\if{html}{\out{</div>}}
-}
-}
 }

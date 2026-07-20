@@ -8,6 +8,8 @@ full(x, ...)
 }
 \arguments{
 \item{x}{A Tensor object.}
+
+\item{...}{Additional arguments passed to methods.}
 }
 \value{
 A base R array.

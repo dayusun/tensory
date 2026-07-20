@@ -2,9 +2,12 @@
 % Please edit documentation in R/tensor_operations.R
 \name{khatri_rao}
 \alias{khatri_rao}
+\alias{khatri_rao.matrix}
 \title{Khatri-Rao Product}
 \usage{
 khatri_rao(x, ...)
+
+\method{khatri_rao}{matrix}(x, y, reverse = FALSE, ...)
 }
 \arguments{
 \item{x}{A matrix or list of matrices.}

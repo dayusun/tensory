@@ -12,6 +12,8 @@ unfold(x, rdims = NULL, cdims = NULL, ...)
 \item{rdims}{Row modes.}
 
 \item{cdims}{Column modes. If omitted, all remaining modes are used.}
+
+\item{...}{Additional arguments passed to methods.}
 }
 \value{
 A matrix.

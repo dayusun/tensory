@@ -10,6 +10,8 @@ innerprod(x, y, ...)
 \item{x}{First tensor-like object.}
 
 \item{y}{Second tensor-like object.}
+
+\item{...}{Additional arguments passed to methods.}
 }
 \value{
 Numeric scalar inner product.

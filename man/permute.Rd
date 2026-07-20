@@ -10,6 +10,8 @@ permute(x, order, ...)
 \item{x}{A tensor-like object.}
 
 \item{order}{Permutation of dimensions.}
+
+\item{...}{Additional arguments passed to methods.}
 }
 \value{
 A permuted Tensor object.

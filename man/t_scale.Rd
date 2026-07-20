@@ -2,9 +2,12 @@
 % Please edit documentation in R/tensor_operations.R
 \name{t_scale}
 \alias{t_scale}
+\alias{t_scale.Tensor}
 \title{Scale Tensor}
 \usage{
 t_scale(x, ...)
+
+\method{t_scale}{Tensor}(x, s, dims, ...)
 }
 \arguments{
 \item{x}{A Tensor.}

@@ -12,6 +12,8 @@ mttkrp(x, U, mode, ...)
 \item{U}{A list of factor matrices or a \code{KTensor}.}
 
 \item{mode}{Mode to skip.}
+
+\item{...}{Additional arguments passed to methods.}
 }
 \value{
 A matrix of size \verb{dim(x)[mode] x R}.

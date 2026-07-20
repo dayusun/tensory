@@ -12,6 +12,8 @@ contract(x, i, j, ...)
 \item{i}{First mode.}
 
 \item{j}{Second mode.}
+
+\item{...}{Additional arguments passed to methods.}
 }
 \value{
 A Tensor object, potentially scalar.

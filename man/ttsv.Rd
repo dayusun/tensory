@@ -12,6 +12,8 @@ ttsv(x, v, n = 0, ...)
 \item{v}{A vector whose length matches each contracted mode.}
 
 \item{n}{Non-positive integer controlling how many leading modes remain.}
+
+\item{...}{Additional arguments passed to methods.}
 }
 \value{
 A scalar, vector, matrix, or Tensor depending on the number of

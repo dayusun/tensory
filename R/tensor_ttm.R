@@ -226,6 +226,20 @@ ttm <- function(tensor, matrix, mode = NULL, transpose = FALSE) {
   if (inherits(tensor, "KTensor")) {
     return(.ttm_kruskal(tensor, matrix, mode, transpose))
   }
+  if (inherits(tensor, "SumTensor")) {
+    # Distribute over the parts and materialize the (dense) sum.
+    results <- lapply(tensor$parts,
+                      function(p) .tensor_as_dense(ttm(p, matrix, mode = mode,
+                                                       transpose = transpose)))
+    total <- results[[1]]
+    for (r in results[-1]) {
+      total <- total + r
+    }
+    return(total)
+  }
+  if (inherits(tensor, "Sptensor")) {
+    return(.ttm_sparse(tensor, matrix, mode, transpose))
+  }
 
   if (!inherits(tensor, "Tensor")) {
     stop("ttm is not implemented for this object type")
