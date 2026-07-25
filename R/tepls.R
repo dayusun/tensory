@@ -1,27 +1,26 @@
 #' @include tensor_class.R tensor_ttm.R tensor_dense_methods.R cp_decomposition.R
 NULL
 
-# Coerce the predictor argument into a list of length-n arrays plus the
-# per-mode dimensions. Accepts either an explicit list of Tensors/arrays or a
-# single order-(m+1) Tensor/array whose LAST mode indexes the observations.
-.tepls_predictor_list <- function(X) {
+# Build the n x prod(dims) design matrix (row i = vec(X_i), mode-1 fastest)
+# from either a list of same-shaped observations or a single order-(m+1)
+# Tensor/array whose LAST mode indexes the observations.
+.tepls_design <- function(X) {
   if (is.list(X) && !inherits(X, "Tensor")) {
     n <- length(X)
     if (n == 0) stop("X must contain at least one observation.")
-    arrs <- lapply(X, function(xi) {
-      xi <- .tensor_as_dense(xi)
-      xi$as_array()
-    })
-    dims <- dim(as.array(arrs[[1]]))
-    if (is.null(dims)) dims <- length(arrs[[1]])
-    for (a in arrs) {
+    first <- .tensor_as_dense(X[[1]])$as_array()
+    dims <- dim(as.array(first)); if (is.null(dims)) dims <- length(first)
+    dims <- as.integer(dims)
+    P <- prod(dims)
+    Xmat <- t(matrix(vapply(X, function(xi) {
+      a <- .tensor_as_dense(xi)$as_array()
       da <- dim(as.array(a)); if (is.null(da)) da <- length(a)
-      if (!identical(as.integer(da), as.integer(dims))) {
+      if (!identical(as.integer(da), dims)) {
         stop("All observations in X must share the same dimensions.")
       }
-    }
-    return(list(arrs = lapply(arrs, function(a) array(as.double(a), dim = dims)),
-                dims = as.integer(dims), n = n))
+      as.double(a)
+    }, numeric(P)), nrow = P))
+    return(list(Xmat = Xmat, dims = dims, n = n))
   }
 
   X <- .tensor_as_dense(X)
@@ -30,28 +29,24 @@ NULL
     stop("A tensor X must have order >= 2 (last mode indexes observations).")
   }
   n <- full[length(full)]
-  dims <- full[-length(full)]
-  data <- X$as_array()
-  # Slice off the last (observation) mode.
-  idx <- lapply(dims, seq_len)
-  arrs <- lapply(seq_len(n), function(i) {
-    sub <- do.call(`[`, c(list(data), idx, list(i), list(drop = FALSE)))
-    array(as.double(sub), dim = dims)
-  })
-  list(arrs = arrs, dims = as.integer(dims), n = n)
+  dims <- as.integer(full[-length(full)])
+  # Data is stored mode-1-fastest with observations last, so reshaping the
+  # flat vector to prod(dims) x n gives one column per observation.
+  Xmat <- t(matrix(as.double(X$as_array()), nrow = prod(dims)))
+  list(Xmat = Xmat, dims = dims, n = n)
 }
 
-# Mode-k marginal covariance, Zhang & Li (2017) eq. (1):
-#   Sigma_k = (n prod_{j!=k} p_j)^{-1} sum_i X_{i(k)} X_{i(k)}^T.
-.tepls_mode_cov <- function(arrs, dims, k) {
-  pk <- dims[k]
-  rest <- prod(dims[-k])
-  acc <- matrix(0, pk, pk)
-  for (a in arrs) {
-    Xk <- as.matrix(tenmat(Tensor$new(a, dims = dims, fast = TRUE), rdims = k))
-    acc <- acc + tcrossprod(Xk)
-  }
-  acc / (length(arrs) * rest)
+# Per-mode marginal covariances, Zhang & Li (2017) eq. (1):
+#   Sigma_k = (n prod_{j!=k} p_j)^{-1} sum_i X_{i(k)} X_{i(k)}^T,
+# computed for every mode at once from the centered n x prod(p) design matrix.
+.tepls_mode_covs <- function(Xc, dims, n) {
+  m <- length(dims)
+  Xarr <- array(t(Xc), dim = c(dims, n)) # p_1 x ... x p_m x n
+  lapply(seq_len(m), function(k) {
+    perm <- c(k, setdiff(seq_len(m), k), m + 1L)
+    Ak <- matrix(aperm(Xarr, perm), nrow = dims[k]) # p_k x (rest * n)
+    tcrossprod(Ak) / (n * prod(dims[-k]))
+  })
 }
 
 # Symmetric inverse square root and inverse of a symmetric PD matrix.
@@ -145,10 +140,10 @@ NULL
 #' fit <- tepls(X, y, u = c(1, 1))
 #' @export
 tepls <- function(X, Y, u, ridge = 1e-8) {
-  pl <- .tepls_predictor_list(X)
-  arrs <- pl$arrs
-  dims <- pl$dims
-  n <- pl$n
+  des <- .tepls_design(X)
+  Xmat <- des$Xmat
+  dims <- des$dims
+  n <- des$n
   m <- length(dims)
 
   Y <- as.matrix(Y)
@@ -165,21 +160,18 @@ tepls <- function(X, Y, u, ridge = 1e-8) {
   }
 
   # Center predictor and response.
-  Xbar <- Reduce(`+`, arrs) / n
-  arrs_c <- lapply(arrs, function(a) a - Xbar)
+  Xbar <- colMeans(Xmat)
+  Xc <- sweep(Xmat, 2L, Xbar, `-`)
   Ybar <- colMeans(Y)
   Yc <- sweep(Y, 2L, Ybar, `-`)
 
-  # Cross-covariance tensor C in R^{p_1 x ... x p_m x r}. Build n-row matrices
-  # via an explicit nrow so a length-1 feature dimension is not collapsed.
-  Xmat <- t(matrix(vapply(arrs_c, as.vector, numeric(prod(dims))),
-                   nrow = prod(dims))) # n x prod(p)
-  Cmat <- crossprod(Xmat, Yc) / n # prod(p) x r
+  # Cross-covariance tensor C in R^{p_1 x ... x p_m x r}.
+  Cmat <- crossprod(Xc, Yc) / n # prod(p) x r
   C <- Tensor$new(array(Cmat, dim = c(dims, r)), dims = as.integer(c(dims, r)),
                   fast = TRUE)
 
   # Mode covariances and response covariance (moment estimators).
-  Sig <- lapply(seq_len(m), function(k) .tepls_mode_cov(arrs_c, dims, k))
+  Sig <- .tepls_mode_covs(Xc, dims, n)
   SigY <- crossprod(Yc) / n
   SigInv <- lapply(Sig, .sym_inv, ridge = ridge)
   SigYinv <- .sym_inv(SigY, ridge = ridge)
@@ -199,24 +191,21 @@ tepls <- function(X, Y, u, ridge = 1e-8) {
     W[[k]] <- .tepls_simpls_mode(Mk, Sig[[k]], u[k])
   }
 
-  # Reduce X to the latent tensor T and regress Y on vec(T).
-  Wt <- lapply(W, t)
-  Tmat <- t(matrix(vapply(arrs_c, function(a) {
-    ti <- ttm(Tensor$new(a, dims = dims, fast = TRUE), Wt, mode = seq_len(m))
-    as.vector(ti$as_array())
-  }, numeric(prod(u))), nrow = prod(u)))
-  Psi <- .pinv(crossprod(Tmat) + diag(ridge, ncol(Tmat))) %*% crossprod(Tmat, Yc)
-
-  # Map the latent coefficient back to predictor space:
-  # vec(B) = (W_m kron ... kron W_1) Psi.
+  # Latent-space Kronecker map vec(T) = (W_m kron ... kron W_1)^T vec(X).
   Kfac <- W[[m]]
   if (m >= 2) {
     for (k in (m - 1):1) {
       Kfac <- kronecker(Kfac, W[[k]])
     }
   }
+
+  # Reduce X to the latent scores and regress Y on them (Algorithm 4, Step 6).
+  Tmat <- Xc %*% Kfac # n x prod(u)
+  Psi <- .pinv(crossprod(Tmat) + diag(ridge, ncol(Tmat))) %*% crossprod(Tmat, Yc)
+
+  # Map the latent coefficient back to predictor space.
   Bmat <- Kfac %*% Psi # prod(p) x r
-  fitted <- Xmat %*% Bmat + matrix(Ybar, n, r, byrow = TRUE)
+  fitted <- Xc %*% Bmat + matrix(Ybar, n, r, byrow = TRUE)
 
   if (r == 1L) {
     Bt <- Tensor$new(array(Bmat, dim = dims), dims = dims, fast = TRUE)
@@ -246,14 +235,13 @@ predict.tepls <- function(object, newX = NULL, ...) {
   if (is.null(newX)) {
     return(object$fitted)
   }
-  pl <- .tepls_predictor_list(newX)
-  if (!identical(pl$dims, object$dims)) {
+  des <- .tepls_design(newX)
+  if (!identical(des$dims, object$dims)) {
     stop("newX dimensions must match the fitted predictor dimensions.")
   }
-  Xc <- t(matrix(vapply(pl$arrs, function(a) as.vector(a - object$Xbar),
-                        numeric(prod(object$dims))), nrow = prod(object$dims)))
+  Xc <- sweep(des$Xmat, 2L, object$Xbar, `-`)
   Bmat <- matrix(as.vector(object$coef$as_array()), ncol = object$r)
-  pred <- Xc %*% Bmat + matrix(object$intercept, pl$n, object$r, byrow = TRUE)
+  pred <- Xc %*% Bmat + matrix(object$intercept, des$n, object$r, byrow = TRUE)
   if (object$r == 1L) as.vector(pred) else pred
 }
 
