@@ -12,6 +12,13 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+# Every chunk below compares against rTensor and plots with ggplot2; skip
+# evaluation when any of the suggested packages is unavailable.
+has_deps <- all(vapply(
+  c("bench", "ggplot2", "rTensor"),
+  requireNamespace, logical(1), quietly = TRUE
+))
+knitr::opts_chunk$set(eval = has_deps)
 ```
 
 ## Benchmarking Approach
@@ -27,12 +34,7 @@ The `tensory` package implements a highly optimized, zero-copy sliced DGEMM appr
 We start with a performance comparison using `bench::mark` with a large fixed-size tensor and matrix for TTM:
 
 ```{r basic-example, warning=FALSE, message=FALSE, fig.width=7, fig.height=4}
-if ("package:rTensor" %in% search()) {
-  detach("package:rTensor", unload=TRUE, force=TRUE)
-}
-devtools::load_all(".")
 library(tensory)
-library(rTensor)
 library(bench)
 library(ggplot2)
 

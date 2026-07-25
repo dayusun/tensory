@@ -1,6 +1,9 @@
 ## -*- mode: makefile; -*-
 
-PKG_CXXFLAGS = -I../inst/include -DNDEBUG -funroll-loops
+# Optimization flags are deliberately left to R's own CXXFLAGS: R CMD check
+# flags any -O/-f/-m tuning here as non-portable. Set them in ~/.R/Makevars
+# (e.g. CXX20FLAGS = -O2 -funroll-loops) for local benchmarking instead.
+PKG_CXXFLAGS = -I../inst/include -DNDEBUG
 CXX_STD = CXX20
 
 # Link against optimized BLAS/LAPACK if available

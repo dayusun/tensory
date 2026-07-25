@@ -15,7 +15,7 @@ R package built with roxygen2 + Rcpp + testthat 3.
 - Build vignettes: `R -e 'devtools::build_vignettes()'`
 - Re-vendor xtensor / xtl / xsimd / xtensor-blas headers into `inst/include/` from upstream tags: `bash inst/tools/vendor` (only needed when bumping pinned versions inside that script; xtensor-r is intentionally not re-fetched there)
 
-The C++ kernels require a C++20 compiler. `src/Makevars` sets `CXX_STD = CXX20` plus `-funroll-loops` (optimization level comes from R's default flags, typically `-O2`). Note `pkgbuild::compile_dll()` defaults to a `-O0` debug build — pass `debug = FALSE` before benchmarking.
+The C++ kernels require a C++20 compiler. `src/Makevars` sets `CXX_STD = CXX20` and nothing else beyond the include path — optimization flags come from R's own `CXX20FLAGS` (typically `-O2`), because `R CMD check` warns about any `-O`/`-f`/`-m` tuning set in `PKG_CXXFLAGS`. Put local tuning (e.g. `-funroll-loops`) in `~/.R/Makevars`. Note `pkgbuild::compile_dll()` defaults to a `-O0` debug build — pass `debug = FALSE` before benchmarking.
 
 ## Architecture
 

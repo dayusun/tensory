@@ -12,15 +12,14 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+# MASS is only needed for the pseudo-inverse identity below.
+has_mass <- requireNamespace("MASS", quietly = TRUE)
 ```
 
 This vignette replicates the identities and relationships shown in the [MATLAB Tensor Toolbox examples](https://www.tensortoolbox.org/identities_doc.html), demonstrating how the mathematical identities hold natively in `tensory`.
 
 ```{r setup}
-if ("package:rTensor" %in% search()) {
-  detach("package:rTensor", unload=TRUE, force=TRUE)
-}
-devtools::load_all(".")
+library(tensory)
 set.seed(123) # Setting random seed for reproducibility
 ```
 
@@ -134,10 +133,9 @@ fnorm(as.tensor(X) - as.tensor(Y_AB)) # should be zero
 
 **Proposition 4.2b**
 
-```{r}
-library(MASS)
+```{r, eval = has_mass}
 X <- ttensor(Y, A)
-Apinv <- lapply(A, ginv)
+Apinv <- lapply(A, MASS::ginv)
 Y2 <- ttm(as.tensor(X), Apinv, mode = 1:3)
 fnorm(Y - as.tensor(Y2)) # should be zero
 ```

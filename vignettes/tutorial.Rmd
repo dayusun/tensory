@@ -27,11 +27,6 @@ This tutorial covers the primary classes and operations available in the package
 First, load the package:
 
 ```{r setup}
-# Ensure rTensor is detached if loaded by previous vignettes during package build
-if ("package:rTensor" %in% search()) {
-  detach("package:rTensor", unload=TRUE, force=TRUE)
-}
-devtools::load_all(".")
 library(tensory)
 ```
 

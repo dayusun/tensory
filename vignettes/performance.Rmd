@@ -12,6 +12,13 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+# Every chunk below benchmarks against rTensor and plots the result; skip
+# evaluation when any of the suggested packages is unavailable.
+has_deps <- all(vapply(
+  c("bench", "dplyr", "ggplot2", "rTensor", "scales", "tidyr"),
+  requireNamespace, logical(1), quietly = TRUE
+))
+knitr::opts_chunk$set(eval = has_deps)
 ```
 
 ## Computational Efficiency: ttm vs rTensor
@@ -185,7 +192,7 @@ X <- tensory::Tensor$new(X)
 
 # Memory benchmark
 bm_memory <- bench::mark(
-  tensory = tensory:::ttm(X , mat, mode = 2)$data,
+  tensory = tensory::ttm(X, mat, mode = 2)$data,
   rTensor = rTensor::ttm(X_rTensor, mat, m = 2)@data,
   iterations = 20,
   check = FALSE
@@ -302,8 +309,4 @@ ggplot(scalability_results, aes(x = size, y = mean_time, color = package)) +
        y = "Median Time",
        color = "Package") +
   theme_minimal()
-```
-
-```
-
 ```

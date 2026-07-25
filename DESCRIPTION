@@ -23,9 +23,15 @@ Roxygen: list(markdown = TRUE)
 LinkingTo: Rcpp 
 Suggests:
     bench,
+    dplyr,
+    ggplot2,
     knitr,
+    MASS,
     rmarkdown,
-    testthat (>= 3.0.0)
+    rTensor,
+    scales,
+    testthat (>= 3.0.0),
+    tidyr
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 Collate:
