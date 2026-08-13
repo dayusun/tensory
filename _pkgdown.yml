@@ -21,9 +21,7 @@ navbar:
     articles:
       text: Articles
       menu:
-      - text: "Getting started"
-      - text: Tensory tutorial
-        href: articles/tutorial.html
+      - text: "Using tensors"
       - text: Tensor identities
         href: articles/identities.html
       - text: "Modelling"

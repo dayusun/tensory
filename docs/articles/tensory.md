@@ -1,4 +1,4 @@
-# Tensory Tutorial
+# Get started with tensory
 
 ## Introduction
 

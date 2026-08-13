@@ -349,5 +349,5 @@ penalized generalized tensor regression, and tensor envelope PLS.
 - [performance](https://www.sundayu.me/tensory/articles/performance.md):
 - [Tensor Regression with
   spgtr()](https://www.sundayu.me/tensory/articles/spgtr.md):
-- [Tensory
-  Tutorial](https://www.sundayu.me/tensory/articles/tutorial.md):
+- [Get started with
+  tensory](https://www.sundayu.me/tensory/articles/tensory.md):

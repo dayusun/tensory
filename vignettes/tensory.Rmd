@@ -1,8 +1,8 @@
 ---
-title: "Tensory Tutorial"
+title: "Get started with tensory"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Tensory Tutorial}
+  %\VignetteIndexEntry{Get started with tensory}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
