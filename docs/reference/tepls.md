@@ -76,7 +76,7 @@ regression. Technometrics 59(4), 426-436.
 
 ## See also
 
-[`predict.tepls()`](https://dayusun.github.io/tensory/reference/predict.tepls.md)
+[`predict.tepls()`](https://www.sundayu.me/tensory/reference/predict.tepls.md)
 
 ## Examples
 

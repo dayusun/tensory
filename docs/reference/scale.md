@@ -1,8 +1,8 @@
 # Tensor Scaling
 
 Alias for
-[`t_scale()`](https://dayusun.github.io/tensory/reference/t_scale.md)
-with Tensor Toolbox naming.
+[`t_scale()`](https://www.sundayu.me/tensory/reference/t_scale.md) with
+Tensor Toolbox naming.
 
 ## Usage
 

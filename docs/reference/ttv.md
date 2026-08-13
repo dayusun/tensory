@@ -1,7 +1,7 @@
 # Tensor Times Vector
 
 Convenience wrapper around
-[`ttm()`](https://dayusun.github.io/tensory/reference/ttm.md) for vector
+[`ttm()`](https://www.sundayu.me/tensory/reference/ttm.md) for vector
 contractions.
 
 ## Usage

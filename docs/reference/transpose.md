@@ -1,7 +1,7 @@
 # Transpose Tensor
 
 Tensor transpose is not defined; use
-[`permute()`](https://dayusun.github.io/tensory/reference/permute.md)
+[`permute()`](https://www.sundayu.me/tensory/reference/permute.md)
 instead.
 
 ## Usage

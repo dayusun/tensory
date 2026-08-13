@@ -17,8 +17,8 @@ summary(object, ...)
 - object:
 
   A fit from
-  [`spgtr()`](https://dayusun.github.io/tensory/reference/spgtr.md) or
-  [`spgtr_cv()`](https://dayusun.github.io/tensory/reference/spgtr_cv.md).
+  [`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md) or
+  [`spgtr_cv()`](https://www.sundayu.me/tensory/reference/spgtr_cv.md).
 
 - ...:
 
@@ -34,7 +34,7 @@ and `auc`.
 
 In-sample fit statistics are optimistic. For an honest estimate, hold
 out subjects or read the cross-validated deviance in `fit$cv` after
-[`spgtr_cv()`](https://dayusun.github.io/tensory/reference/spgtr_cv.md).
+[`spgtr_cv()`](https://www.sundayu.me/tensory/reference/spgtr_cv.md).
 
 ## Examples
 

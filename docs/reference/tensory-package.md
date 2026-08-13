@@ -22,12 +22,12 @@ operations able to delegate to optimized C++ backends.
 
 - Operations with names and semantics similar to the MATLAB Tensor
   Toolbox such as
-  [`ttm()`](https://dayusun.github.io/tensory/reference/ttm.md),
-  [`ttt()`](https://dayusun.github.io/tensory/reference/ttt.md),
-  [`ttv()`](https://dayusun.github.io/tensory/reference/ttv.md),
-  [`permute()`](https://dayusun.github.io/tensory/reference/permute.md),
+  [`ttm()`](https://www.sundayu.me/tensory/reference/ttm.md),
+  [`ttt()`](https://www.sundayu.me/tensory/reference/ttt.md),
+  [`ttv()`](https://www.sundayu.me/tensory/reference/ttv.md),
+  [`permute()`](https://www.sundayu.me/tensory/reference/permute.md),
   and
-  [`contract()`](https://dayusun.github.io/tensory/reference/contract.md)
+  [`contract()`](https://www.sundayu.me/tensory/reference/contract.md)
 
 - Dense helpers for unfolding, vectorization, symmetry checks, and
   matricized tensor products
@@ -36,39 +36,39 @@ operations able to delegate to optimized C++ backends.
 
 ## Main Classes
 
-- [`Tensor`](https://dayusun.github.io/tensory/reference/Tensor.md): The
+- [`Tensor`](https://www.sundayu.me/tensory/reference/Tensor.md): The
   core R6 class for tensor operations
 
-- [`Tenmat`](https://dayusun.github.io/tensory/reference/Tenmat.md):
+- [`Tenmat`](https://www.sundayu.me/tensory/reference/Tenmat.md):
   Matricized tensor representation
 
-- [`KTensor`](https://dayusun.github.io/tensory/reference/KTensor.md):
+- [`KTensor`](https://www.sundayu.me/tensory/reference/KTensor.md):
   Kruskal tensor representation
 
-- [`TTensor`](https://dayusun.github.io/tensory/reference/TTensor.md):
+- [`TTensor`](https://www.sundayu.me/tensory/reference/TTensor.md):
   Tucker tensor representation
 
 ## Main Functions
 
-- [`tensor`](https://dayusun.github.io/tensory/reference/Tensor.md):
-  Create tensor objects from R data structures
+- [`tensor`](https://www.sundayu.me/tensory/reference/Tensor.md): Create
+  tensor objects from R data structures
 
-- [`zeros`](https://dayusun.github.io/tensory/reference/zeros.md):
-  Create tensors filled with zeros
+- [`zeros`](https://www.sundayu.me/tensory/reference/zeros.md): Create
+  tensors filled with zeros
 
-- [`ones`](https://dayusun.github.io/tensory/reference/ones.md): Create
+- [`ones`](https://www.sundayu.me/tensory/reference/ones.md): Create
   tensors filled with ones
 
-- [`ttm`](https://dayusun.github.io/tensory/reference/ttm.md): Tensor
-  times matrix or vector
+- [`ttm`](https://www.sundayu.me/tensory/reference/ttm.md): Tensor times
+  matrix or vector
 
-- [`ttt`](https://dayusun.github.io/tensory/reference/ttt.md):
+- [`ttt`](https://www.sundayu.me/tensory/reference/ttt.md):
   Tensor-times-tensor products
 
-- [`permute`](https://dayusun.github.io/tensory/reference/permute.md):
+- [`permute`](https://www.sundayu.me/tensory/reference/permute.md):
   Reorder tensor dimensions
 
-- [`mttkrp`](https://dayusun.github.io/tensory/reference/mttkrp.md):
+- [`mttkrp`](https://www.sundayu.me/tensory/reference/mttkrp.md):
   Matricized tensor times Khatri-Rao product
 
 ## Performance

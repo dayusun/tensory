@@ -1,7 +1,7 @@
 # Choose the Sparsity of a Tensor Regression by Cross-Validation
 
-Runs [`spgtr()`](https://dayusun.github.io/tensory/reference/spgtr.md)
-over a range of sparsity levels, scores each one by `nfolds`-fold
+Runs [`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md) over
+a range of sparsity levels, scores each one by `nfolds`-fold
 cross-validation, and returns the model refitted at the best value. Use
 this when you want the method to decide by itself how much of the array
 to keep.
@@ -29,8 +29,7 @@ spgtr_cv(
 
 - X, y, u, Z, family, maxit, tol, ridge:
 
-  As in
-  [`spgtr()`](https://dayusun.github.io/tensory/reference/spgtr.md).
+  As in [`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md).
 
 - lambda:
 
@@ -70,8 +69,8 @@ the selected value sits at either end of the grid.
 
 ## See also
 
-[`spgtr()`](https://dayusun.github.io/tensory/reference/spgtr.md),
-[`summary.spgtr()`](https://dayusun.github.io/tensory/reference/summary.spgtr.md)
+[`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md),
+[`summary.spgtr()`](https://www.sundayu.me/tensory/reference/summary.spgtr.md)
 
 ## Examples
 

@@ -44,4 +44,4 @@ Format by type (values in column-major / first-index-fastest order):
 
 ## See also
 
-[`import_data()`](https://dayusun.github.io/tensory/reference/import_data.md)
+[`import_data()`](https://www.sundayu.me/tensory/reference/import_data.md)

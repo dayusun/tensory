@@ -12,14 +12,14 @@ optimized C++ backends where available.
   decomposed tensors
 - Operations with names and semantics similar to the MATLAB Tensor
   Toolbox, such as
-  [`ttm()`](https://dayusun.github.io/tensory/reference/ttm.md),
-  [`ttt()`](https://dayusun.github.io/tensory/reference/ttt.md),
-  [`ttv()`](https://dayusun.github.io/tensory/reference/ttv.md),
-  [`mttkrp()`](https://dayusun.github.io/tensory/reference/mttkrp.md),
-  [`contract()`](https://dayusun.github.io/tensory/reference/contract.md),
-  [`permute()`](https://dayusun.github.io/tensory/reference/permute.md),
+  [`ttm()`](https://www.sundayu.me/tensory/reference/ttm.md),
+  [`ttt()`](https://www.sundayu.me/tensory/reference/ttt.md),
+  [`ttv()`](https://www.sundayu.me/tensory/reference/ttv.md),
+  [`mttkrp()`](https://www.sundayu.me/tensory/reference/mttkrp.md),
+  [`contract()`](https://www.sundayu.me/tensory/reference/contract.md),
+  [`permute()`](https://www.sundayu.me/tensory/reference/permute.md),
   and
-  [`symmetrize()`](https://dayusun.github.io/tensory/reference/symmetrize.md)
+  [`symmetrize()`](https://www.sundayu.me/tensory/reference/symmetrize.md)
 - Rcpp/xtensor-backed implementation hooks for performance-critical
   kernels
 
@@ -81,9 +81,9 @@ x_vec <- vec(x)
 This package is licensed under MIT. The repository also vendors
 third-party headers under `inst/include/` that are distributed under
 BSD-style licenses. See
-[LICENSE](https://dayusun.github.io/tensory/LICENSE),
-[LICENSE.md](https://dayusun.github.io/tensory/LICENSE.md), and
-[THIRD_PARTY_NOTICES.md](https://dayusun.github.io/tensory/THIRD_PARTY_NOTICES.md)
+[LICENSE](https://www.sundayu.me/tensory/LICENSE),
+[LICENSE.md](https://www.sundayu.me/tensory/LICENSE.md), and
+[THIRD_PARTY_NOTICES.md](https://www.sundayu.me/tensory/THIRD_PARTY_NOTICES.md)
 for details.
 
 `tensory` also takes API inspiration from the MATLAB Tensor Toolbox. The

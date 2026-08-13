@@ -14,14 +14,14 @@ predict(object, newX = NULL, ...)
 - object:
 
   A `tepls` object from
-  [`tepls()`](https://dayusun.github.io/tensory/reference/tepls.md).
+  [`tepls()`](https://www.sundayu.me/tensory/reference/tepls.md).
 
 - newX:
 
   New predictors, in the same form accepted by
-  [`tepls()`](https://dayusun.github.io/tensory/reference/tepls.md) (a
-  list of observations or an order-`(m + 1)` tensor with observations in
-  the last mode). If omitted, the fitted values are returned.
+  [`tepls()`](https://www.sundayu.me/tensory/reference/tepls.md) (a list
+  of observations or an order-`(m + 1)` tensor with observations in the
+  last mode). If omitted, the fitted values are returned.
 
 - ...:
 

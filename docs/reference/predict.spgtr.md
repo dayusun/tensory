@@ -20,13 +20,13 @@ predict(
 - object:
 
   A fit from
-  [`spgtr()`](https://dayusun.github.io/tensory/reference/spgtr.md) or
-  [`spgtr_cv()`](https://dayusun.github.io/tensory/reference/spgtr_cv.md).
+  [`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md) or
+  [`spgtr_cv()`](https://www.sundayu.me/tensory/reference/spgtr_cv.md).
 
 - newX:
 
   New subjects, in either form accepted by
-  [`spgtr()`](https://dayusun.github.io/tensory/reference/spgtr.md). If
+  [`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md). If
   omitted, predictions for the subjects used in fitting are returned.
 
 - newZ:

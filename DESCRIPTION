@@ -10,7 +10,7 @@ Description: Provides dense and decomposed tensor classes for R together with
     matricized products, contractions, reshaping helpers, and symmetry
     utilities. Selected kernels can delegate to `xtensor`/`Rcpp` backends for
     performance.
-URL: https://dayusun.github.io/tensory/, https://github.com/dayusun/tensory
+URL: https://www.sundayu.me/tensory/, https://github.com/dayusun/tensory
 BugReports: https://github.com/dayusun/tensory/issues
 License: MIT + file LICENSE
 Encoding: UTF-8

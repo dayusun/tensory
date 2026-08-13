@@ -40,10 +40,10 @@ unique solution and any answer it produces is noise. Flattening also
 throws away the grid structure: it forgets that column 12 of row 4 sits
 next to column 13 of row 4.
 
-[`spgtr()`](https://dayusun.github.io/tensory/reference/spgtr.md) keeps
-the structure. It compresses each *dimension* of the array separately
-down to a few informative directions, fits a generalized linear model on
-the compressed version, and then translates the fitted model back to the
+[`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md) keeps the
+structure. It compresses each *dimension* of the array separately down
+to a few informative directions, fits a generalized linear model on the
+compressed version, and then translates the fitted model back to the
 original array shape so you can look at it. Adding a sparsity penalty
 makes it also *select*: whole rows, columns, or slices that carry no
 signal are dropped, and you are told which ones survived.
@@ -236,7 +236,7 @@ sparse$selected
 ```
 
 Rather than guessing `lambda`, let cross-validation choose it.
-[`spgtr_cv()`](https://dayusun.github.io/tensory/reference/spgtr_cv.md)
+[`spgtr_cv()`](https://www.sundayu.me/tensory/reference/spgtr_cv.md)
 fits the whole path in every fold, scores each value by held-out
 deviance, and refits at the winner.
 
@@ -334,7 +334,7 @@ cor(predict(fit_gauss), scores)
 ```
 
 For a continuous outcome with no sparsity you can also use
-[`tepls()`](https://dayusun.github.io/tensory/reference/tepls.md), the
+[`tepls()`](https://www.sundayu.me/tensory/reference/tepls.md), the
 classical tensor envelope PLS estimator;
 `spgtr(..., family = gaussian(), basis = "simpls")` reproduces it
 exactly.
@@ -352,7 +352,7 @@ max(abs(as.vector(a$coef$as_array()) - b$bvec))
 Everything [`summary()`](https://rdrr.io/r/base/summary.html) prints is
 in-sample and therefore optimistic. Split the subjects, or read the
 cross-validated deviance from
-[`spgtr_cv()`](https://dayusun.github.io/tensory/reference/spgtr_cv.md).
+[`spgtr_cv()`](https://www.sundayu.me/tensory/reference/spgtr_cv.md).
 
 ``` r
 
@@ -403,7 +403,7 @@ of shape `p_1 x ... x p_m`, and `Z` for the ordinary covariates.
     `B = D x_1 W_1 ... x_m W_m`. The returned `coef(fit)` is that `B`,
     stored as a `TTensor` (core `D`, factors `W`) so the structure is
     preserved;
-    [`as.tensor()`](https://dayusun.github.io/tensory/reference/as.tensor.md)
+    [`as.tensor()`](https://www.sundayu.me/tensory/reference/as.tensor.md)
     expands it.
 
 References: Zhang & Li (2017, *Technometrics*) for the tensor PLS
@@ -416,7 +416,7 @@ gradient solver.
 The two expensive steps – the mode-wise covariances and the manifold
 solver – are compiled kernels calling BLAS/LAPACK directly, and the
 score computation reuses the package’s compiled
-[`ttm()`](https://dayusun.github.io/tensory/reference/ttm.md). Reference
+[`ttm()`](https://www.sundayu.me/tensory/reference/ttm.md). Reference
 implementations in R are used automatically if the package was built
 without compilation; the two paths agree to numerical tolerance and are
 checked against each other in the test suite.
@@ -424,10 +424,10 @@ checked against each other in the test suite.
 Practical guidance:
 
 - A single
-  [`spgtr()`](https://dayusun.github.io/tensory/reference/spgtr.md) fit
-  on a 60 × 60 predictor with 300 subjects takes about a tenth of a
-  second; the full
-  [`spgtr_cv()`](https://dayusun.github.io/tensory/reference/spgtr_cv.md)
+  [`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md) fit on
+  a 60 × 60 predictor with 300 subjects takes about a tenth of a second;
+  the full
+  [`spgtr_cv()`](https://www.sundayu.me/tensory/reference/spgtr_cv.md)
   path (20 penalties, 5 folds) takes a second or two.
 - Cost grows linearly in the number of subjects and in the total array
   size, and cubically in each individual dimension `p_k` (from the eigen
@@ -435,7 +435,7 @@ Practical guidance:
   dimensions of 50.
 - `basis = "simpls"` skips all iteration and is the fastest option when
   you do not need sparsity.
-- [`spgtr_cv()`](https://dayusun.github.io/tensory/reference/spgtr_cv.md)
+- [`spgtr_cv()`](https://www.sundayu.me/tensory/reference/spgtr_cv.md)
   computes covariances once per fold and warm-starts each penalty from
   the previous one, so a 20-point path costs far less than 20 separate
   fits.

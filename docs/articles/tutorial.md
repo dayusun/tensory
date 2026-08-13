@@ -46,7 +46,7 @@ operator overloads for a fluid experience.
 ### Creating Tensors
 
 You can create tensors from vectors, matrices, arrays, or scalars using
-the [`tensor()`](https://dayusun.github.io/tensory/reference/Tensor.md)
+the [`tensor()`](https://www.sundayu.me/tensory/reference/Tensor.md)
 constructor function, or directly using `Tensor$new()`.
 
 ``` r
@@ -222,7 +222,7 @@ to `cdims`.
 ### Creating Matricizations
 
 You can matricize a `Tensor` along specific dimensions using
-[`tenmat()`](https://dayusun.github.io/tensory/reference/Tenmat.md).
+[`tenmat()`](https://www.sundayu.me/tensory/reference/Tenmat.md).
 
 ``` r
 
@@ -290,7 +290,7 @@ leveraging C++ xtensor-blas optimizations.
 
 ### Tensor Times Matrix (ttm)
 
-[`ttm()`](https://dayusun.github.io/tensory/reference/ttm.md) computes a
+[`ttm()`](https://www.sundayu.me/tensory/reference/ttm.md) computes a
 tensor times a matrix (or matrices) or vector (or vectors) in one (or
 more) dimensions.
 
@@ -327,8 +327,8 @@ res4$as_array() # Returns a scalar value
 
 ### Tensor Times Tensor (ttt)
 
-[`ttt()`](https://dayusun.github.io/tensory/reference/ttt.md) computes
-the generalized product (outer, inner, or contracted) of two tensors.
+[`ttt()`](https://www.sundayu.me/tensory/reference/ttt.md) computes the
+generalized product (outer, inner, or contracted) of two tensors.
 
 ``` r
 
@@ -535,10 +535,10 @@ t_norm$fnorm()
 
 ### Collapsing and Scaling
 
-[`collapse()`](https://dayusun.github.io/tensory/reference/collapse.md)
+[`collapse()`](https://www.sundayu.me/tensory/reference/collapse.md)
 reduces a tensor along specific dimensions using an accumulation
 function, while
-[`t_scale()`](https://dayusun.github.io/tensory/reference/t_scale.md)
+[`t_scale()`](https://www.sundayu.me/tensory/reference/t_scale.md)
 performs dimension-aligned multiplying (broadcasting).
 
 ``` r

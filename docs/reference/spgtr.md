@@ -82,7 +82,7 @@ print(x, ...)
 
   Amount of sparsity, `>= 0`. `0` (default) keeps every row of every
   factor matrix; larger values remove more slices of the array. Use
-  [`spgtr_cv()`](https://dayusun.github.io/tensory/reference/spgtr_cv.md)
+  [`spgtr_cv()`](https://www.sundayu.me/tensory/reference/spgtr_cv.md)
   if you do not want to pick this by hand. Ignored when
   `basis = "simpls"`.
 
@@ -98,7 +98,7 @@ print(x, ...)
 - object:
 
   A fit from `spgtr()` or
-  [`spgtr_cv()`](https://dayusun.github.io/tensory/reference/spgtr_cv.md).
+  [`spgtr_cv()`](https://www.sundayu.me/tensory/reference/spgtr_cv.md).
 
 - ...:
 
@@ -107,7 +107,7 @@ print(x, ...)
 - x:
 
   A fit from `spgtr()` or
-  [`spgtr_cv()`](https://dayusun.github.io/tensory/reference/spgtr_cv.md).
+  [`spgtr_cv()`](https://www.sundayu.me/tensory/reference/spgtr_cv.md).
 
 ## Value
 
@@ -116,10 +116,10 @@ An object of class `spgtr`, a list whose most useful elements are:
 - `coef`:
 
   coefficient array as a
-  [TTensor](https://dayusun.github.io/tensory/reference/TTensor.md) with
+  [TTensor](https://www.sundayu.me/tensory/reference/TTensor.md) with
   core `D` and factor matrices `W`; `coef(fit)` returns it and
   `as.tensor(coef(fit))` expands it to a dense
-  [Tensor](https://dayusun.github.io/tensory/reference/Tensor.md).
+  [Tensor](https://www.sundayu.me/tensory/reference/Tensor.md).
 
 - `alpha`, `gamma`:
 
@@ -146,7 +146,7 @@ means "a high value at this position pushes the outcome up"; a zero
 entry means the position was not used. With `lambda > 0` whole rows,
 columns, or slices are set to zero, so the fit also tells you which
 parts of the array matter at all (see `fit$selected` and
-[`summary.spgtr()`](https://dayusun.github.io/tensory/reference/summary.spgtr.md)).
+[`summary.spgtr()`](https://www.sundayu.me/tensory/reference/summary.spgtr.md)).
 
 ## How to use it (short version)
 
@@ -161,7 +161,7 @@ parts of the array matter at all (see `fit$selected` and
     with `predict(fit, newX)`.
 
 4.  To also *select* which parts of the array matter, use
-    [`spgtr_cv()`](https://dayusun.github.io/tensory/reference/spgtr_cv.md),
+    [`spgtr_cv()`](https://www.sundayu.me/tensory/reference/spgtr_cv.md),
     which picks the amount of sparsity for you by cross-validation.
 
 ## How it works (technical)
@@ -175,7 +175,7 @@ for its cross-covariance with `r`, the mode-`k` signal matrix is
 
 With `basis = "simpls"` the factor matrix `W_k` collects the first
 `u[k]` SIMPLS directions of `(U_k, Sigma_k)`, exactly as in
-[`tepls()`](https://dayusun.github.io/tensory/reference/tepls.md). With
+[`tepls()`](https://www.sundayu.me/tensory/reference/tepls.md). With
 `basis = "envelope"` (the default) that basis is refined by minimizing
 the envelope objective
 `log|W' Sigma_k W| + log|W' (Sigma_k + U_k)^-1 W|` over the Stiefel
@@ -202,7 +202,7 @@ the latent coefficients `D`.
 The mode-wise covariances and the manifold solver are compiled kernels
 (`spgtr_mode_covs_cpp`, `spgtr_slpg_cpp`); the score computation reuses
 the package's compiled
-[`ttm()`](https://dayusun.github.io/tensory/reference/ttm.md). Reference
+[`ttm()`](https://www.sundayu.me/tensory/reference/ttm.md). Reference
 implementations in R are used automatically if the package was installed
 without compilation, and the two paths agree to numerical tolerance.
 
@@ -220,12 +220,12 @@ Optimization 31(4), 3097-3126.
 
 ## See also
 
-[`spgtr_cv()`](https://dayusun.github.io/tensory/reference/spgtr_cv.md)
-to choose `lambda`,
-[`predict.spgtr()`](https://dayusun.github.io/tensory/reference/predict.spgtr.md),
-[`summary.spgtr()`](https://dayusun.github.io/tensory/reference/summary.spgtr.md),
-and [`tepls()`](https://dayusun.github.io/tensory/reference/tepls.md)
-for the continuous-response version.
+[`spgtr_cv()`](https://www.sundayu.me/tensory/reference/spgtr_cv.md) to
+choose `lambda`,
+[`predict.spgtr()`](https://www.sundayu.me/tensory/reference/predict.spgtr.md),
+[`summary.spgtr()`](https://www.sundayu.me/tensory/reference/summary.spgtr.md),
+and [`tepls()`](https://www.sundayu.me/tensory/reference/tepls.md) for
+the continuous-response version.
 
 ## Examples
 

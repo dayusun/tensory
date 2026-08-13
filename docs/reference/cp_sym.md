@@ -59,7 +59,7 @@ A `SymKTensor`.
 With `t_r = <X, u_r^(o m)>` and `c_rs = u_r . u_s`, the objective is
 `||X||^2 - 2 sum_r lambda_r t_r + sum_rs lambda_r lambda_s c_rs^m`,
 whose gradients are evaluated exactly using
-[`ttsv()`](https://dayusun.github.io/tensory/reference/ttsv.md).
+[`ttsv()`](https://www.sundayu.me/tensory/reference/ttsv.md).
 
 ## Examples
 

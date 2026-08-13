@@ -54,11 +54,11 @@ The package also exports `Tenmat` (matricization), `KTensor`
 storage) + `Sptenmat`, `SymTensor` (compact symmetric storage),
 `SymKTensor` (symmetric CP), and `SumTensor` (lazy sum of parts), each
 with their own R6 class file and an
-[`as.tensor()`](https://dayusun.github.io/tensory/reference/as.tensor.md)
+[`as.tensor()`](https://www.sundayu.me/tensory/reference/as.tensor.md)
 method that materializes back to a dense `Tensor`. Conversion goes
 through `as.tensor.<class>()` S3 methods declared in `NAMESPACE`.
 
-[`ktensor()`](https://dayusun.github.io/tensory/reference/KTensor.md)/[`ttensor()`](https://dayusun.github.io/tensory/reference/TTensor.md)/[`sptensor()`](https://dayusun.github.io/tensory/reference/Sptensor.md)/[`sumtensor()`](https://dayusun.github.io/tensory/reference/SumTensor.md)
+[`ktensor()`](https://www.sundayu.me/tensory/reference/KTensor.md)/[`ttensor()`](https://www.sundayu.me/tensory/reference/TTensor.md)/[`sptensor()`](https://www.sundayu.me/tensory/reference/Sptensor.md)/[`sumtensor()`](https://www.sundayu.me/tensory/reference/SumTensor.md)
 prepend their own class **before** `"Tensor"` in the S3 class vector.
 This is deliberate: specialized methods (e.g. `fnorm.KTensor`,
 `mttkrp.Sptensor`) win dispatch, while the `"Tensor"` operators serve as
@@ -74,10 +74,10 @@ Structured (non-densifying) implementations exist for
 for
 `fnorm`/`innerprod`/`mttkrp`/`nvecs`/`ttv`/`ttm`/`collapse`/`permute` on
 `Sptensor` (`.ttm_sparse` in `R/sptensor_methods.R` is dispatched from
-the [`ttm()`](https://dayusun.github.io/tensory/reference/ttm.md)
-generic). `cp_als` accepts an `Sptensor` natively and never densifies.
-When adding a new reduction, add the structured method rather than
-relying on the dense fallback.
+the [`ttm()`](https://www.sundayu.me/tensory/reference/ttm.md) generic).
+`cp_als` accepts an `Sptensor` natively and never densifies. When adding
+a new reduction, add the structured method rather than relying on the
+dense fallback.
 
 `DESCRIPTION` has a `Collate:` field — class files load before method
 files, and `tensor_operations.R` depends on the class definitions. If
@@ -132,7 +132,7 @@ primitives):
   (Poisson CP, Chi–Kolda MU), `cp_opt`/`cp_wopt` (L-BFGS-B on the exact
   gradient; `cp_wopt` handles missing data via a weight tensor),
   `cp_arls` (uniformly sampled ALS using
-  [`fibers()`](https://dayusun.github.io/tensory/reference/fibers.md);
+  [`fibers()`](https://www.sundayu.me/tensory/reference/fibers.md);
   deliberately no FFT mixing — documented divergence from MATLAB).
   Shared helpers: `.kr_others` (skip-mode Khatri–Rao whose row order
   matches `unfold(x, rdims = n)` columns — tested against `mttkrp`),
@@ -160,7 +160,7 @@ primitives):
   `extract`, `redistribute`, `tovec`, `viz`.
 
 - `R/tepls.R` —
-  [`tepls()`](https://dayusun.github.io/tensory/reference/tepls.md), the
+  [`tepls()`](https://www.sundayu.me/tensory/reference/tepls.md), the
   one **supervised** method (tensor predictor + response), from Zhang &
   Li (2017) Tensor Envelope PLS. It is *not* Tensor Toolbox; it returns
   a `tepls` S3 object with a `predict.tepls`/`coef`/`print`. Algorithm 4
@@ -174,14 +174,14 @@ primitives):
   order-`(m+1)` tensor with observations in the **last** mode.
 
 - `R/spgtr.R` —
-  [`spgtr()`](https://dayusun.github.io/tensory/reference/spgtr.md)/[`spgtr_cv()`](https://dayusun.github.io/tensory/reference/spgtr_cv.md),
+  [`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md)/[`spgtr_cv()`](https://www.sundayu.me/tensory/reference/spgtr_cv.md),
   the GLM counterpart of
-  [`tepls()`](https://dayusun.github.io/tensory/reference/tepls.md)
-  (port of the MATLAB TPLSGLM/SPGTR code): the response enters through
-  the working residual `y - mu_0` of the nuisance-only GLM, per-mode
-  SIMPLS bases are optionally refined by minimizing the Cook–Zhang
-  envelope objective over the Stiefel manifold, and an adaptive row-wise
-  L2,1 penalty (`lambda > 0`) drops whole slices of the predictor. The
+  [`tepls()`](https://www.sundayu.me/tensory/reference/tepls.md) (port
+  of the MATLAB TPLSGLM/SPGTR code): the response enters through the
+  working residual `y - mu_0` of the nuisance-only GLM, per-mode SIMPLS
+  bases are optionally refined by minimizing the Cook–Zhang envelope
+  objective over the Stiefel manifold, and an adaptive row-wise L2,1
+  penalty (`lambda > 0`) drops whole slices of the predictor. The
   manifold solver is SLPG (Xiao–Liu–Yuan) with a polar retraction:
   **every retraction/feasibility step must right-multiply `W`** — that
   is what preserves the row sparsity the prox step creates, so never
@@ -191,7 +191,7 @@ primitives):
   (covariances, signal matrices, SIMPLS bases — everything independent
   of `lambda`) and `.spgtr_solve()` (bases at one `lambda` + score-level
   GLM) so
-  [`spgtr_cv()`](https://dayusun.github.io/tensory/reference/spgtr_cv.md)
+  [`spgtr_cv()`](https://www.sundayu.me/tensory/reference/spgtr_cv.md)
   reuses one preparation per fold and warm-starts along the path. Shares
   `.tepls_design`/`.tepls_mode_covs`/`.tepls_simpls_mode` with
   `tepls.R`; `.sym_pow` lives here and `tepls.R`’s `.sym_inv` delegates
@@ -208,12 +208,12 @@ primitives):
   `.env_slpg_r` as the reference R paths — `test-spgtr.R` pins the two
   against each other, so any edit must touch both. Latent scores
   deliberately go through
-  [`ttm()`](https://dayusun.github.io/tensory/reference/ttm.md) rather
-  than a Kronecker product. Measured: the Kronecker path is ~2-3x
-  *faster* for order-2 predictors with tiny `u` (milliseconds either
-  way), but `ttm` wins 1.3x at `u = (3,3,3)` and 5.4x at `u = (5,5,5)`
-  and never allocates the `prod(p) x prod(u)` factor — so `ttm` is the
-  single path, at a few ms cost in the cheap case.
+  [`ttm()`](https://www.sundayu.me/tensory/reference/ttm.md) rather than
+  a Kronecker product. Measured: the Kronecker path is ~2-3x *faster*
+  for order-2 predictors with tiny `u` (milliseconds either way), but
+  `ttm` wins 1.3x at `u = (3,3,3)` and 5.4x at `u = (5,5,5)` and never
+  allocates the `prod(p) x prod(u)` factor — so `ttm` is the single
+  path, at a few ms cost in the cheap case.
 
 ### `ttm` C++ kernel — current vs. target
 
@@ -262,8 +262,8 @@ reducing a 1-D tensor) returns a **scalar `Tensor` with
 on this — when adding new reductions, return
 `Tensor$new(value, integer(0), fast = TRUE)` rather than unwrapping to a
 numeric.
-[`isscalar()`](https://dayusun.github.io/tensory/reference/isscalar.md)
-is the predicate that recognizes this shape.
+[`isscalar()`](https://www.sundayu.me/tensory/reference/isscalar.md) is
+the predicate that recognizes this shape.
 
 ### `ttm` automatic squeeze
 

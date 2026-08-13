@@ -1,7 +1,7 @@
 # Import Tensor Data from a Text File
 
 Reads a file written by
-[`export_data()`](https://dayusun.github.io/tensory/reference/export_data.md)
+[`export_data()`](https://www.sundayu.me/tensory/reference/export_data.md)
 (or MATLAB Tensor Toolbox `exportdata`) and reconstructs the
 corresponding object.
 
@@ -24,4 +24,4 @@ header.
 
 ## See also
 
-[`export_data()`](https://dayusun.github.io/tensory/reference/export_data.md)
+[`export_data()`](https://www.sundayu.me/tensory/reference/export_data.md)

@@ -4,7 +4,7 @@ Computes a generalized tensor eigenpair `A x^(m-1) = lambda B x^(m-1)`,
 `||x|| = 1`, for symmetric `A` and symmetric positive definite `B` using
 the GEAP method of Kolda & Mayo (Algorithm 1), mirroring the MATLAB
 Tensor Toolbox `eig_geap`. With `B = teneye(m, n)` this reduces to
-[`eig_sshopm()`](https://dayusun.github.io/tensory/reference/eig_sshopm.md).
+[`eig_sshopm()`](https://www.sundayu.me/tensory/reference/eig_sshopm.md).
 
 ## Usage
 
