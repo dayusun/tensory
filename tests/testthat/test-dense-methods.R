@@ -215,3 +215,11 @@ test_that("full, double, isequal, isscalar, scale, and transpose wrappers work",
   expect_equal(scale(x, c(10, 20), dims = 1)$as_array(), t_scale(x, c(10, 20), dims = 1)$as_array())
   expect_error(transpose(x), "not defined")
 })
+
+test_that("scale still works on plain matrices", {
+  # Masking base::scale must not send non-tensors back through the generic.
+  m <- matrix(c(1, 2, 3, 4, 5, 7), nrow = 3)
+  expect_equal(scale(m), base::scale.default(m))
+  expect_equal(scale(m, center = TRUE, scale = FALSE),
+               base::scale.default(m, center = TRUE, scale = FALSE))
+})

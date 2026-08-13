@@ -1,0 +1,171 @@
+url: https://dayusun.github.io/tensory/
+
+template:
+  bootstrap: 5
+  bslib:
+    primary: "#1f4e79"
+    code_font: {google: "JetBrains Mono"}
+
+home:
+  title: Modern tensor operations for R
+  description: >
+    Dense, sparse, and decomposed tensor classes with a MATLAB Tensor
+    Toolbox-style API, compiled xtensor/BLAS kernels, tensor decompositions,
+    and regression with tensor-valued predictors.
+
+navbar:
+  structure:
+    left: [intro, reference, articles, news]
+    right: [search, github]
+  components:
+    articles:
+      text: Articles
+      menu:
+      - text: "Getting started"
+      - text: Tensory tutorial
+        href: articles/tutorial.html
+      - text: Tensor identities
+        href: articles/identities.html
+      - text: "Modelling"
+      - text: Tensor regression with spgtr()
+        href: articles/spgtr.html
+      - text: "Performance"
+      - text: Performance guide
+        href: articles/performance.html
+      - text: Benchmarks vs rTensor
+        href: articles/benchmark.html
+
+reference:
+- title: Package
+  contents:
+  - tensory-package
+
+- title: Tensor classes and constructors
+  desc: >
+    The dense `Tensor` object, its matricized and decomposed relatives, and the
+    constructors that build them.
+  contents:
+  - Tensor
+  - tenrand
+  - ones
+  - zeros
+  - tendiag
+  - teneye
+  - tenfun
+  - Tenmat
+  - as.tenmat
+  - KTensor
+  - TTensor
+  - Sptensor
+  - Sptenmat
+  - sptenrand
+  - SymTensor
+  - SymKTensor
+  - SumTensor
+  - as.tensor
+  - as.tensor.KTensor
+  - as.tensor.TTensor
+  - as.tensor.Tenmat
+
+- title: Shape, indexing, and predicates
+  desc: Reshaping, unfolding, conversion, and structural queries.
+  contents:
+  - permute
+  - reshape
+  - squeeze
+  - unfold
+  - vec
+  - find
+  - nnz
+  - full
+  - isequal
+  - isscalar
+  - issymmetric
+  - symmetrize
+  - transpose
+  - double.Tensor
+  - double.Tenmat
+  - as.double.Tenmat
+  - as.matrix.Tenmat
+  - as.vector.Tenmat
+  - head.Tensor
+  - tail.Tensor
+  - show.Tensor
+  - print.Tensor
+  - print.KTensor
+  - print.TTensor
+  - Math.Tensor
+  - Summary.Tensor
+
+- title: Products, contractions, and reductions
+  desc: >
+    The computational core: tensor-times-matrix/vector/tensor products,
+    matricized products, norms, and reductions.
+  contents:
+  - ttm
+  - ttv
+  - ttt
+  - ttsv
+  - mtimes
+  - "`%*%`"
+  - innerprod
+  - contract
+  - khatri_rao
+  - kronecker
+  - hadamard
+  - mttkrp
+  - mttkrps
+  - fibers
+  - mask
+  - collapse
+  - scale
+  - t_scale
+  - fnorm
+  - nvecs
+
+- title: Decompositions
+  desc: CP, Tucker, generalized CP, and tensor eigenpairs.
+  contents:
+  - cp_als
+  - cp_nmu
+  - cp_apr
+  - cp_opt
+  - cp_wopt
+  - cp_arls
+  - cp_sym
+  - gcp_opt
+  - tucker_als
+  - tucker_sym
+  - hosvd
+  - eig_sshopm
+  - eig_geap
+
+- title: Working with CP factors
+  desc: Post-processing, comparison, and visualization of `KTensor` fits.
+  contents:
+  - arrange
+  - normalize
+  - fixsigns
+  - score
+  - ncomponents
+  - extract
+  - redistribute
+  - tovec
+  - viz
+
+- title: Regression with tensor predictors
+  desc: >
+    Supervised models where each observation is a whole array: sparse
+    penalized generalized tensor regression, and tensor envelope PLS.
+  contents:
+  - spgtr
+  - spgtr_cv
+  - predict.spgtr
+  - summary.spgtr
+  - tepls
+  - predict.tepls
+
+- title: Import and export
+  contents:
+  - import_data
+  - export_data

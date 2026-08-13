@@ -49,13 +49,8 @@ NULL
   })
 }
 
-# Symmetric inverse square root and inverse of a symmetric PD matrix.
-.sym_inv <- function(M, ridge = 1e-10) {
-  M <- (M + t(M)) / 2
-  e <- eigen(M, symmetric = TRUE)
-  d <- pmax(e$values, ridge * max(e$values, 1))
-  e$vectors %*% (t(e$vectors) / d)
-}
+# Inverse of a symmetric PD matrix, eigenvalues floored for stability.
+.sym_inv <- function(M, ridge = 1e-10) .sym_pow(M, -1, ridge)
 
 # SIMPLS envelope-basis estimation for one mode (Algorithm 4, steps 2-3).
 # M is the (deflated) second-moment matrix C~ C~^T; Sig is Sigma_k. Returns a

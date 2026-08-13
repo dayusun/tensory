@@ -33,6 +33,18 @@ issymmetric_cpp <- function(tensor_data, grps) {
     .Call(`_tensory_issymmetric_cpp`, tensor_data, grps)
 }
 
+#' @keywords internal
+#' @noRd
+spgtr_mode_covs_cpp <- function(Xt, dims) {
+    .Call(`_tensory_spgtr_mode_covs_cpp`, Xt, dims)
+}
+
+#' @keywords internal
+#' @noRd
+spgtr_slpg_cpp <- function(G0, M, MUinv, gam, maxit, tol, ridge = 1e-10) {
+    .Call(`_tensory_spgtr_slpg_cpp`, G0, M, MUinv, gam, maxit, tol, ridge)
+}
+
 ttm_cpp <- function(tensor_data, matrix, mode, transpose = FALSE) {
     .Call(`_tensory_ttm_cpp`, tensor_data, matrix, mode, transpose)
 }

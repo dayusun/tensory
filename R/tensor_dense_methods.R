@@ -960,7 +960,9 @@ scale.Tensor <- function(x, s, dims, ...) {
 
 #' @export
 scale.default <- function(x, ...) {
-  base::scale(x, ...)
+  # base::scale is itself a generic, so calling it here dispatches straight
+  # back to this method: go to base's implementation directly.
+  base::scale.default(x, ...)
 }
 
 #' Transpose Tensor

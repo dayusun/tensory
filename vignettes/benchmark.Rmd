@@ -54,7 +54,7 @@ res_ttm1 <- bench::mark(
   rTensor = rTensor::ttm(t_rtensor, mat, 1)@data,
   check = FALSE, iterations = 20
 )
-plot(res_ttm1) + ggtitle("TTM Mode 1 Performance")
+plot(res_ttm1, type = "violin") + ggtitle("TTM Mode 1 Performance")
 
 # Benchmark Mode 2
 res_ttm2 <- bench::mark(
@@ -62,7 +62,7 @@ res_ttm2 <- bench::mark(
   rTensor = rTensor::ttm(t_rtensor, mat, 2)@data,
   check = FALSE, iterations = 20
 )
-plot(res_ttm2) + ggtitle("TTM Mode 2 Performance")
+plot(res_ttm2, type = "violin") + ggtitle("TTM Mode 2 Performance")
 
 # Benchmark Mode 3
 res_ttm3 <- bench::mark(
@@ -70,7 +70,7 @@ res_ttm3 <- bench::mark(
   rTensor = rTensor::ttm(t_rtensor, mat, 3)@data,
   check = FALSE, iterations = 20
 )
-plot(res_ttm3) + ggtitle("TTM Mode 3 Performance")
+plot(res_ttm3, type = "violin") + ggtitle("TTM Mode 3 Performance")
 ```
 
 ### 2. TTT Performance Comparison
@@ -102,7 +102,7 @@ res_inner <- bench::mark(
   rTensor = rTensor::innerProd(tA_rt_inner, tB_rt_inner),
   check = FALSE, iterations = 20
 )
-plot(res_inner) + ggtitle("TTT Inner Product Performance")
+plot(res_inner, type = "violin") + ggtitle("TTT Inner Product Performance")
 
 # Partial Contraction (dim 2 and 3 of A with dim 2 and 1 of B)
 res_partial <- bench::mark(
@@ -115,7 +115,7 @@ res_partial <- bench::mark(
   },
   check = FALSE, iterations = 20
 )
-plot(res_partial) + ggtitle("TTT Partial Contraction Performance")
+plot(res_partial, type = "violin") + ggtitle("TTT Partial Contraction Performance")
 
 # Outer Product
 arrA_small <- array(rnorm(100), dim=c(10, 10))
@@ -130,7 +130,7 @@ res_outer <- bench::mark(
   rTensor = rTensor::as.tensor(outer(tA_rt_sm@data, tB_rt_sm@data))@data,
   check = FALSE, iterations = 20
 )
-plot(res_outer) + ggtitle("TTT Outer Product Performance")
+plot(res_outer, type = "violin") + ggtitle("TTT Outer Product Performance")
 ```
 
 ### 3. Tenmat (Unfolding) Performance Comparison
@@ -172,9 +172,9 @@ res_unfold_large <- bench::mark(
   check = FALSE, iterations = 10
 )
 
-plot(res_unfold_small) + ggtitle("Tenmat Performance (Small Tensor 10x10x10)")
-plot(res_unfold_med) + ggtitle("Tenmat Performance (Medium Tensor 30x40x50)")
-plot(res_unfold_large) + ggtitle("Tenmat Performance (Large Tensor 100x100x100)")
+plot(res_unfold_small, type = "violin") + ggtitle("Tenmat Performance (Small Tensor 10x10x10)")
+plot(res_unfold_med, type = "violin") + ggtitle("Tenmat Performance (Medium Tensor 30x40x50)")
+plot(res_unfold_large, type = "violin") + ggtitle("Tenmat Performance (Large Tensor 100x100x100)")
 ```
 
 ### 4. Advanced Mathematical Operations Performance
@@ -194,7 +194,7 @@ res_kr <- bench::mark(
   rTensor = rTensor::khatri_rao_list(mat_list),
   check = FALSE, iterations = 20
 )
-plot(res_kr) + ggtitle("Khatri-Rao Product (List) Performance")
+plot(res_kr, type = "violin") + ggtitle("Khatri-Rao Product (List) Performance")
 
 # 2. Kronecker Product
 # Use smaller matrices for Kronecker to avoid memory explosion (O(N^K))
@@ -208,7 +208,7 @@ res_kron <- bench::mark(
   rTensor = rTensor::kronecker_list(k_list),
   check = FALSE, iterations = 20
 )
-plot(res_kron) + ggtitle("Kronecker Product (List) Performance")
+plot(res_kron, type = "violin") + ggtitle("Kronecker Product (List) Performance")
 
 # 3. Hadamard Product (Element-wise)
 h1 <- matrix(rnorm(500 * 500), nrow = 500, ncol = 500)
@@ -221,7 +221,7 @@ res_hadamard <- bench::mark(
   rTensor = rTensor::hadamard_list(h_list),
   check = FALSE, iterations = 50
 )
-plot(res_hadamard) + ggtitle("Hadamard Product (List) Performance")
+plot(res_hadamard, type = "violin") + ggtitle("Hadamard Product (List) Performance")
 
 # 4. Frobenius Norm
 t_fnorm_ts <- tensory::tensor(array(rnorm(100*100*100), dim=c(100, 100, 100)))
@@ -232,7 +232,7 @@ res_fnorm <- bench::mark(
   rTensor = rTensor::fnorm(t_fnorm_rt),
   check = FALSE, iterations = 50
 )
-plot(res_fnorm) + ggtitle("Frobenius Norm Performance")
+plot(res_fnorm, type = "violin") + ggtitle("Frobenius Norm Performance")
 ```
 
 ## Results & Conclusion

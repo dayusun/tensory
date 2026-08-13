@@ -13,3 +13,7 @@
 ^\.claude$
 ^CLAUDE\.md$
 ^THIRD_PARTY_NOTICES\.md$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^TPLSGLM_SPGTR_code_.*\.zip$

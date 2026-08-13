@@ -354,11 +354,11 @@ t_norm$fnorm()
 t_dense <- tensor(1:24, c(4, 3, 2))
 
 # Collapse Mode 1 (Sum all elements across rows)
-collapse(t_dense, 1)$dim()
+tensory::collapse(t_dense, 1)$dim()
 
 # Collapse all modes EXCEPT Mode 3
 # Negative dimensions mean "exclude these dimensions from collapse"
-collapse(t_dense, -3)$dim()
+tensory::collapse(t_dense, -3)$dim()
 
 # Scale mode 3 with a specific vector
 t_scale(t_dense, c(10, 20), dims = 3)$dim()

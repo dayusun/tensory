@@ -1,0 +1,239 @@
+# Package index
+
+## Package
+
+- [`tensory-package`](https://dayusun.github.io/tensory/reference/tensory-package.md)
+  [`tensory`](https://dayusun.github.io/tensory/reference/tensory-package.md)
+  : tensory: Tensory - Modern Tensor Operations for R
+
+## Tensor classes and constructors
+
+The dense `Tensor` object, its matricized and decomposed relatives, and
+the constructors that build them.
+
+- [`tensor()`](https://dayusun.github.io/tensory/reference/Tensor.md) :
+  R6 Tensor Class
+- [`tenrand()`](https://dayusun.github.io/tensory/reference/tenrand.md)
+  : Random Dense Tensor
+- [`ones()`](https://dayusun.github.io/tensory/reference/ones.md) :
+  Create a tensor of ones
+- [`zeros()`](https://dayusun.github.io/tensory/reference/zeros.md) :
+  Create a tensor of zeros
+- [`tendiag()`](https://dayusun.github.io/tensory/reference/tendiag.md)
+  : Diagonal Tensor
+- [`teneye()`](https://dayusun.github.io/tensory/reference/teneye.md) :
+  Identity Tensor
+- [`tenfun()`](https://dayusun.github.io/tensory/reference/tenfun.md) :
+  Apply Elementwise Function to Tensor Arguments
+- [`tenmat()`](https://dayusun.github.io/tensory/reference/Tenmat.md) :
+  R6 Tenmat Class
+- [`as.tenmat()`](https://dayusun.github.io/tensory/reference/as.tenmat.md)
+  : Convert object to Tenmat
+- [`ktensor()`](https://dayusun.github.io/tensory/reference/KTensor.md)
+  : R6 Class for Kruskal Tensors (KTensor)
+- [`ttensor()`](https://dayusun.github.io/tensory/reference/TTensor.md)
+  : R6 Class for Tucker Tensors (TTensor)
+- [`sptensor()`](https://dayusun.github.io/tensory/reference/Sptensor.md)
+  : R6 Class for Sparse Tensors (Sptensor)
+- [`sptenmat()`](https://dayusun.github.io/tensory/reference/Sptenmat.md)
+  : R6 Class for Sparse Matricized Tensors (Sptenmat)
+- [`sptenrand()`](https://dayusun.github.io/tensory/reference/sptenrand.md)
+  : Random Sparse Tensor
+- [`symtensor()`](https://dayusun.github.io/tensory/reference/SymTensor.md)
+  : R6 Class for Symmetric Tensors (SymTensor)
+- [`symktensor()`](https://dayusun.github.io/tensory/reference/SymKTensor.md)
+  : R6 Class for Symmetric Kruskal Tensors (SymKTensor)
+- [`sumtensor()`](https://dayusun.github.io/tensory/reference/SumTensor.md)
+  : R6 Class for Implicit Sums of Tensors (SumTensor)
+- [`as.tensor()`](https://dayusun.github.io/tensory/reference/as.tensor.md)
+  : Convert object to Tensor
+- [`as.tensor(`*`<KTensor>`*`)`](https://dayusun.github.io/tensory/reference/as.tensor.KTensor.md)
+  : S3 function to convert KTensor to full Tensor
+- [`as.tensor(`*`<TTensor>`*`)`](https://dayusun.github.io/tensory/reference/as.tensor.TTensor.md)
+  : S3 function to convert TTensor to full Tensor
+- [`as.tensor(`*`<Tenmat>`*`)`](https://dayusun.github.io/tensory/reference/as.tensor.Tenmat.md)
+  : Convert Tenmat to Tensor
+
+## Shape, indexing, and predicates
+
+Reshaping, unfolding, conversion, and structural queries.
+
+- [`permute()`](https://dayusun.github.io/tensory/reference/permute.md)
+  : Permute Tensor Dimensions
+- [`reshape()`](https://dayusun.github.io/tensory/reference/reshape.md)
+  : Reshape Tensor
+- [`squeeze()`](https://dayusun.github.io/tensory/reference/squeeze.md)
+  : Squeeze Tensor
+- [`unfold()`](https://dayusun.github.io/tensory/reference/unfold.md) :
+  Unfold Tensor
+- [`vec()`](https://dayusun.github.io/tensory/reference/vec.md) :
+  Vectorize Tensor
+- [`find()`](https://dayusun.github.io/tensory/reference/find.md) : Find
+  Nonzero Entries
+- [`nnz()`](https://dayusun.github.io/tensory/reference/nnz.md) : Number
+  of Nonzeros
+- [`full()`](https://dayusun.github.io/tensory/reference/full.md) :
+  Dense Array Representation
+- [`isequal()`](https://dayusun.github.io/tensory/reference/isequal.md)
+  : Equality Test for Tensors
+- [`isscalar()`](https://dayusun.github.io/tensory/reference/isscalar.md)
+  : Scalar Tensor Predicate
+- [`issymmetric()`](https://dayusun.github.io/tensory/reference/issymmetric.md)
+  : Check Tensor Symmetry
+- [`symmetrize()`](https://dayusun.github.io/tensory/reference/symmetrize.md)
+  : Symmetrize Tensor
+- [`transpose()`](https://dayusun.github.io/tensory/reference/transpose.md)
+  : Transpose Tensor
+- [`double.Tensor()`](https://dayusun.github.io/tensory/reference/double.Tensor.md)
+  : MATLAB-Style Double Conversion
+- [`double.Tenmat()`](https://dayusun.github.io/tensory/reference/double.Tenmat.md)
+  : Convert Tenmat to standard R double array (alias for matrix)
+- [`as.double(`*`<Tenmat>`*`)`](https://dayusun.github.io/tensory/reference/as.double.Tenmat.md)
+  : Convert Tenmat to standard R Matrix using generic type conversion
+- [`as.matrix(`*`<Tenmat>`*`)`](https://dayusun.github.io/tensory/reference/as.matrix.Tenmat.md)
+  : Convert Tenmat to standard R Matrix
+- [`as.vector(`*`<Tenmat>`*`)`](https://dayusun.github.io/tensory/reference/as.vector.Tenmat.md)
+  : Convert Tenmat to standard R vector
+- [`head(`*`<Tensor>`*`)`](https://dayusun.github.io/tensory/reference/head.Tensor.md)
+  : S3 head method for Tensor
+- [`tail(`*`<Tensor>`*`)`](https://dayusun.github.io/tensory/reference/tail.Tensor.md)
+  : S3 tail method for Tensor
+- [`show.Tensor()`](https://dayusun.github.io/tensory/reference/show.Tensor.md)
+  : S3 show method for Tensor
+- [`print(`*`<Tensor>`*`)`](https://dayusun.github.io/tensory/reference/print.Tensor.md)
+  : S3 print method for Tensor
+- [`print(`*`<KTensor>`*`)`](https://dayusun.github.io/tensory/reference/print.KTensor.md)
+  : S3 print method for KTensor
+- [`print(`*`<TTensor>`*`)`](https://dayusun.github.io/tensory/reference/print.TTensor.md)
+  : S3 print method for TTensor
+- [`Math(`*`<Tensor>`*`)`](https://dayusun.github.io/tensory/reference/Math.Tensor.md)
+  : S3 Math group generic for Tensor
+- [`Summary(`*`<Tensor>`*`)`](https://dayusun.github.io/tensory/reference/Summary.Tensor.md)
+  : S3 Summary group generic for Tensor
+
+## Products, contractions, and reductions
+
+The computational core: tensor-times-matrix/vector/tensor products,
+matricized products, norms, and reductions.
+
+- [`ttm()`](https://dayusun.github.io/tensory/reference/ttm.md) : Tensor
+  Times Matrix/Vector (ttm) Operation
+- [`ttv()`](https://dayusun.github.io/tensory/reference/ttv.md) : Tensor
+  Times Vector
+- [`ttt()`](https://dayusun.github.io/tensory/reference/ttt.md) : Tensor
+  Times Tensor (ttt) Operation
+- [`ttsv()`](https://dayusun.github.io/tensory/reference/ttsv.md) :
+  Tensor Times Same Vector
+- [`mtimes()`](https://dayusun.github.io/tensory/reference/mtimes.md) :
+  Matrix Multiplication Alias
+- [`` `%*%` ``](https://dayusun.github.io/tensory/reference/grapes-times-grapes.md)
+  : S3 Matrix Multiplication Generic
+- [`innerprod()`](https://dayusun.github.io/tensory/reference/innerprod.md)
+  : Inner Product
+- [`contract()`](https://dayusun.github.io/tensory/reference/contract.md)
+  : Contract Tensor Dimensions
+- [`khatri_rao()`](https://dayusun.github.io/tensory/reference/khatri_rao.md)
+  : Khatri-Rao Product
+- [`kronecker()`](https://dayusun.github.io/tensory/reference/kronecker.md)
+  : Kronecker Product
+- [`hadamard()`](https://dayusun.github.io/tensory/reference/hadamard.md)
+  : Hadamard Product
+- [`mttkrp()`](https://dayusun.github.io/tensory/reference/mttkrp.md) :
+  Matricized Tensor Times Khatri-Rao Product
+- [`mttkrps()`](https://dayusun.github.io/tensory/reference/mttkrps.md)
+  : Sequence of MTTKRP Calculations
+- [`fibers()`](https://dayusun.github.io/tensory/reference/fibers.md) :
+  Extract Tensor Fibers
+- [`mask()`](https://dayusun.github.io/tensory/reference/mask.md) : Mask
+  Tensor Values
+- [`collapse()`](https://dayusun.github.io/tensory/reference/collapse.md)
+  : Collapse Tensor
+- [`scale()`](https://dayusun.github.io/tensory/reference/scale.md) :
+  Tensor Scaling
+- [`t_scale()`](https://dayusun.github.io/tensory/reference/t_scale.md)
+  : Scale Tensor
+- [`fnorm()`](https://dayusun.github.io/tensory/reference/fnorm.md) :
+  Frobenius Norm
+- [`nvecs()`](https://dayusun.github.io/tensory/reference/nvecs.md) :
+  Leading Mode-n Vectors
+
+## Decompositions
+
+CP, Tucker, generalized CP, and tensor eigenpairs.
+
+- [`cp_als()`](https://dayusun.github.io/tensory/reference/cp_als.md) :
+  CP Alternating Least Squares Decomposition
+- [`cp_nmu()`](https://dayusun.github.io/tensory/reference/cp_nmu.md) :
+  Nonnegative CP Decomposition via Multiplicative Updates
+- [`cp_apr()`](https://dayusun.github.io/tensory/reference/cp_apr.md) :
+  Poisson CP Decomposition (CP-APR) via Multiplicative Updates
+- [`cp_opt()`](https://dayusun.github.io/tensory/reference/cp_opt.md) :
+  CP Decomposition via Direct Optimization
+- [`cp_wopt()`](https://dayusun.github.io/tensory/reference/cp_wopt.md)
+  : Weighted CP Decomposition via Direct Optimization
+- [`cp_arls()`](https://dayusun.github.io/tensory/reference/cp_arls.md)
+  : CP Decomposition via Randomized (Sampled) ALS
+- [`cp_sym()`](https://dayusun.github.io/tensory/reference/cp_sym.md) :
+  Symmetric CP Decomposition via Direct Optimization
+- [`gcp_opt()`](https://dayusun.github.io/tensory/reference/gcp_opt.md)
+  : Generalized CP Decomposition
+- [`tucker_als()`](https://dayusun.github.io/tensory/reference/tucker_als.md)
+  : Tucker Alternating Least Squares (HOOI)
+- [`tucker_sym()`](https://dayusun.github.io/tensory/reference/tucker_sym.md)
+  : Symmetric Tucker Decomposition
+- [`hosvd()`](https://dayusun.github.io/tensory/reference/hosvd.md) :
+  Higher-Order Singular Value Decomposition
+- [`eig_sshopm()`](https://dayusun.github.io/tensory/reference/eig_sshopm.md)
+  : Shifted Symmetric Higher-Order Power Method (SS-HOPM)
+- [`eig_geap()`](https://dayusun.github.io/tensory/reference/eig_geap.md)
+  : Generalized Eigenproblem Adaptive Power Method (GEAP)
+
+## Working with CP factors
+
+Post-processing, comparison, and visualization of `KTensor` fits.
+
+- [`arrange()`](https://dayusun.github.io/tensory/reference/arrange.md)
+  : Arrange the Components of a Kruskal Tensor
+- [`normalize()`](https://dayusun.github.io/tensory/reference/normalize.md)
+  : Normalize a Kruskal Tensor
+- [`fixsigns()`](https://dayusun.github.io/tensory/reference/fixsigns.md)
+  : Fix Sign Ambiguity of a Kruskal Tensor
+- [`score()`](https://dayusun.github.io/tensory/reference/score.md) :
+  Score the Similarity of Two Kruskal Tensors
+- [`ncomponents()`](https://dayusun.github.io/tensory/reference/ncomponents.md)
+  : Number of Components of a Kruskal Tensor
+- [`extract()`](https://dayusun.github.io/tensory/reference/extract.md)
+  : Extract Components of a Kruskal Tensor
+- [`redistribute()`](https://dayusun.github.io/tensory/reference/redistribute.md)
+  : Redistribute Kruskal Weights into a Mode
+- [`tovec()`](https://dayusun.github.io/tensory/reference/tovec.md) :
+  Kruskal Tensor to Vector
+- [`viz()`](https://dayusun.github.io/tensory/reference/viz.md) :
+  Visualize a Kruskal Tensor
+
+## Regression with tensor predictors
+
+Supervised models where each observation is a whole array: sparse
+penalized generalized tensor regression, and tensor envelope PLS.
+
+- [`spgtr()`](https://dayusun.github.io/tensory/reference/spgtr.md)
+  [`coef(`*`<spgtr>`*`)`](https://dayusun.github.io/tensory/reference/spgtr.md)
+  [`print(`*`<spgtr>`*`)`](https://dayusun.github.io/tensory/reference/spgtr.md)
+  : Sparse Penalized Generalized Tensor Regression (SPGTR)
+- [`spgtr_cv()`](https://dayusun.github.io/tensory/reference/spgtr_cv.md)
+  : Choose the Sparsity of a Tensor Regression by Cross-Validation
+- [`predict(`*`<spgtr>`*`)`](https://dayusun.github.io/tensory/reference/predict.spgtr.md)
+  : Predict from a Tensor Regression Fit
+- [`summary(`*`<spgtr>`*`)`](https://dayusun.github.io/tensory/reference/summary.spgtr.md)
+  : Summarize a Tensor Regression Fit
+- [`tepls()`](https://dayusun.github.io/tensory/reference/tepls.md) :
+  Tensor Envelope Partial Least Squares Regression (TEPLS)
+- [`predict(`*`<tepls>`*`)`](https://dayusun.github.io/tensory/reference/predict.tepls.md)
+  : Predict from a TEPLS Fit
+
+## Import and export
+
+- [`import_data()`](https://dayusun.github.io/tensory/reference/import_data.md)
+  : Import Tensor Data from a Text File
+- [`export_data()`](https://dayusun.github.io/tensory/reference/export_data.md)
+  : Export Tensor Data to a Text File

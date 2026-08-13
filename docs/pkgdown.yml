@@ -1,0 +1,13 @@
+pandoc: 3.9.0.2
+pkgdown: 2.2.1
+pkgdown_sha: ~
+articles:
+  benchmark: benchmark.html
+  identities: identities.html
+  performance: performance.html
+  spgtr: spgtr.html
+  tutorial: tutorial.html
+last_built: 2026-08-13T01:56Z
+urls:
+  reference: https://dayusun.github.io/tensory/reference
+  article: https://dayusun.github.io/tensory/articles

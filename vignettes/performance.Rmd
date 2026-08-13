@@ -53,7 +53,7 @@ bm
 library(ggplot2)
 library(dplyr)
 library(tidyr)
-autoplot(bm)
+autoplot(bm, type = "violin")
 
 bm %>%
   unnest(c(time, gc)) %>%
@@ -88,7 +88,7 @@ bm
 
 # Visualization
 library(ggplot2)
-autoplot(bm)
+autoplot(bm, type = "violin")
 ```
 
 ## Multiple Matrix Multiplications Benchmark
@@ -133,7 +133,7 @@ bm_multiple
 
 # Visualization
 library(ggplot2)
-autoplot(bm_multiple)
+autoplot(bm_multiple, type = "violin")
 ```
 
 ```{r multiple-matrix-benchmark-2, message=FALSE, warning=FALSE}
@@ -170,7 +170,7 @@ bm_multiple
 
 # Visualization
 library(ggplot2)
-autoplot(bm_multiple)
+autoplot(bm_multiple, type = "violin")
 ```
 
 ## Memory Efficiency Comparison
@@ -201,7 +201,7 @@ bm_memory
 
 # Visualization
 library(ggplot2)
-autoplot(bm_memory)
+autoplot(bm_memory, type = "violin")
 ```
 
 ## Scalability Analysis

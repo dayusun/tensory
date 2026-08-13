@@ -112,6 +112,35 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// spgtr_mode_covs_cpp
+List spgtr_mode_covs_cpp(const NumericMatrix& Xt, const IntegerVector& dims);
+RcppExport SEXP _tensory_spgtr_mode_covs_cpp(SEXP XtSEXP, SEXP dimsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type Xt(XtSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type dims(dimsSEXP);
+    rcpp_result_gen = Rcpp::wrap(spgtr_mode_covs_cpp(Xt, dims));
+    return rcpp_result_gen;
+END_RCPP
+}
+// spgtr_slpg_cpp
+NumericMatrix spgtr_slpg_cpp(const NumericMatrix& G0, const NumericMatrix& M, const NumericMatrix& MUinv, const NumericVector& gam, int maxit, double tol, double ridge);
+RcppExport SEXP _tensory_spgtr_slpg_cpp(SEXP G0SEXP, SEXP MSEXP, SEXP MUinvSEXP, SEXP gamSEXP, SEXP maxitSEXP, SEXP tolSEXP, SEXP ridgeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type G0(G0SEXP);
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type M(MSEXP);
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type MUinv(MUinvSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type gam(gamSEXP);
+    Rcpp::traits::input_parameter< int >::type maxit(maxitSEXP);
+    Rcpp::traits::input_parameter< double >::type tol(tolSEXP);
+    Rcpp::traits::input_parameter< double >::type ridge(ridgeSEXP);
+    rcpp_result_gen = Rcpp::wrap(spgtr_slpg_cpp(G0, M, MUinv, gam, maxit, tol, ridge));
+    return rcpp_result_gen;
+END_RCPP
+}
 // ttm_cpp
 xt::rarray<double> ttm_cpp(const xt::rarray<double>& tensor_data, const NumericMatrix& matrix, int mode, bool transpose);
 RcppExport SEXP _tensory_ttm_cpp(SEXP tensor_dataSEXP, SEXP matrixSEXP, SEXP modeSEXP, SEXP transposeSEXP) {
@@ -150,6 +179,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_tensory_contract_cpp", (DL_FUNC) &_tensory_contract_cpp, 3},
     {"_tensory_mask_cpp", (DL_FUNC) &_tensory_mask_cpp, 2},
     {"_tensory_issymmetric_cpp", (DL_FUNC) &_tensory_issymmetric_cpp, 2},
+    {"_tensory_spgtr_mode_covs_cpp", (DL_FUNC) &_tensory_spgtr_mode_covs_cpp, 2},
+    {"_tensory_spgtr_slpg_cpp", (DL_FUNC) &_tensory_spgtr_slpg_cpp, 7},
     {"_tensory_ttm_cpp", (DL_FUNC) &_tensory_ttm_cpp, 4},
     {"_tensory_ttm_multiple_cpp", (DL_FUNC) &_tensory_ttm_multiple_cpp, 4},
     {NULL, NULL, 0}

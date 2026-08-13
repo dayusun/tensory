@@ -43,3 +43,6 @@ inst/doc
 dev/
 /doc/
 /Meta/
+
+# local: MATLAB source archive for the spgtr port (not distributed)
+TPLSGLM_SPGTR_code_*.zip

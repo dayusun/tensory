@@ -10,6 +10,8 @@ Description: Provides dense and decomposed tensor classes for R together with
     matricized products, contractions, reshaping helpers, and symmetry
     utilities. Selected kernels can delegate to `xtensor`/`Rcpp` backends for
     performance.
+URL: https://dayusun.github.io/tensory/, https://github.com/dayusun/tensory
+BugReports: https://github.com/dayusun/tensory/issues
 License: MIT + file LICENSE
 Encoding: UTF-8
 SystemRequirements: C++20
@@ -46,19 +48,20 @@ Collate:
     'symktensor_class.R'
     'cp_sym.R'
     'gcp_opt.R'
+    'ttensor_class.R'
+    'tensor_ttm.R'
+    'tepls.R'
+    'spgtr.R'
     'sptensor_class.R'
     'sptenmat_class.R'
     'sptensor_methods.R'
-    'ttensor_class.R'
     'sumtensor_class.R'
     'symtensor_class.R'
     'tenmat_class.R'
     'tensor_constructors.R'
     'tensor_eigen.R'
-    'tensor_ttm.R'
     'tensor_ttt.R'
     'tensory-package.R'
-    'tepls.R'
     'ttensor_methods.R'
     'tucker_decomposition.R'
 Config/roxygen2/version: 8.0.0

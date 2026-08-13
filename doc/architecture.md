@@ -49,6 +49,11 @@ At the moment:
 
 - `ttm` uses a compiled C++ backend in `src/tensor_ttm.cpp`
 - `ttt` is implemented in R using reshape, permute, and `%*%`
+- the two hot spots of `spgtr()` are compiled in `src/tensor_spgtr.cpp`: mode-wise
+  marginal covariances (a `dsyrk` accumulation per observation, replacing `m` array
+  permutations) and the Stiefel-manifold proximal-gradient solver (the whole iteration
+  runs in C++ on `dgemm`/`dsyev` rather than returning to R per step). Both keep the
+  reference R implementations as fallbacks, pinned against the kernels in the tests.
 - many dense helper functions in `R/tensor_dense_methods.R` are still R-level implementations
 
 This split is intentional. The package does not assume that a generic C++ tensor expression is always faster than R reshaping plus BLAS.
@@ -93,7 +98,9 @@ This keeps tensor shape behavior explicit and consistent with the package's obje
 - `R/tensor_ttm.R`: dense tensor-times-matrix/vector dispatch and wrappers
 - `R/tensor_ttt.R`: dense tensor-times-tensor contractions in R
 - `R/tensor_dense_methods.R`: dense tensor helper methods and compatibility functions
+- `R/tepls.R`, `R/spgtr.R`: supervised tensor-predictor regression (continuous and GLM)
 - `src/tensor_ttm.cpp`: compiled `ttm` kernel using explicit layout handling and BLAS
+- `src/tensor_spgtr.cpp`: compiled mode-covariance and manifold-solver kernels for `spgtr`
 
 ## Target Architecture
 

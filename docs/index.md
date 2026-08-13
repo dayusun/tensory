@@ -1,0 +1,99 @@
+# tensory
+
+`tensory` is an R package for tensor algebra with an API similar to the
+MATLAB Tensor Toolbox. It provides dense tensors, matricized tensors,
+and decomposed tensor representations, with an R API that can use
+optimized C++ backends where available.
+
+## Features
+
+- Dense `Tensor` objects for multidimensional arrays
+- `Tenmat`, `KTensor`, and `TTensor` representations for unfolded and
+  decomposed tensors
+- Operations with names and semantics similar to the MATLAB Tensor
+  Toolbox, such as
+  [`ttm()`](https://dayusun.github.io/tensory/reference/ttm.md),
+  [`ttt()`](https://dayusun.github.io/tensory/reference/ttt.md),
+  [`ttv()`](https://dayusun.github.io/tensory/reference/ttv.md),
+  [`mttkrp()`](https://dayusun.github.io/tensory/reference/mttkrp.md),
+  [`contract()`](https://dayusun.github.io/tensory/reference/contract.md),
+  [`permute()`](https://dayusun.github.io/tensory/reference/permute.md),
+  and
+  [`symmetrize()`](https://dayusun.github.io/tensory/reference/symmetrize.md)
+- Rcpp/xtensor-backed implementation hooks for performance-critical
+  kernels
+
+## Installation
+
+You can install the development version from source:
+
+``` r
+
+# Clone the repository
+# In R:
+install.packages("devtools")
+devtools::install_local("path/to/tensory")
+```
+
+## Usage
+
+``` r
+
+library(tensory)
+
+# Dense tensor creation
+x <- tensor(array(1:24, dim = c(2, 3, 4)))
+
+# Tensor-times-matrix and tensor-times-vector operations
+A <- matrix(runif(6), nrow = 2)
+y <- ttm(x, A, mode = 2)
+z <- ttv(x, c(1, 2), mode = 1)
+
+# Tensor reshaping helpers
+x_perm <- permute(x, c(3, 1, 2))
+x_vec <- vec(x)
+```
+
+## Project Structure
+
+- `R/` — R interface and exported functions
+- `src/` — C++ source code, using xtensor for core computations
+- `inst/include/` — C++ headers for xtensor and related libraries
+- `man/` — R documentation
+- `tests/` — Unit tests
+
+## Dependencies
+
+- [xtensor](https://github.com/xtensor-stack/xtensor) (C++)
+- [xtensor-r](https://github.com/xtensor-stack/xtensor-r) (C++)
+- [Rcpp](https://cran.r-project.org/package=Rcpp)
+
+## Current Priorities
+
+- Stabilize shape semantics and keep scalar behavior consistent across
+  dense operations
+- Complete package documentation for the full exported API surface
+- Move more dense tensor kernels, including reshape/squeeze-adjacent
+  operations, into the xtensor-backed path where it improves performance
+
+## License
+
+This package is licensed under MIT. The repository also vendors
+third-party headers under `inst/include/` that are distributed under
+BSD-style licenses. See
+[LICENSE](https://dayusun.github.io/tensory/LICENSE),
+[LICENSE.md](https://dayusun.github.io/tensory/LICENSE.md), and
+[THIRD_PARTY_NOTICES.md](https://dayusun.github.io/tensory/THIRD_PARTY_NOTICES.md)
+for details.
+
+`tensory` also takes API inspiration from the MATLAB Tensor Toolbox. The
+Tensor Toolbox for MATLAB is distributed under a BSD 2-Clause license.
+This repository does not vendor Tensor Toolbox source code; if Tensor
+Toolbox code or documentation is copied in the future, its copyright and
+license notices must be retained.
+
+## Acknowledgements
+
+- [xtensor](https://github.com/xtensor-stack/xtensor) and
+  [xtensor-r](https://github.com/xtensor-stack/xtensor-r) projects
+- Rcpp authors
