@@ -55,7 +55,9 @@ First development version. Everything below is new.
   cross-validated deviance. Any GLM family is supported, with optional
   unpenalized nuisance covariates. See `vignette("spgtr")`.
 * `tepls()` fits the tensor envelope partial least-squares regression of Zhang
-  and Li (2017) for continuous responses.
+  and Li (2017) for continuous responses, one or several at a time. The
+  per-mode envelope dimensions are chosen automatically when `u` is not given.
+  See `vignette("tepls")`.
 * Both accept the predictor either as a list of equally shaped observations or
   as a single array whose last mode indexes observations.
 

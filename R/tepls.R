@@ -116,7 +116,9 @@ NULL
 #' @param Y Response: numeric vector (length `n`) or `n x r` matrix.
 #' @param u Envelope dimension per mode: an integer vector of length `m`, or a
 #'   scalar recycled across modes. Each `u[k]` must satisfy
-#'   `1 <= u[k] <= p_k`.
+#'   `1 <= u[k] <= p_k`. The default `NULL` picks each `u[k]` from the largest
+#'   consecutive eigenvalue ratio of that mode's signal matrix, the same rule
+#'   [spgtr()] uses; supply `u` explicitly when you know the rank.
 #' @param ridge Small ridge added when inverting covariance / normal-equation
 #'   matrices for numerical stability (default `1e-8`).
 #' @return An object of class `tepls`: a list with elements `coef` (the
@@ -133,8 +135,9 @@ NULL
 #' X <- lapply(1:80, function(i) matrix(rnorm(prod(p)), p[1], p[2]))
 #' y <- vapply(X, function(xi) sum(B * xi), numeric(1)) + rnorm(80, sd = 0.1)
 #' fit <- tepls(X, y, u = c(1, 1))
+#' tepls(X, y) # envelope dimensions chosen automatically
 #' @export
-tepls <- function(X, Y, u, ridge = 1e-8) {
+tepls <- function(X, Y, u = NULL, ridge = 1e-8) {
   des <- .tepls_design(X)
   Xmat <- des$Xmat
   dims <- des$dims
@@ -147,6 +150,34 @@ tepls <- function(X, Y, u, ridge = 1e-8) {
   }
   r <- ncol(Y)
 
+  # Center. Xt is prod(p) x n, one column per case: transposing first and
+  # recycling Xbar down the columns centers in one pass, and it is the layout
+  # the compiled covariance kernel wants.
+  Xbar <- colMeans(Xmat)
+  Xt <- t(Xmat) - Xbar
+  Ybar <- colMeans(Y)
+  Yc <- sweep(Y, 2L, Ybar, `-`)
+
+  # Cross-covariance tensor C in R^{p_1 x ... x p_m x r}.
+  Cmat <- Xt %*% Yc / n # prod(p) x r
+  C <- Tensor$new(array(Cmat, dim = c(dims, r)), dims = as.integer(c(dims, r)),
+                  fast = TRUE)
+
+  # Mode covariances and response covariance (moment estimators).
+  Sig <- .spgtr_mode_covs(Xt, dims, n)
+  SigY <- crossprod(Yc) / n
+  SigInv <- lapply(Sig, .sym_inv, ridge = ridge)
+  SigYinv <- .sym_inv(SigY, ridge = ridge)
+
+  # Per-mode signal matrices M_k = D_(k) C_(k)^T = C_(k) (Kron Sigma^-1) C_(k)^T,
+  # where D is C standardized on every mode except k (and on the response mode).
+  M <- lapply(seq_len(m), function(k) {
+    other <- setdiff(seq_len(m), k)
+    D <- ttm(C, c(SigInv[other], list(SigYinv)), mode = c(other, m + 1L))
+    as.matrix(tenmat(D, rdims = k)) %*% t(as.matrix(tenmat(C, rdims = k)))
+  })
+
+  if (is.null(u)) u <- .spgtr_auto_u(M, dims, n, 0L)
   u <- as.integer(u)
   if (length(u) == 1L) u <- rep(u, m)
   if (length(u) != m) stop("u must have length 1 or ndims of the predictor.")
@@ -154,37 +185,8 @@ tepls <- function(X, Y, u, ridge = 1e-8) {
     stop("each u[k] must satisfy 1 <= u[k] <= p_k.")
   }
 
-  # Center predictor and response.
-  Xbar <- colMeans(Xmat)
-  Xc <- sweep(Xmat, 2L, Xbar, `-`)
-  Ybar <- colMeans(Y)
-  Yc <- sweep(Y, 2L, Ybar, `-`)
-
-  # Cross-covariance tensor C in R^{p_1 x ... x p_m x r}.
-  Cmat <- crossprod(Xc, Yc) / n # prod(p) x r
-  C <- Tensor$new(array(Cmat, dim = c(dims, r)), dims = as.integer(c(dims, r)),
-                  fast = TRUE)
-
-  # Mode covariances and response covariance (moment estimators).
-  Sig <- .tepls_mode_covs(Xc, dims, n)
-  SigY <- crossprod(Yc) / n
-  SigInv <- lapply(Sig, .sym_inv, ridge = ridge)
-  SigYinv <- .sym_inv(SigY, ridge = ridge)
-
   # Per-mode SIMPLS envelope bases (Algorithm 4).
-  W <- vector("list", m)
-  for (k in seq_len(m)) {
-    other <- setdiff(seq_len(m), k)
-    # D = C standardized on every mode except k (and on the response mode),
-    # so that M_k = D_(k) C_(k)^T = C_(k) (Kron Sigma^{-1}) C_(k)^T.
-    mats <- c(SigInv[other], list(SigYinv))
-    modes <- c(other, m + 1L)
-    D <- ttm(C, mats, mode = modes)
-    Ck <- as.matrix(tenmat(C, rdims = k))
-    Dk <- as.matrix(tenmat(D, rdims = k))
-    Mk <- Dk %*% t(Ck)
-    W[[k]] <- .tepls_simpls_mode(Mk, Sig[[k]], u[k])
-  }
+  W <- lapply(seq_len(m), function(k) .tepls_simpls_mode(M[[k]], Sig[[k]], u[k]))
 
   # Latent-space Kronecker map vec(T) = (W_m kron ... kron W_1)^T vec(X).
   Kfac <- W[[m]]
@@ -195,12 +197,12 @@ tepls <- function(X, Y, u, ridge = 1e-8) {
   }
 
   # Reduce X to the latent scores and regress Y on them (Algorithm 4, Step 6).
-  Tmat <- Xc %*% Kfac # n x prod(u)
+  Tmat <- crossprod(Xt, Kfac) # n x prod(u)
   Psi <- .pinv(crossprod(Tmat) + diag(ridge, ncol(Tmat))) %*% crossprod(Tmat, Yc)
 
   # Map the latent coefficient back to predictor space.
   Bmat <- Kfac %*% Psi # prod(p) x r
-  fitted <- Xc %*% Bmat + matrix(Ybar, n, r, byrow = TRUE)
+  fitted <- crossprod(Xt, Bmat) + matrix(Ybar, n, r, byrow = TRUE)
 
   if (r == 1L) {
     Bt <- Tensor$new(array(Bmat, dim = dims), dims = dims, fast = TRUE)

@@ -23,6 +23,7 @@
     <li><a class="dropdown-item" href="../articles/identities.html">Tensor identities</a></li>
     <li><h6 class="dropdown-header" data-toc-skip>Modelling</h6></li>
     <li><a class="dropdown-item" href="../articles/spgtr.html">Tensor regression with spgtr()</a></li>
+    <li><a class="dropdown-item" href="../articles/tepls.html">Tensor PLS regression with tepls()</a></li>
     <li><h6 class="dropdown-header" data-toc-skip>Performance</h6></li>
     <li><a class="dropdown-item" href="../articles/performance.html">Performance guide</a></li>
     <li><a class="dropdown-item" href="../articles/benchmark.html">Benchmarks vs rTensor</a></li>
@@ -76,7 +77,7 @@
 <ul><li>
 <code><a href="../reference/spgtr.html">spgtr()</a></code> and <code><a href="../reference/spgtr_cv.html">spgtr_cv()</a></code> fit a generalized linear model whose predictor is a whole array per observation. Each mode is reduced to an envelope basis, the GLM is fit on the latent scores, and the coefficient array is returned in the original shape as a <code>TTensor</code>. An adaptively weighted row-wise L2,1 penalty selects whole slices of the array; <code><a href="../reference/spgtr_cv.html">spgtr_cv()</a></code> chooses its strength by cross-validated deviance. Any GLM family is supported, with optional unpenalized nuisance covariates. See <code><a href="../articles/spgtr.html">vignette("spgtr")</a></code>.</li>
 <li>
-<code><a href="../reference/tepls.html">tepls()</a></code> fits the tensor envelope partial least-squares regression of Zhang and Li (2017) for continuous responses.</li>
+<code><a href="../reference/tepls.html">tepls()</a></code> fits the tensor envelope partial least-squares regression of Zhang and Li (2017) for continuous responses, one or several at a time. The per-mode envelope dimensions are chosen automatically when <code>u</code> is not given. See <code><a href="../articles/tepls.html">vignette("tepls")</a></code>.</li>
 <li>Both accept the predictor either as a list of equally shaped observations or as a single array whose last mode indexes observations.</li>
 </ul></div>
 <div class="section level3">

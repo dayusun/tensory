@@ -119,7 +119,10 @@ First development version. Everything below is new.
   [`vignette("spgtr")`](https://www.sundayu.me/tensory/articles/spgtr.md).
 - [`tepls()`](https://www.sundayu.me/tensory/reference/tepls.md) fits
   the tensor envelope partial least-squares regression of Zhang and
-  Li (2017) for continuous responses.
+  Li (2017) for continuous responses, one or several at a time. The
+  per-mode envelope dimensions are chosen automatically when `u` is not
+  given. See
+  [`vignette("tepls")`](https://www.sundayu.me/tensory/articles/tepls.md).
 - Both accept the predictor either as a list of equally shaped
   observations or as a single array whose last mode indexes
   observations.

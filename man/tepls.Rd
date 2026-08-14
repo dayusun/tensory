@@ -4,7 +4,7 @@
 \alias{tepls}
 \title{Tensor Envelope Partial Least Squares Regression (TEPLS)}
 \usage{
-tepls(X, Y, u, ridge = 1e-08)
+tepls(X, Y, u = NULL, ridge = 1e-08)
 }
 \arguments{
 \item{X}{Tensor predictor: a list of observations, or an order-\code{(m + 1)}
@@ -14,7 +14,9 @@ tensor with observations in the last mode.}
 
 \item{u}{Envelope dimension per mode: an integer vector of length \code{m}, or a
 scalar recycled across modes. Each \code{u[k]} must satisfy
-\verb{1 <= u[k] <= p_k}.}
+\verb{1 <= u[k] <= p_k}. The default \code{NULL} picks each \code{u[k]} from the largest
+consecutive eigenvalue ratio of that mode's signal matrix, the same rule
+\code{\link[=spgtr]{spgtr()}} uses; supply \code{u} explicitly when you know the rank.}
 
 \item{ridge}{Small ridge added when inverting covariance / normal-equation
 matrices for numerical stability (default \code{1e-8}).}
@@ -63,6 +65,7 @@ B <- outer(c(1, rep(0, 7)), c(1, rep(0, 5))) # rank-1, envelope dim 1 per mode
 X <- lapply(1:80, function(i) matrix(rnorm(prod(p)), p[1], p[2]))
 y <- vapply(X, function(xi) sum(B * xi), numeric(1)) + rnorm(80, sd = 0.1)
 fit <- tepls(X, y, u = c(1, 1))
+tepls(X, y) # envelope dimensions chosen automatically
 }
 \references{
 Zhang, X. and Li, L. (2017). Tensor envelope partial

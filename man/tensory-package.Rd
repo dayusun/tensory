@@ -75,6 +75,15 @@ result <- t3d$clone_tensor()$add(t3d)$multiply(2)
 }
 }
 
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://www.sundayu.me/tensory/}
+  \item \url{https://github.com/dayusun/tensory}
+  \item Report bugs at \url{https://github.com/dayusun/tensory/issues}
+}
+
+}
 \author{
 Dayu Sun
 }

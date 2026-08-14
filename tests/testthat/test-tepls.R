@@ -83,6 +83,16 @@ test_that("tepls with full envelope dims reproduces the OLS fit", {
                tolerance = 1e-6)
 })
 
+test_that("envelope dimensions are chosen automatically when u is missing", {
+  d <- make_reg(7)
+  fit <- tepls(d$X, d$Y)
+  expect_true(all(fit$u >= 1L & fit$u <= d$p))
+  # The truth is rank one per mode, so the eigenvalue-gap rule should find it
+  # and the fit should be as good as the oracle u.
+  expect_equal(fit$u, c(1L, 1L))
+  expect_gt(r2(predict(fit), d$Y), 0.98)
+})
+
 test_that("tepls validates its arguments", {
   d <- make_reg(6, n = 40)
   expect_error(tepls(d$X, d$Y[1:10], u = c(1, 1)), "one row")

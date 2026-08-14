@@ -90,6 +90,16 @@ and predictable tensor shapes.
     # Mathematical operations
     result <- t3d$clone_tensor()$add(t3d)$multiply(2)
 
+## See also
+
+Useful links:
+
+- <https://www.sundayu.me/tensory/>
+
+- <https://github.com/dayusun/tensory>
+
+- Report bugs at <https://github.com/dayusun/tensory/issues>
+
 ## Author
 
 Dayu Sun

@@ -27,6 +27,8 @@ navbar:
       - text: "Modelling"
       - text: Tensor regression with spgtr()
         href: articles/spgtr.html
+      - text: Tensor PLS regression with tepls()
+        href: articles/tepls.html
       - text: "Performance"
       - text: Performance guide
         href: articles/performance.html

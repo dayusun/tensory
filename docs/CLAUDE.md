@@ -172,6 +172,11 @@ primitives):
   6), which is invariant to the separable-covariance scale ambiguity.
   Predictor input is either a list of same-shaped observations or an
   order-`(m+1)` tensor with observations in the **last** mode.
+  `u = NULL` (the default) delegates to `spgtr.R`’s `.spgtr_auto_u`
+  eigenvalue-gap rule, and the mode covariances go through
+  `.spgtr_mode_covs` so the compiled `spgtr_mode_covs_cpp` kernel
+  applies here too — hence the centered design is kept as `Xt`
+  (`prod(p) x n`), not `Xc`. Vignette: `vignettes/tepls.Rmd`.
 
 - `R/spgtr.R` —
   [`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md)/[`spgtr_cv()`](https://www.sundayu.me/tensory/reference/spgtr_cv.md),

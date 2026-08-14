@@ -11,7 +11,7 @@ the `B_PLS` estimator.
 ## Usage
 
 ``` r
-tepls(X, Y, u, ridge = 1e-08)
+tepls(X, Y, u = NULL, ridge = 1e-08)
 ```
 
 ## Arguments
@@ -29,7 +29,11 @@ tepls(X, Y, u, ridge = 1e-08)
 
   Envelope dimension per mode: an integer vector of length `m`, or a
   scalar recycled across modes. Each `u[k]` must satisfy
-  `1 <= u[k] <= p_k`.
+  `1 <= u[k] <= p_k`. The default `NULL` picks each `u[k]` from the
+  largest consecutive eigenvalue ratio of that mode's signal matrix, the
+  same rule
+  [`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md) uses;
+  supply `u` explicitly when you know the rank.
 
 - ridge:
 
@@ -87,4 +91,9 @@ B <- outer(c(1, rep(0, 7)), c(1, rep(0, 5))) # rank-1, envelope dim 1 per mode
 X <- lapply(1:80, function(i) matrix(rnorm(prod(p)), p[1], p[2]))
 y <- vapply(X, function(xi) sum(B * xi), numeric(1)) + rnorm(80, sd = 0.1)
 fit <- tepls(X, y, u = c(1, 1))
+tepls(X, y) # envelope dimensions chosen automatically
+#> <tepls: tensor envelope PLS regression>
+#> Predictor dims:  8 x 6 
+#> Envelope dims (u):  1 1 
+#> Response dim (r):  1 
 ```

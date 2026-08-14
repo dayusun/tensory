@@ -121,11 +121,11 @@ which picks the amount of sparsity for you by cross-validation.
 
 \section{How it works (technical)}{
 
-The outcome enters through the working residual \code{r = y - mu_0}, where
+The outcome enters through the working residual \code{y - mu_0}, where
 \code{mu_0} is the fitted mean of the GLM of \code{y} on the nuisance covariates \code{Z}
 alone (the intercept only, when \code{Z} is \code{NULL}). Writing \code{Sigma_k} for the
 mode-\code{k} marginal covariance of the centered predictor and \code{C} for its
-cross-covariance with \code{r}, the mode-\code{k} signal matrix is
+cross-covariance with that residual, the mode-\code{k} signal matrix is
 \verb{U_k = C_(k) (kron_\{j != k\} Sigma_j^-1) C_(k)'}.
 
 With \code{basis = "simpls"} the factor matrix \code{W_k} collects the first \code{u[k]}

@@ -39,6 +39,7 @@ original array shape so it can be read off like a picture."></head><body>
     <li><a class="dropdown-item" href="../articles/identities.html">Tensor identities</a></li>
     <li><h6 class="dropdown-header" data-toc-skip>Modelling</h6></li>
     <li><a class="dropdown-item" href="../articles/spgtr.html">Tensor regression with spgtr()</a></li>
+    <li><a class="dropdown-item" href="../articles/tepls.html">Tensor PLS regression with tepls()</a></li>
     <li><h6 class="dropdown-header" data-toc-skip>Performance</h6></li>
     <li><a class="dropdown-item" href="../articles/performance.html">Performance guide</a></li>
     <li><a class="dropdown-item" href="../articles/benchmark.html">Benchmarks vs rTensor</a></li>
@@ -219,11 +220,11 @@ which picks the amount of sparsity for you by cross-validation.</p></li>
     <h2 id="how-it-works-technical-">How it works (technical)<a class="anchor" aria-label="anchor" href="#how-it-works-technical-"></a></h2>
 
 
-<p>The outcome enters through the working residual <code>r = y - mu_0</code>, where
+<p>The outcome enters through the working residual <code>y - mu_0</code>, where
 <code>mu_0</code> is the fitted mean of the GLM of <code>y</code> on the nuisance covariates <code>Z</code>
 alone (the intercept only, when <code>Z</code> is <code>NULL</code>). Writing <code>Sigma_k</code> for the
 mode-<code>k</code> marginal covariance of the centered predictor and <code>C</code> for its
-cross-covariance with <code>r</code>, the mode-<code>k</code> signal matrix is
+cross-covariance with that residual, the mode-<code>k</code> signal matrix is
 <code>U_k = C_(k) (kron_{j != k} Sigma_j^-1) C_(k)'</code>.</p>
 <p>With <code>basis = "simpls"</code> the factor matrix <code>W_k</code> collects the first <code>u[k]</code>
 SIMPLS directions of <code>(U_k, Sigma_k)</code>, exactly as in <code><a href="tepls.html">tepls()</a></code>. With

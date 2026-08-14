@@ -11,3 +11,5 @@
   spgtr()](https://www.sundayu.me/tensory/articles/spgtr.md):
 - [Get started with
   tensory](https://www.sundayu.me/tensory/articles/tensory.md):
+- [Tensor PLS Regression with
+  tepls()](https://www.sundayu.me/tensory/articles/tepls.md):
