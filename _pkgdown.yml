@@ -29,6 +29,8 @@ navbar:
         href: articles/spgtr.html
       - text: Tensor PLS regression with tepls()
         href: articles/tepls.html
+      - text: Quantile regression with pqtr()
+        href: articles/pqtr.html
       - text: "Performance"
       - text: Performance guide
         href: articles/performance.html
@@ -156,7 +158,8 @@ reference:
 - title: Regression with tensor predictors
   desc: >
     Supervised models where each observation is a whole array: sparse
-    penalized generalized tensor regression, and tensor envelope PLS.
+    penalized generalized tensor regression, tensor envelope PLS, and partial
+    quantile tensor regression.
   contents:
   - spgtr
   - spgtr_cv
@@ -164,6 +167,9 @@ reference:
   - summary.spgtr
   - tepls
   - predict.tepls
+  - pqtr
+  - pqtr_cv
+  - predict.pqtr
 
 - title: Import and export
   contents:

@@ -123,7 +123,17 @@ First development version. Everything below is new.
   per-mode envelope dimensions are chosen automatically when `u` is not
   given. See
   [`vignette("tepls")`](https://www.sundayu.me/tensory/articles/tepls.md).
-- Both accept the predictor either as a list of equally shaped
+- [`pqtr()`](https://www.sundayu.me/tensory/reference/pqtr.md) and
+  [`pqtr_cv()`](https://www.sundayu.me/tensory/reference/pqtr_cv.md) fit
+  the partial quantile tensor regression of Sun, Zhang and Zhang (2024):
+  a chosen quantile of the outcome, rather than its mean, is regressed
+  on the array through per-mode partial-least-squares directions.
+  Optional unreduced covariates are supported, the reduced dimension is
+  chosen by an eigenvalue-ratio rule or by cross-validated check loss,
+  and the inner quantile regressions use the MM algorithm of Hunter and
+  Lange (2000), so no linear-programming dependency is needed. See
+  [`vignette("pqtr")`](https://www.sundayu.me/tensory/articles/pqtr.md).
+- All three accept the predictor either as a list of equally shaped
   observations or as a single array whose last mode indexes
   observations.
 

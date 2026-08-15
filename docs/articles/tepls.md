@@ -393,7 +393,7 @@ Gaussian family and the SIMPLS basis is the same model.**
 a <- tepls(X, y, u = c(2, 2))
 b <- spgtr(X, y, u = c(2, 2), family = gaussian(), basis = "simpls")
 max(abs(as.vector(as.tensor(coef(a))$as_array()) - b$bvec))
-#> [1] 9.763568e-11
+#> [1] 9.763435e-11
 ```
 
 If either identity ever breaks, something is wrong with the centering,

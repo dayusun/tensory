@@ -8,6 +8,7 @@
 <url><loc>https://www.sundayu.me/tensory/articles/identities.html</loc></url>
 <url><loc>https://www.sundayu.me/tensory/articles/index.html</loc></url>
 <url><loc>https://www.sundayu.me/tensory/articles/performance.html</loc></url>
+<url><loc>https://www.sundayu.me/tensory/articles/pqtr.html</loc></url>
 <url><loc>https://www.sundayu.me/tensory/articles/spgtr.html</loc></url>
 <url><loc>https://www.sundayu.me/tensory/articles/tensory.html</loc></url>
 <url><loc>https://www.sundayu.me/tensory/articles/tepls.html</loc></url>
@@ -77,6 +78,9 @@
 <url><loc>https://www.sundayu.me/tensory/reference/nvecs.html</loc></url>
 <url><loc>https://www.sundayu.me/tensory/reference/ones.html</loc></url>
 <url><loc>https://www.sundayu.me/tensory/reference/permute.html</loc></url>
+<url><loc>https://www.sundayu.me/tensory/reference/pqtr.html</loc></url>
+<url><loc>https://www.sundayu.me/tensory/reference/pqtr_cv.html</loc></url>
+<url><loc>https://www.sundayu.me/tensory/reference/predict.pqtr.html</loc></url>
 <url><loc>https://www.sundayu.me/tensory/reference/predict.spgtr.html</loc></url>
 <url><loc>https://www.sundayu.me/tensory/reference/predict.tepls.html</loc></url>
 <url><loc>https://www.sundayu.me/tensory/reference/print.KTensor.html</loc></url>

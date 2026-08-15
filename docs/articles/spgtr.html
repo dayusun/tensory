@@ -40,6 +40,7 @@
     <li><h6 class="dropdown-header" data-toc-skip>Modelling</h6></li>
     <li><a class="dropdown-item" href="../articles/spgtr.html">Tensor regression with spgtr()</a></li>
     <li><a class="dropdown-item" href="../articles/tepls.html">Tensor PLS regression with tepls()</a></li>
+    <li><a class="dropdown-item" href="../articles/pqtr.html">Quantile regression with pqtr()</a></li>
     <li><h6 class="dropdown-header" data-toc-skip>Performance</h6></li>
     <li><a class="dropdown-item" href="../articles/performance.html">Performance guide</a></li>
     <li><a class="dropdown-item" href="../articles/benchmark.html">Benchmarks vs rTensor</a></li>
@@ -357,7 +358,7 @@ reproduces it exactly.</p>
 <code class="sourceCode R"><span><span class="va">a</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tepls.html">tepls</a></span><span class="op">(</span><span class="va">X</span>, <span class="va">scores</span>, u <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">b</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spgtr.html">spgtr</a></span><span class="op">(</span><span class="va">X</span>, <span class="va">scores</span>, u <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>, basis <span class="op">=</span> <span class="st">"simpls"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="va">a</span><span class="op">$</span><span class="va">coef</span><span class="op">$</span><span class="fu">as_array</span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">-</span> <span class="va">b</span><span class="op">$</span><span class="va">bvec</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 8.841194e-11</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 8.841083e-11</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="honest-evaluation">Honest evaluation<a class="anchor" aria-label="anchor" href="#honest-evaluation"></a>

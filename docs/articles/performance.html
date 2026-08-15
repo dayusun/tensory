@@ -40,6 +40,7 @@
     <li><h6 class="dropdown-header" data-toc-skip>Modelling</h6></li>
     <li><a class="dropdown-item" href="../articles/spgtr.html">Tensor regression with spgtr()</a></li>
     <li><a class="dropdown-item" href="../articles/tepls.html">Tensor PLS regression with tepls()</a></li>
+    <li><a class="dropdown-item" href="../articles/pqtr.html">Quantile regression with pqtr()</a></li>
     <li><h6 class="dropdown-header" data-toc-skip>Performance</h6></li>
     <li><a class="dropdown-item" href="../articles/performance.html">Performance guide</a></li>
     <li><a class="dropdown-item" href="../articles/benchmark.html">Benchmarks vs rTensor</a></li>
@@ -106,8 +107,8 @@ tensor-times-matrix multiplication.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression      min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> tensory      1.79ms   1.85ms      507.   511.1KB     4.11</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> rTensor      1.48ms    1.8ms      563.     1.2MB    15.4</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> tensory       1.5ms   1.57ms      574.   511.1KB     6.21</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> rTensor      1.52ms   1.59ms      599.     1.2MB    15.4</span></span>
 <span></span>
 <span></span>
 <span></span>
@@ -151,8 +152,8 @@ tensor-times-matrix multiplication.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression      min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> tensory      3.73ms   4.43ms      229.  781.67KB     4.68</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> rTensor      3.72ms   3.81ms      246.    1.53MB    10.2</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> tensory      3.72ms   4.29ms      236.  781.67KB     4.81</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> rTensor      3.73ms   4.51ms      224.    1.53MB     9.34</span></span>
 <span></span>
 <span><span class="co"># Visualization</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
@@ -203,8 +204,8 @@ multilinear algebra.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression      min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> tensory      12.5ms     13ms      74.1    1.08MB     4.73</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> rTensor      15.5ms   15.8ms      61.9   14.07MB    61.9</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> tensory      12.4ms   12.6ms      78.3    1.08MB     5.00</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> rTensor      13.5ms   13.7ms      71.6   14.07MB    71.6</span></span>
 <span></span>
 <span><span class="co"># Visualization</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
@@ -244,8 +245,8 @@ multilinear algebra.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression      min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> tensory      1.16ms    1.2ms      821.     225KB        0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> rTensor       2.4ms    2.5ms      388.     773KB        0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> tensory    993.28µs      1ms      971.     225KB        0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> rTensor      2.06ms   2.09ms      474.     773KB        0</span></span>
 <span></span>
 <span><span class="co"># Visualization</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
@@ -280,8 +281,8 @@ multilinear algebra.</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 6</span></span></span>
 <span><span class="co">#&gt;   expression      min   median `itr/sec` mem_alloc `gc/sec`</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;bch:expr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:tm&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;bch:byt&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> tensory       850µs    892µs     <span style="text-decoration: underline;">1</span>114.     329KB      0  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> rTensor       960µs    995µs      991.     610KB     52.1</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> tensory       717µs    755µs     <span style="text-decoration: underline;">1</span>328.     329KB        0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> rTensor       806µs    845µs     <span style="text-decoration: underline;">1</span>179.     610KB        0</span></span>
 <span></span>
 <span><span class="co"># Visualization</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>

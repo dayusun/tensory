@@ -32,8 +32,8 @@ bm
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 tensory      1.79ms   1.85ms      507.   511.1KB     4.11
-#> 2 rTensor      1.48ms    1.8ms      563.     1.2MB    15.4
+#> 1 tensory       1.5ms   1.57ms      574.   511.1KB     6.21
+#> 2 rTensor      1.52ms   1.59ms      599.     1.2MB    15.4
 
 
 
@@ -85,8 +85,8 @@ bm
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 tensory      3.73ms   4.43ms      229.  781.67KB     4.68
-#> 2 rTensor      3.72ms   3.81ms      246.    1.53MB    10.2
+#> 1 tensory      3.72ms   4.29ms      236.  781.67KB     4.81
+#> 2 rTensor      3.73ms   4.51ms      224.    1.53MB     9.34
 
 # Visualization
 library(ggplot2)
@@ -140,8 +140,8 @@ bm_multiple
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 tensory      12.5ms     13ms      74.1    1.08MB     4.73
-#> 2 rTensor      15.5ms   15.8ms      61.9   14.07MB    61.9
+#> 1 tensory      12.4ms   12.6ms      78.3    1.08MB     5.00
+#> 2 rTensor      13.5ms   13.7ms      71.6   14.07MB    71.6
 
 # Visualization
 library(ggplot2)
@@ -185,8 +185,8 @@ bm_multiple
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 tensory      1.16ms    1.2ms      821.     225KB        0
-#> 2 rTensor       2.4ms    2.5ms      388.     773KB        0
+#> 1 tensory    993.28µs      1ms      971.     225KB        0
+#> 2 rTensor      2.06ms   2.09ms      474.     773KB        0
 
 # Visualization
 library(ggplot2)
@@ -224,8 +224,8 @@ bm_memory
 #> # A tibble: 2 × 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 tensory       850µs    892µs     1114.     329KB      0  
-#> 2 rTensor       960µs    995µs      991.     610KB     52.1
+#> 1 tensory       717µs    755µs     1328.     329KB        0
+#> 2 rTensor       806µs    845µs     1179.     610KB        0
 
 # Visualization
 library(ggplot2)

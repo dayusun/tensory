@@ -25,6 +25,29 @@ NULL
   .tepls_mode_covs(t(Xt), dims, n)
 }
 
+# Mode covariances and per-mode signal matrices, shared by every PLS-type fit
+# in the package. `Xt` is the centered prod(p) x n design, `R` the length-n
+# working response. U_k = C_(k) (kron_{j != k} Sigma_j^-1) C_(k)' is formed as
+# C_0k C_0k', so it is positive semi-definite by construction.
+.pls_signal <- function(Xt, R, dims, n, ridge) {
+  m <- length(dims)
+  Sig <- .spgtr_mode_covs(Xt, dims, n)
+  C <- Tensor$new(array(as.vector(Xt %*% R) / n, dim = dims), dims = dims,
+                  fast = TRUE)
+  Sig_isqrt <- lapply(Sig, .sym_pow, pow = -0.5, ridge = ridge)
+  U <- vector("list", m)
+  for (k in seq_len(m)) {
+    other <- setdiff(seq_len(m), k)
+    Ck <- if (m == 1L) {
+      as.matrix(C$as_array())
+    } else {
+      as.matrix(tenmat(ttm(C, Sig_isqrt[other], mode = other), rdims = k))
+    }
+    U[[k]] <- tcrossprod(Ck)
+  }
+  list(Sig = Sig, U = U, C = C)
+}
+
 # Envelope objective of Cook & Zhang (2016) and its Euclidean gradient:
 #   f(G) = log|G' M G| + log|G' (M + U)^-1 G|,  G a p x d semi-orthogonal basis.
 .env_fg <- function(G, M, MUinv) {
@@ -130,15 +153,20 @@ NULL
 }
 
 # Eigenvalue-ratio rule for the per-mode envelope dimension (MATLAB
-# pls_tensor_core_auto): u_k maximizes lambda_s / lambda_{s+1} of U_k.
+# pls_tensor_core_auto): u_k maximizes lambda_s / lambda_{s+1} of U_k. The
+# search is capped at a handful of candidates per mode; ratios taken deep in
+# the noise tail are meaningless and the largest of them usually wins.
 .spgtr_auto_u <- function(U, dims, n, q) {
   m <- length(dims)
   upper <- max(2L, min(floor((n - 1 - q)^(1 / m)), 5L))
   vapply(seq_len(m), function(k) {
-    K <- min(upper, dims[k])
+    ev <- eigen(U[[k]], symmetric = TRUE, only.values = TRUE)$values
+    # U_k has rank at most prod(p_{-k}), so past that point the eigenvalues are
+    # numerical zeros whose ratio would otherwise win and pick the rank cliff.
+    rank <- max(sum(ev > max(ev[1L], 0) * 1e-8), 1L)
+    K <- min(upper, dims[k], rank)
     if (K < 2L) return(1L)
-    ev <- eigen(U[[k]], symmetric = TRUE, only.values = TRUE)$values[seq_len(K)]
-    ev <- pmax(ev, .Machine$double.eps)
+    ev <- pmax(ev[seq_len(K)], .Machine$double.eps)
     which.max(ev[-K] / ev[-1L])
   }, integer(1))
 }
@@ -164,25 +192,12 @@ NULL
   # the columns centers in one pass, half the cost of sweep-then-transpose.
   Xbar <- colMeans(Xmat)
   Xt <- t(Xmat) - Xbar
-  Sig <- .spgtr_mode_covs(Xt, dims, n)
 
-  # Cross-covariance tensor between the centered predictor and the residual.
-  C <- Tensor$new(array(as.vector(Xt %*% R) / n / sdR, dim = dims),
-                  dims = dims, fast = TRUE)
-  Sig_isqrt <- lapply(Sig, .sym_pow, pow = -0.5, ridge = ridge)
-
-  # U_k = C_(k) (kron_{j != k} Sigma_j^-1) C_(k)', formed as C_0k C_0k' so it
-  # is positive semi-definite by construction.
-  U <- vector("list", m)
-  for (k in seq_len(m)) {
-    other <- setdiff(seq_len(m), k)
-    Ck <- if (m == 1L) {
-      as.matrix(C$as_array())
-    } else {
-      as.matrix(tenmat(ttm(C, Sig_isqrt[other], mode = other), rdims = k))
-    }
-    U[[k]] <- tcrossprod(Ck)
-  }
+  # Mode covariances and the cross-covariance signal matrices, scaled by the
+  # residual spread so the penalty weights are on a comparable footing.
+  sig <- .pls_signal(Xt, R / sdR, dims, n, ridge)
+  Sig <- sig$Sig
+  U <- sig$U
 
   if (is.null(u)) u <- .spgtr_auto_u(U, dims, n, q)
   u <- as.integer(u)

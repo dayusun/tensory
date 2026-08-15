@@ -55,16 +55,32 @@ NULL
 # SIMPLS envelope-basis estimation for one mode (Algorithm 4, steps 2-3).
 # M is the (deflated) second-moment matrix C~ C~^T; Sig is Sigma_k. Returns a
 # p_k x d matrix whose columns are the estimated factor directions w_{ks}.
-.tepls_simpls_mode <- function(M, Sig, d) {
+#
+# The two deflations differ in what they orthogonalize, and they span different
+# subspaces whenever M has rank > 1:
+#   "scores"  - project out span(Sigma_k W) orthogonally, so w_s' Sigma_k w_t
+#               = 0 and the latent scores are uncorrelated. This is de Jong's
+#               SIMPLS, used by tepls() and spgtr().
+#   "weights" - oblique projector onto null(W') along span(Sigma_k W), leaving
+#               W'W = I. This is the deflation in PQTR's pls_tensor_core.m.
+.tepls_simpls_mode <- function(M, Sig, d, orth = c("scores", "weights")) {
+  orth <- match.arg(orth)
   pk <- nrow(M)
   W <- matrix(0, pk, d)
   Vbasis <- NULL # orthonormal basis of span(Sigma_k W_s)
   Q <- diag(pk)
   for (s in seq_len(d)) {
-    Ms <- Q %*% M %*% Q
+    Ms <- Q %*% M %*% t(Q)
     Ms <- (Ms + t(Ms)) / 2
     w <- eigen(Ms, symmetric = TRUE)$vectors[, 1]
     W[, s] <- w
+
+    if (orth == "weights") {
+      Ws <- W[, seq_len(s), drop = FALSE]
+      A <- Sig %*% Ws
+      Q <- diag(pk) - A %*% .pinv(crossprod(Ws, A)) %*% t(Ws)
+      next
+    }
 
     a <- as.vector(Sig %*% w)
     if (!is.null(Vbasis)) {

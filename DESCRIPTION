@@ -52,6 +52,7 @@ Collate:
     'tensor_ttm.R'
     'tepls.R'
     'spgtr.R'
+    'pqtr.R'
     'sptensor_class.R'
     'sptenmat_class.R'
     'sptensor_methods.R'

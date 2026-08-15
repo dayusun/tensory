@@ -7,6 +7,8 @@
 - [Identities and Relationships of
   Tensors](https://www.sundayu.me/tensory/articles/identities.md):
 - [performance](https://www.sundayu.me/tensory/articles/performance.md):
+- [Quantile Regression with Tensor Predictors:
+  pqtr()](https://www.sundayu.me/tensory/articles/pqtr.md):
 - [Tensor Regression with
   spgtr()](https://www.sundayu.me/tensory/articles/spgtr.md):
 - [Get started with

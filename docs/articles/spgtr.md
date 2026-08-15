@@ -344,7 +344,7 @@ exactly.
 a <- tepls(X, scores, u = c(1, 1))
 b <- spgtr(X, scores, u = c(1, 1), family = gaussian(), basis = "simpls")
 max(abs(as.vector(a$coef$as_array()) - b$bvec))
-#> [1] 8.841194e-11
+#> [1] 8.841083e-11
 ```
 
 ## Honest evaluation
