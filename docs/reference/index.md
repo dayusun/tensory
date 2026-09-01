@@ -188,6 +188,35 @@ CP, Tucker, generalized CP, and tensor eigenpairs.
 - [`eig_geap()`](https://www.sundayu.me/tensory/reference/eig_geap.md) :
   Generalized Eigenproblem Adaptive Power Method (GEAP)
 
+## Regression with tensor predictors
+
+Supervised models where each subject’s predictor is a whole array:
+sparse partial generalized tensor regression, tensor envelope PLS, and
+partial quantile tensor regression.
+
+- [`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md)
+  [`coef(`*`<spgtr>`*`)`](https://www.sundayu.me/tensory/reference/spgtr.md)
+  [`print(`*`<spgtr>`*`)`](https://www.sundayu.me/tensory/reference/spgtr.md)
+  : Sparse Partial Generalized Tensor Regression (SPGTR)
+- [`spgtr_cv()`](https://www.sundayu.me/tensory/reference/spgtr_cv.md) :
+  Choose the Sparsity of a Tensor Regression by Cross-Validation
+- [`predict(`*`<spgtr>`*`)`](https://www.sundayu.me/tensory/reference/predict.spgtr.md)
+  : Predict from a Tensor Regression Fit
+- [`summary(`*`<spgtr>`*`)`](https://www.sundayu.me/tensory/reference/summary.spgtr.md)
+  : Summarize a Tensor Regression Fit
+- [`tepls()`](https://www.sundayu.me/tensory/reference/tepls.md) :
+  Tensor Envelope Partial Least Squares Regression (TEPLS)
+- [`predict(`*`<tepls>`*`)`](https://www.sundayu.me/tensory/reference/predict.tepls.md)
+  : Predict from a TEPLS Fit
+- [`pqtr()`](https://www.sundayu.me/tensory/reference/pqtr.md)
+  [`coef(`*`<pqtr>`*`)`](https://www.sundayu.me/tensory/reference/pqtr.md)
+  [`print(`*`<pqtr>`*`)`](https://www.sundayu.me/tensory/reference/pqtr.md)
+  : Partial Quantile Tensor Regression (PQTR)
+- [`pqtr_cv()`](https://www.sundayu.me/tensory/reference/pqtr_cv.md) :
+  Choose the Reduced Dimension of a Quantile Tensor Regression
+- [`predict(`*`<pqtr>`*`)`](https://www.sundayu.me/tensory/reference/predict.pqtr.md)
+  : Predict from a Partial Quantile Tensor Regression Fit
+
 ## Working with CP factors
 
 Post-processing, comparison, and visualization of `KTensor` fits.
@@ -210,35 +239,6 @@ Post-processing, comparison, and visualization of `KTensor` fits.
   Kruskal Tensor to Vector
 - [`viz()`](https://www.sundayu.me/tensory/reference/viz.md) : Visualize
   a Kruskal Tensor
-
-## Regression with tensor predictors
-
-Supervised models where each observation is a whole array: sparse
-penalized generalized tensor regression, tensor envelope PLS, and
-partial quantile tensor regression.
-
-- [`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md)
-  [`coef(`*`<spgtr>`*`)`](https://www.sundayu.me/tensory/reference/spgtr.md)
-  [`print(`*`<spgtr>`*`)`](https://www.sundayu.me/tensory/reference/spgtr.md)
-  : Sparse Penalized Generalized Tensor Regression (SPGTR)
-- [`spgtr_cv()`](https://www.sundayu.me/tensory/reference/spgtr_cv.md) :
-  Choose the Sparsity of a Tensor Regression by Cross-Validation
-- [`predict(`*`<spgtr>`*`)`](https://www.sundayu.me/tensory/reference/predict.spgtr.md)
-  : Predict from a Tensor Regression Fit
-- [`summary(`*`<spgtr>`*`)`](https://www.sundayu.me/tensory/reference/summary.spgtr.md)
-  : Summarize a Tensor Regression Fit
-- [`tepls()`](https://www.sundayu.me/tensory/reference/tepls.md) :
-  Tensor Envelope Partial Least Squares Regression (TEPLS)
-- [`predict(`*`<tepls>`*`)`](https://www.sundayu.me/tensory/reference/predict.tepls.md)
-  : Predict from a TEPLS Fit
-- [`pqtr()`](https://www.sundayu.me/tensory/reference/pqtr.md)
-  [`coef(`*`<pqtr>`*`)`](https://www.sundayu.me/tensory/reference/pqtr.md)
-  [`print(`*`<pqtr>`*`)`](https://www.sundayu.me/tensory/reference/pqtr.md)
-  : Partial Quantile Tensor Regression (PQTR)
-- [`pqtr_cv()`](https://www.sundayu.me/tensory/reference/pqtr_cv.md) :
-  Choose the Reduced Dimension of a Quantile Tensor Regression
-- [`predict(`*`<pqtr>`*`)`](https://www.sundayu.me/tensory/reference/predict.pqtr.md)
-  : Predict from a Partial Quantile Tensor Regression Fit
 
 ## Import and export
 

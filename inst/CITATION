@@ -1,0 +1,41 @@
+citHeader(
+  "The methods in tensory come from the following papers. Cite the one for",
+  "the model you used."
+)
+
+bibentry(
+  bibtype = "Unpublished",
+  title   = paste("Sparse partial generalized tensor regression with",
+                  "application to neuroimaging data"),
+  author  = c(person("D.", "Sun"), person("L.", "Peng"), person("Z.", "Qiu"),
+              person("J.", "Stevens"), person("A.", "Manatunga"),
+              person("Y.", "Guo")),
+  note    = "Submitted",
+  header  = "For spgtr() and spgtr_cv():"
+)
+
+bibentry(
+  bibtype = "Article",
+  title   = "Partial quantile tensor regression",
+  author  = c(person("D.", "Sun"), person("Z.", "Qiu"), person("L.", "Peng"),
+              person("Y.", "Guo"), person("A.", "Manatunga")),
+  journal = "Journal of the American Statistical Association",
+  year    = "2024",
+  volume  = "120",
+  number  = "551",
+  pages   = "1724--1735",
+  doi     = "10.1080/01621459.2024.2422129",
+  header  = "For pqtr() and pqtr_cv():"
+)
+
+bibentry(
+  bibtype = "Article",
+  title   = "Tensor envelope partial least-squares regression",
+  author  = c(person("X.", "Zhang"), person("L.", "Li")),
+  journal = "Technometrics",
+  year    = "2017",
+  volume  = "59",
+  number  = "4",
+  pages   = "426--436",
+  header  = "For tepls():"
+)

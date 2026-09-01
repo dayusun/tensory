@@ -45,7 +45,7 @@ X <- lapply(1:100, function(i) matrix(rnorm(30), 6, 5))
 eta <- vapply(X, function(xi) sum(B * xi), numeric(1))
 y <- rbinom(100, 1, 1 / (1 + exp(-eta)))
 summary(spgtr(X, y, u = c(1, 1)))
-#> <spgtr: sparse penalized generalized tensor regression>
+#> <spgtr: sparse partial generalized tensor regression>
 #> Outcome:         binomial with logit link
 #> Subjects:        100 
 #> Array shape:     6 x 5 

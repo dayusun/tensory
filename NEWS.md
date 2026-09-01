@@ -47,8 +47,9 @@ First development version. Everything below is new.
 
 ## Regression with tensor predictors
 
-* `spgtr()` and `spgtr_cv()` fit a generalized linear model whose predictor is
-  a whole array per observation. Each mode is reduced to an envelope basis, the
+* `spgtr()` and `spgtr_cv()` fit the sparse partial generalized tensor
+  regression of Sun, Peng, Qiu, Stevens, Manatunga and Guo (submitted): a
+  generalized linear model whose predictor is a whole array per observation. Each mode is reduced to an envelope basis, the
   GLM is fit on the latent scores, and the coefficient array is returned in the
   original shape as a `TTensor`. An adaptively weighted row-wise L2,1 penalty
   selects whole slices of the array; `spgtr_cv()` chooses its strength by
@@ -59,7 +60,7 @@ First development version. Everything below is new.
   per-mode envelope dimensions are chosen automatically when `u` is not given.
   See `vignette("tepls")`.
 * `pqtr()` and `pqtr_cv()` fit the partial quantile tensor regression of Sun,
-  Zhang and Zhang (2024): a chosen quantile of the outcome, rather than its
+  Qiu, Peng, Guo and Manatunga (2024): a chosen quantile of the outcome, rather than its
   mean, is regressed on the array through per-mode partial-least-squares
   directions. Optional unreduced covariates are supported, the reduced
   dimension is chosen by an eigenvalue-ratio rule or by cross-validated check

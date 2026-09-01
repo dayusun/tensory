@@ -23,8 +23,7 @@ library(tensory)
 
 Each subject contributes a whole **array** — an image, a
 region-by-region connectivity matrix, a sensor-by-time grid — and one or
-more **continuous** outcomes. You want to predict the outcome from the
-array.
+more **continuous** outcomes to be predicted from it.
 
 Flattening the array and calling
 [`lm()`](https://rdrr.io/r/stats/lm.html) does not work. A 32 × 32 image
@@ -36,8 +35,8 @@ also discards the grid: it forgets that row 4 column 12 sits beside row
 [`tepls()`](https://www.sundayu.me/tensory/reference/tepls.md) keeps the
 grid. It compresses each *dimension* of the array separately into a few
 informative directions, regresses the outcome on the compressed array,
-and then maps the answer back so the coefficient has the same shape as
-your data. A 32 × 32 predictor reduced to 2 directions per mode leaves 4
+then maps the answer back so the coefficient has the same shape as the
+data. A 32 × 32 predictor reduced to 2 directions per mode leaves 4
 numbers to estimate instead of 1,024.
 
 **[`tepls()`](https://www.sundayu.me/tensory/reference/tepls.md) or
@@ -52,19 +51,18 @@ numbers to estimate instead of 1,024.
 
 For a continuous outcome and no covariates the two agree exactly when
 [`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md) is given
-`family = gaussian()` and `basis = "simpls"`; a check at the end of this
-article confirms it. Reach for
-[`tepls()`](https://www.sundayu.me/tensory/reference/tepls.md) when that
-is your setting — it is the cheaper, more direct route — and for
-[`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md) when you
-need a non-Gaussian outcome, nuisance covariates, or slice selection.
+`family = gaussian()` and `basis = "simpls"`, which is checked below.
+[`tepls()`](https://www.sundayu.me/tensory/reference/tepls.md) is the
+cheaper and more direct route in that setting;
+[`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md) is the
+one for a non-Gaussian outcome, nuisance covariates, or slice selection.
 
 ## How to lay out your data
 
 Two forms are accepted, and they are interchangeable.
 
-**A list, one array per subject.** The most natural form. Every element
-must have the same dimensions.
+**A list, one array per subject.** Every element must have the same
+dimensions.
 
 ``` r
 
@@ -77,8 +75,8 @@ dim(X[[1]])
 #> [1] 16 12
 ```
 
-**One big array with subjects in the *last* mode.** If your data already
-arrives as a `16 x 12 x 150` block, hand it over directly — no
+**One big array with subjects in the *last* mode.** Data that already
+arrives as a `16 x 12 x 150` block can be handed over directly, with no
 reshaping.
 
 ``` r
@@ -88,13 +86,13 @@ dim(Xbig)
 #> [1]  16  12 150
 ```
 
-The response is a numeric vector of length `n`, or an `n x r` matrix if
-you have several outcomes per subject.
+The response is a numeric vector of length `n`, or an `n x r` matrix for
+several outcomes per subject.
 
 ## Quick start
 
-We plant a signal in the top-left corner of the image: the outcome
-depends on the array through a single rank-one pattern, plus noise.
+The outcome here depends on the array through a single rank-one pattern
+in the top-left corner, plus noise.
 
 ``` r
 
@@ -109,10 +107,10 @@ fit
 #> Response dim (r):  1
 ```
 
-That is the whole call. `u` was not supplied, so
+`u` was not supplied, so
 [`tepls()`](https://www.sundayu.me/tensory/reference/tepls.md) chose the
-number of directions per mode for you. The estimated coefficient is an
-array of the same shape as a subject’s data:
+number of directions per mode. The estimated coefficient is an array of
+the same shape as a subject’s data:
 
 ``` r
 
@@ -127,8 +125,7 @@ round(B_hat[1:4, 1:4], 2)
 #> [4,] -0.08  0.01 -0.01  0.01
 ```
 
-Only the corner is large, which is where we put the signal. A picture
-makes the point faster than the numbers:
+Only the corner is large, which is where the signal was planted:
 
 ``` r
 
@@ -166,8 +163,7 @@ Left at its default `NULL`,
 [`tepls()`](https://www.sundayu.me/tensory/reference/tepls.md) picks
 each mode’s value from the largest gap between consecutive eigenvalues
 of that mode’s signal matrix — the same rule
-[`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md) uses. It
-is fast and usually sensible:
+[`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md) uses:
 
 ``` r
 
@@ -185,8 +181,8 @@ tepls(X, y, u = 2)$u # a scalar is recycled across modes
 #> [1] 2 2
 ```
 
-When you do not, cross-validate. There is no `tepls_cv()`; the fit is
-cheap enough that an explicit loop is clearer than a wrapper:
+Otherwise cross-validate. There is no `tepls_cv()`; the fit is cheap
+enough that an explicit loop over a grid does the job:
 
 ``` r
 
@@ -239,9 +235,8 @@ dim(predict(mfit))
 #> [1] 150   2
 ```
 
-Sharing the directions is the point: the two outcomes here are driven by
-the same image pattern, and fitting them together estimates that pattern
-from twice the data.
+The two outcomes here are driven by the same image pattern, so fitting
+them together estimates that pattern from twice the data.
 
 ## What is in the fit
 
@@ -252,20 +247,20 @@ names(fit)
 #> [7] "r"         "fitted"
 ```
 
-- `coef` — the coefficient `Tensor`, in the shape of your predictor
-  (with a trailing response mode when there is more than one outcome).
-  Also reachable as `coef(fit)`.
+- `coef` — the coefficient `Tensor`, in the shape of the predictor (with
+  a trailing response mode when there is more than one outcome). Also
+  reachable as `coef(fit)`.
 - `W` — one matrix per mode, `p_k x u[k]`, whose columns are the
-  directions kept in that mode. These are what the method learns.
+  directions kept in that mode.
 - `u`, `dims`, `r` — the shape of the problem.
 - `intercept`, `Xbar` — the response mean and the predictor mean used
   for centering; [`predict()`](https://rdrr.io/r/stats/predict.html)
   needs both.
 - `fitted` — in-sample predictions.
 
-The per-mode directions are interpretable on their own. Here the first
-mode’s direction should be concentrated on rows 1 and 2, and the second
-mode’s on column 1:
+The per-mode directions are interpretable on their own. The first mode’s
+direction should be concentrated on rows 1 and 2, and the second mode’s
+on column 1:
 
 ``` r
 
@@ -283,10 +278,9 @@ round(fit$W[[2]][1:4, 1, drop = FALSE], 3)
 #> [4,] -0.147
 ```
 
-Subjects’ compressed coordinates — the *latent scores* — are the
-centered predictor projected onto those directions — `prod(u)` numbers
-per subject, so just one apiece here. They are useful for plotting or as
-input to another model:
+The *latent scores* are the centered predictor projected onto those
+directions, `prod(u)` numbers per subject — one apiece here. They serve
+for plotting or as input to another model:
 
 ``` r
 
@@ -297,7 +291,7 @@ str(scores)
 #>  num [1:150] -1.131 -0.85 2.151 1.72 -0.459 ...
 ```
 
-## Evaluating honestly
+## Out-of-sample prediction
 
 In-sample `R^2` is optimistic. Hold data out.
 
@@ -331,40 +325,23 @@ try(predict(f, lapply(1:5, function(i) matrix(0, 3, 3))))
 ## How it works
 
 [`tepls()`](https://www.sundayu.me/tensory/reference/tepls.md)
-implements Algorithm 4 of Zhang & Li (2017).
-
-1.  **Center** the predictor and response.
-2.  **Marginal covariances.** For each mode `k`, `Sigma_k` averages
-    `X_(k) X_(k)'` over subjects — how variable the array is along that
-    mode. (This step runs in C++ when the compiled kernel is available.)
-3.  **Cross-covariance.** `C` is the array of covariances between each
-    predictor cell and the response — where the signal is.
-4.  **Per-mode signal matrix.**
-    `M_k = C_(k) (kron_{j != k} Sigma_j^-1) C_(k)'` standardizes `C`
-    along every mode but `k`, so `M_k` measures signal in mode `k` after
-    accounting for the others.
-5.  **SIMPLS deflation.** The leading eigenvector of `M_k` is the first
-    direction; project it out (in the `Sigma_k` metric) and repeat,
-    `u[k]` times. This gives `W_k`.
-6.  **Reduced regression.** Project every subject onto
-    `W_1 kron ... kron W_m` and regress the response on the resulting
-    `prod(u)` scores by least squares.
-7.  **Map back.** `B = W (reduced coefficient)`, reshaped to the
-    predictor’s shape (their Lemma 2).
-
-Nothing here is iterative, and nothing inverts a `prod(p) x prod(p)`
-matrix — only the per-mode `p_k x p_k` ones. That is why `n` can be far
-smaller than `prod(p)`.
+implements Algorithm 4 of Zhang & Li (2017): each mode of the array is
+compressed to a few directions chosen for their association with the
+response, the response is regressed on the compressed predictor by least
+squares, and the reduced coefficient is expanded back to the shape of
+the original array. Nothing is iterative. No `prod(p) x prod(p)` matrix
+is inverted, only the per-mode `p_k x p_k` ones, which is why `n` can be
+far smaller than `prod(p)`. Zhang & Li (2017) give the derivation.
 
 **Relation to the reference implementation.** The mode-`k` second-moment
-matrix built in step 4 is identical to the `U U'` matrix in
-`TEReg::TensPLS_fit`. Two deliberate divergences: that package estimates
-each mode’s basis with an envelope (`EnvMU`) optimizer, whereas
+matrix is identical to the `U U'` matrix in `TEReg::TensPLS_fit`. Two
+divergences are deliberate: that package estimates each mode’s basis
+with an envelope (`EnvMU`) optimizer, whereas
 [`tepls()`](https://www.sundayu.me/tensory/reference/tepls.md) runs the
 SIMPLS deflation of Algorithm 4 exactly; and the reduced regression here
-is plain least squares on the latent scores (Step 6), which is invariant
-to the scale ambiguity of the separable covariance, so no Kronecker
-scale needs pinning.
+is plain least squares on the latent scores (Algorithm 4, Step 6), which
+is invariant to the scale ambiguity of the separable covariance, so no
+Kronecker scale needs pinning.
 
 ## Two identities worth knowing
 
@@ -395,28 +372,6 @@ b <- spgtr(X, y, u = c(2, 2), family = gaussian(), basis = "simpls")
 max(abs(as.vector(as.tensor(coef(a))$as_array()) - b$bvec))
 #> [1] 9.763435e-11
 ```
-
-If either identity ever breaks, something is wrong with the centering,
-the score map, or the reconstruction — both are in the test suite for
-that reason.
-
-## Limits
-
-- **Continuous outcomes only.** Binary or count outcomes belong in
-  [`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md).
-- **No covariates.** Age, sex, batch and the like cannot be entered
-  unpenalized;
-  [`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md)’s `Z`
-  argument does that.
-- **No sparsity.** Every row and column of the array contributes. When
-  you need “which slices matter”, use
-  [`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md) with
-  `lambda > 0`.
-- **No standard errors.** The coefficient is a point estimate. Bootstrap
-  the subjects if you need uncertainty.
-- **`u` is not free.** Choose it by cross-validation when the
-  eigenvalue-gap default is not obviously right — with `prod(u)`
-  parameters, a too-large `u` overfits like any other model.
 
 ## Reference
 

@@ -108,11 +108,13 @@ First development version. Everything below is new.
 
 - [`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md) and
   [`spgtr_cv()`](https://www.sundayu.me/tensory/reference/spgtr_cv.md)
-  fit a generalized linear model whose predictor is a whole array per
-  observation. Each mode is reduced to an envelope basis, the GLM is fit
-  on the latent scores, and the coefficient array is returned in the
-  original shape as a `TTensor`. An adaptively weighted row-wise L2,1
-  penalty selects whole slices of the array;
+  fit the sparse partial generalized tensor regression of Sun, Peng,
+  Qiu, Stevens, Manatunga and Guo (submitted): a generalized linear
+  model whose predictor is a whole array per observation. Each mode is
+  reduced to an envelope basis, the GLM is fit on the latent scores, and
+  the coefficient array is returned in the original shape as a
+  `TTensor`. An adaptively weighted row-wise L2,1 penalty selects whole
+  slices of the array;
   [`spgtr_cv()`](https://www.sundayu.me/tensory/reference/spgtr_cv.md)
   chooses its strength by cross-validated deviance. Any GLM family is
   supported, with optional unpenalized nuisance covariates. See
@@ -125,13 +127,14 @@ First development version. Everything below is new.
   [`vignette("tepls")`](https://www.sundayu.me/tensory/articles/tepls.md).
 - [`pqtr()`](https://www.sundayu.me/tensory/reference/pqtr.md) and
   [`pqtr_cv()`](https://www.sundayu.me/tensory/reference/pqtr_cv.md) fit
-  the partial quantile tensor regression of Sun, Zhang and Zhang (2024):
-  a chosen quantile of the outcome, rather than its mean, is regressed
-  on the array through per-mode partial-least-squares directions.
-  Optional unreduced covariates are supported, the reduced dimension is
-  chosen by an eigenvalue-ratio rule or by cross-validated check loss,
-  and the inner quantile regressions use the MM algorithm of Hunter and
-  Lange (2000), so no linear-programming dependency is needed. See
+  the partial quantile tensor regression of Sun, Qiu, Peng, Guo and
+  Manatunga (2024): a chosen quantile of the outcome, rather than its
+  mean, is regressed on the array through per-mode partial-least-squares
+  directions. Optional unreduced covariates are supported, the reduced
+  dimension is chosen by an eigenvalue-ratio rule or by cross-validated
+  check loss, and the inner quantile regressions use the MM algorithm of
+  Hunter and Lange (2000), so no linear-programming dependency is
+  needed. See
   [`vignette("pqtr")`](https://www.sundayu.me/tensory/articles/pqtr.md).
 - All three accept the predictor either as a list of equally shaped
   observations or as a single array whose last mode indexes

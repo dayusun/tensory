@@ -92,45 +92,38 @@
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;     %*%, kronecker, scale</span></span></code></pre></div>
 <div class="section level2">
-<h2 id="the-problem-this-solves">The problem this solves<a class="anchor" aria-label="anchor" href="#the-problem-this-solves"></a>
+<h2 id="array-valued-predictors">Array-valued predictors<a class="anchor" aria-label="anchor" href="#array-valued-predictors"></a>
 </h2>
-<p>Suppose every subject in your study contributes a whole
-<strong>array</strong> of numbers rather than a handful of
-variables:</p>
+<p>Every subject contributes a whole array of numbers rather than a
+handful of variables:</p>
 <ul>
 <li>an image, or a slice of one;</li>
 <li>a brain connectivity matrix (region by region);</li>
 <li>a spectrogram, or any sensor-by-time grid;</li>
 <li>a spatial grid measured at several time points.</li>
 </ul>
-<p>and each subject also has one <strong>outcome</strong>: a diagnosis
-(yes/no), a count, a score. You want to know how the array relates to
-the outcome, and which parts of the array matter.</p>
-<p>You cannot simply flatten the array and run <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code>. A
+<p>Alongside the array each subject has one outcome: a diagnosis
+(yes/no), a count, a score.</p>
+<p>Flattening the array and running <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> does not work. A
 modest 60 × 60 image is 3,600 predictors; with 300 subjects, ordinary
 logistic regression has no unique solution and any answer it produces is
-noise. Flattening also throws away the grid structure: it forgets that
-column 12 of row 4 sits next to column 13 of row 4.</p>
-<p><code><a href="../reference/spgtr.html">spgtr()</a></code> keeps the structure. It compresses each
-<em>dimension</em> of the array separately down to a few informative
-directions, fits a generalized linear model on the compressed version,
-and then translates the fitted model back to the original array shape so
-you can look at it. Adding a sparsity penalty makes it also
-<em>select</em>: whole rows, columns, or slices that carry no signal are
-dropped, and you are told which ones survived.</p>
+noise. Flattening also throws away the grid structure: column 12 of row
+4 is no longer a neighbour of column 13 of row 4.</p>
+<p><code><a href="../reference/spgtr.html">spgtr()</a></code> fits the model on the array as it stands and
+returns coefficients in the same shape, so they can be looked at the way
+the data are looked at. Adding a sparsity penalty makes it also select:
+whole rows, columns, or slices that carry no signal are dropped, and the
+survivors are reported.</p>
 </div>
 <div class="section level2">
 <h2 id="data-layout">Data layout<a class="anchor" aria-label="anchor" href="#data-layout"></a>
 </h2>
 <p>Two input shapes are accepted, whichever is more convenient:</p>
 <ol style="list-style-type: decimal">
-<li>
-<strong>A list</strong>, <code>X[[i]]</code> being subject
-<code>i</code>’s matrix or array. All subjects must share the same
-shape.</li>
-<li>
-<strong>One big array</strong> of order <code>m + 1</code>, with
-subjects in the <strong>last</strong> dimension,
+<li>A list, <code>X[[i]]</code> being subject <code>i</code>’s matrix or
+array. All subjects must share the same shape.</li>
+<li>One big array of order <code>m + 1</code>, with subjects in the
+<strong>last</strong> dimension,
 e.g. <code>dim(X) == c(8, 6, 120)</code> for 120 subjects measured on an
 8 × 6 grid.</li>
 </ol>
@@ -138,8 +131,8 @@ e.g. <code>dim(X) == c(8, 6, 120)</code> for 120 subjects measured on an
 subject: <code>0/1</code>, <code>TRUE</code>/ <code>FALSE</code>, or a
 two-level factor for yes/no outcomes; counts for <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson()</a></code>;
 any numbers for <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian()</a></code>.</p>
-<p>Let us simulate 200 subjects measured on an 8 × 6 grid where only the
-top-left corner drives a yes/no outcome.</p>
+<p>The simulation below has 200 subjects measured on an 8 × 6 grid where
+only the top-left corner drives a yes/no outcome.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">200</span></span>
@@ -169,7 +162,7 @@ kept per dimension; leave it out and it is chosen for you.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spgtr.html">spgtr</a></span><span class="op">(</span><span class="va">X</span>, <span class="va">y</span>, u <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">fit</span></span>
-<span><span class="co">#&gt; &lt;spgtr: sparse penalized generalized tensor regression&gt;</span></span>
+<span><span class="co">#&gt; &lt;spgtr: sparse partial generalized tensor regression&gt;</span></span>
 <span><span class="co">#&gt; Outcome:         binomial with logit link</span></span>
 <span><span class="co">#&gt; Subjects:        200 </span></span>
 <span><span class="co">#&gt; Array shape:     8 x 6 </span></span>
@@ -177,11 +170,11 @@ kept per dimension; leave it out and it is chosen for you.</p>
 <span><span class="co">#&gt; Basis:           envelope (lambda = 0) </span></span>
 <span><span class="co">#&gt; Slices kept:     8/8  6/6 </span></span>
 <span><span class="co">#&gt; Deviance:        183.575</span></span></code></pre></div>
-<p><code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> adds a plain report of what was kept and how
-well the model fits.</p>
+<p><code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> reports what was kept and how well the model
+fits.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
-<span><span class="co">#&gt; &lt;spgtr: sparse penalized generalized tensor regression&gt;</span></span>
+<span><span class="co">#&gt; &lt;spgtr: sparse partial generalized tensor regression&gt;</span></span>
 <span><span class="co">#&gt; Outcome:         binomial with logit link</span></span>
 <span><span class="co">#&gt; Subjects:        200 </span></span>
 <span><span class="co">#&gt; Array shape:     8 x 6 </span></span>
@@ -238,16 +231,16 @@ down.</p>
 </h2>
 <p><code>u[k]</code> is how many directions are kept in dimension
 <code>k</code>. Small values mean a simpler, more stable model; larger
-values mean more flexibility and more parameters (the model has
+values mean more flexibility and more parameters — the model has
 <code>prod(u)</code> coefficients after compression, so
-<code>u = c(2, 2)</code> costs four).</p>
+<code>u = c(2, 2)</code> costs four.</p>
 <p>Omit <code>u</code> and an eigenvalue-ratio rule picks it:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">auto</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spgtr.html">spgtr</a></span><span class="op">(</span><span class="va">X</span>, <span class="va">y</span><span class="op">)</span></span>
 <span><span class="va">auto</span><span class="op">$</span><span class="va">u</span></span>
 <span><span class="co">#&gt; [1] 1 1</span></span></code></pre></div>
-<p>If you would rather choose by predictive performance, fit a few and
-compare on held-out subjects:</p>
+<p>To choose by predictive performance instead, fit a few and compare on
+held-out subjects:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">train</span> <span class="op">&lt;-</span> <span class="fl">1</span><span class="op">:</span><span class="fl">150</span></span>
 <span><span class="va">test</span> <span class="op">&lt;-</span> <span class="fl">151</span><span class="op">:</span><span class="fl">200</span></span>
@@ -274,9 +267,9 @@ survived in each dimension.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; [[2]]</span></span>
 <span><span class="co">#&gt; [1] 1</span></span></code></pre></div>
-<p>Rather than guessing <code>lambda</code>, let cross-validation choose
-it. <code><a href="../reference/spgtr_cv.html">spgtr_cv()</a></code> fits the whole path in every fold, scores
-each value by held-out deviance, and refits at the winner.</p>
+<p>Cross-validation chooses <code>lambda</code> without guesswork.
+<code><a href="../reference/spgtr_cv.html">spgtr_cv()</a></code> fits the whole path in every fold, scores each
+value by held-out deviance, and refits at the winner.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="va">cvfit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spgtr_cv.html">spgtr_cv</a></span><span class="op">(</span><span class="va">X</span>, <span class="va">y</span>, u <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span>, nfolds <span class="op">=</span> <span class="fl">5</span>, nlambda <span class="op">=</span> <span class="fl">12</span><span class="op">)</span></span>
@@ -301,9 +294,7 @@ each value by held-out deviance, and refits at the winner.</p>
 <span>     xlab <span class="op">=</span> <span class="st">"lambda (sparsity)"</span>, ylab <span class="op">=</span> <span class="st">"cross-validated deviance"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/abline.html" class="external-link">abline</a></span><span class="op">(</span>v <span class="op">=</span> <span class="va">cvfit</span><span class="op">$</span><span class="va">lambda_min</span>, lty <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
 <p><img src="spgtr_files/figure-html/cvplot-1.png" class="r-plt" alt="Cross-validated deviance against the sparsity level" width="576"></p>
-<p>The selected model uses only a few rows and columns, which is the
-interpretable output most applications want: <em>these</em> regions of
-the array, and no others, carry the signal.</p>
+<p>The selected model uses only a few rows and columns of the array.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="../reference/as.tensor.html">as.tensor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">cvfit</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="fu">as_array</span><span class="op">(</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="co">#&gt;      [,1] [,2] [,3] [,4] [,5] [,6]</span></span>
@@ -315,10 +306,10 @@ the array, and no others, carry the signal.</p>
 <span><span class="co">#&gt; [6,] 0.00 0.00    0    0    0    0</span></span>
 <span><span class="co">#&gt; [7,] 0.00 0.00    0    0    0    0</span></span>
 <span><span class="co">#&gt; [8,] 0.00 0.00    0    0    0    0</span></span></code></pre></div>
-<p>A caution: <code>lambda</code> selects <strong>whole slices</strong>,
-not individual cells. If row 3 is kept, every cell in row 3 can be
-non-zero. That is the right notion when rows and columns are meaningful
-units (brain regions, sensors, time points).</p>
+<p><code>lambda</code> selects whole slices, not individual cells. If
+row 3 is kept, every cell in row 3 can be non-zero. That is the right
+notion when rows and columns are meaningful units (brain regions,
+sensors, time points).</p>
 </div>
 <div class="section level2">
 <h2 id="ordinary-covariates">Ordinary covariates<a class="anchor" aria-label="anchor" href="#ordinary-covariates"></a>
@@ -350,7 +341,7 @@ penalized.</p>
 <span><span class="va">fit_gauss</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spgtr.html">spgtr</a></span><span class="op">(</span><span class="va">X</span>, <span class="va">scores</span>, u <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit_gauss</span><span class="op">)</span>, <span class="va">scores</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 0.9290174</span></span></code></pre></div>
-<p>For a continuous outcome with no sparsity you can also use
+<p>For a continuous outcome with no sparsity there is also
 <code><a href="../reference/tepls.html">tepls()</a></code>, the classical tensor envelope PLS estimator;
 <code>spgtr(..., family = gaussian(), basis = "simpls")</code>
 reproduces it exactly.</p>
@@ -361,7 +352,7 @@ reproduces it exactly.</p>
 <span><span class="co">#&gt; [1] 8.841083e-11</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="honest-evaluation">Honest evaluation<a class="anchor" aria-label="anchor" href="#honest-evaluation"></a>
+<h2 id="out-of-sample-evaluation">Out-of-sample evaluation<a class="anchor" aria-label="anchor" href="#out-of-sample-evaluation"></a>
 </h2>
 <p>Everything <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> prints is in-sample and therefore
 optimistic. Split the subjects, or read the cross-validated deviance
@@ -380,68 +371,25 @@ from <code><a href="../reference/spgtr_cv.html">spgtr_cv()</a></code>.</p>
 <span><span class="co">#&gt; [1] 0.7864583</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="what-the-algorithm-does">What the algorithm does<a class="anchor" aria-label="anchor" href="#what-the-algorithm-does"></a>
+<h2 id="how-the-fit-is-computed">How the fit is computed<a class="anchor" aria-label="anchor" href="#how-the-fit-is-computed"></a>
 </h2>
-<p>For readers who want the mechanics. Write <code>X_i</code> for
-subject <code>i</code>’s array of shape <code>p_1 x ... x p_m</code>,
-and <code>Z</code> for the ordinary covariates.</p>
-<ol style="list-style-type: decimal">
-<li>
-<strong>Outcome enters through a working residual.</strong> Fit the
-GLM of <code>y</code> on <code>Z</code> alone (the intercept only when
-<code>Z</code> is <code>NULL</code>) and take
-<code>r_i = y_i - mu_0i</code>. This is what makes the method work for
-any family: the rest of the algorithm only ever sees
-<code>r</code>.</li>
-<li>
-<strong>Second moments.</strong> Center the predictors and form the
-mode-<code>k</code> marginal covariance <code>Sigma_k</code> (averaging
-over all other dimensions and subjects) and the cross-covariance array
-<code>C</code> between the centered predictor and <code>r</code>. The
-mode-<code>k</code> signal matrix is
-<code>U_k = C_(k) (kron_{j != k} Sigma_j^{-1}) C_(k)'</code>.</li>
-<li>
-<strong>Directions per dimension.</strong> <code>W_k</code> (size
-<code>p_k x u_k</code>) is estimated from the pair
-<code>(U_k, Sigma_k)</code>. With <code>basis = "simpls"</code> it is
-the SIMPLS deflation of Zhang &amp; Li (2017), a closed-form eigenvector
-recursion. With <code>basis = "envelope"</code> that basis is refined by
-minimizing the envelope objective
-<code>log|W' Sigma_k W| + log|W' (Sigma_k + U_k)^{-1} W|</code> over
-semi-orthogonal <code>W</code>.</li>
-<li>
-<strong>Sparsity.</strong> <code>lambda &gt; 0</code> adds
-<code>lambda * sum_i w_ki ||W_k[i, ]||_2</code>, an adaptively weighted
-group penalty on the <em>rows</em> of <code>W_k</code>. A zero row means
-slice <code>i</code> of dimension <code>k</code> cannot enter the model
-at all. The problem is solved by a proximal gradient method on the
-Stiefel manifold whose retraction is a right-multiplication, which is
-exactly what lets zeroed rows survive re-orthonormalization.</li>
-<li>
-<strong>Fit and translate back.</strong> Reduce each subject to
-scores <code>T_i = X_i x_1 W_1' ... x_m W_m'</code>, fit the GLM of
-<code>y</code> on <code>(Z, vec(T))</code>, and map the latent
-coefficients <code>D</code> back with
-<code>B = D x_1 W_1 ... x_m W_m</code>. The returned
-<code>coef(fit)</code> is that <code>B</code>, stored as a
-<code>TTensor</code> (core <code>D</code>, factors <code>W</code>) so
-the structure is preserved; <code><a href="../reference/as.tensor.html">as.tensor()</a></code> expands it.</li>
-</ol>
-<p>References: Zhang &amp; Li (2017, <em>Technometrics</em>) for the
-tensor PLS estimator, Cook &amp; Zhang (2016, <em>JCGS</em>) for
-envelope estimation, and Xiao, Liu &amp; Yuan (2021, <em>SIAM J.
-Optim.</em>) for the manifold proximal gradient solver.</p>
+<p>Each dimension of the array is compressed down to a few directions,
+the generalized linear model is fitted on the compressed predictor, and
+the fitted coefficients are expanded back to the shape of the original
+array. The directions come from a closed-form deflation with
+<code>basis = "simpls"</code> and from an iterative envelope refinement
+with <code>basis = "envelope"</code>. Sun et al. give the
+derivation.</p>
 </div>
 <div class="section level2">
 <h2 id="performance-notes">Performance notes<a class="anchor" aria-label="anchor" href="#performance-notes"></a>
 </h2>
-<p>The two expensive steps – the mode-wise covariances and the manifold
-solver – are compiled kernels calling BLAS/LAPACK directly, and the
+<p>The two expensive steps — the mode-wise covariances and the manifold
+solver — are compiled kernels calling BLAS/LAPACK directly, and the
 score computation reuses the package’s compiled <code><a href="../reference/ttm.html">ttm()</a></code>.
 Reference implementations in R are used automatically if the package was
 built without compilation; the two paths agree to numerical tolerance
 and are checked against each other in the test suite.</p>
-<p>Practical guidance:</p>
 <ul>
 <li>A single <code><a href="../reference/spgtr.html">spgtr()</a></code> fit on a 60 × 60 predictor with 300
 subjects takes about a tenth of a second; the full
@@ -461,20 +409,17 @@ far less than 20 separate fits.</li>
 </ul>
 </div>
 <div class="section level2">
-<h2 id="limitations">Limitations<a class="anchor" aria-label="anchor" href="#limitations"></a>
+<h2 id="reference">Reference<a class="anchor" aria-label="anchor" href="#reference"></a>
 </h2>
 <ul>
-<li>Sparsity is by slice, not by cell.</li>
-<li>All subjects must share one array shape; missing cells are not
-supported.</li>
-<li>In-sample statistics are optimistic; use held-out data.</li>
-<li>Standard errors and p-values are not provided. The model is selected
-from the data, so naive intervals would be wrong; use resampling if you
-need uncertainty.</li>
-<li>With a binary outcome and very strong signal the score-level GLM can
-separate perfectly, in which case <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm.fit()</a></code> warns and the
-coefficients grow. Reduce <code>u</code> or increase <code>lambda</code>
-if that happens.</li>
+<li>Sun, D., Peng, L., Qiu, Z., Stevens, J., Manatunga, A. and Guo, Y.
+Sparse partial generalized tensor regression with application to
+neuroimaging data. Submitted.</li>
+<li>Zhang, X. and Li, L. (2017). Tensor envelope partial least-squares
+regression. <em>Technometrics</em> <strong>59</strong>(4), 426–436.</li>
+<li>Xiao, N., Liu, X. and Yuan, Y. (2021). Exact penalty function for
+L21 norm minimization over the Stiefel manifold. <em>SIAM Journal on
+Optimization</em> <strong>31</strong>(4), 3097–3126.</li>
 </ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

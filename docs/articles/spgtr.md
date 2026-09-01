@@ -19,42 +19,39 @@ library(tensory)
 #>     %*%, kronecker, scale
 ```
 
-## The problem this solves
+## Array-valued predictors
 
-Suppose every subject in your study contributes a whole **array** of
-numbers rather than a handful of variables:
+Every subject contributes a whole array of numbers rather than a handful
+of variables:
 
 - an image, or a slice of one;
 - a brain connectivity matrix (region by region);
 - a spectrogram, or any sensor-by-time grid;
 - a spatial grid measured at several time points.
 
-and each subject also has one **outcome**: a diagnosis (yes/no), a
-count, a score. You want to know how the array relates to the outcome,
-and which parts of the array matter.
+Alongside the array each subject has one outcome: a diagnosis (yes/no),
+a count, a score.
 
-You cannot simply flatten the array and run
-[`glm()`](https://rdrr.io/r/stats/glm.html). A modest 60 × 60 image is
-3,600 predictors; with 300 subjects, ordinary logistic regression has no
-unique solution and any answer it produces is noise. Flattening also
-throws away the grid structure: it forgets that column 12 of row 4 sits
-next to column 13 of row 4.
+Flattening the array and running
+[`glm()`](https://rdrr.io/r/stats/glm.html) does not work. A modest 60 ×
+60 image is 3,600 predictors; with 300 subjects, ordinary logistic
+regression has no unique solution and any answer it produces is noise.
+Flattening also throws away the grid structure: column 12 of row 4 is no
+longer a neighbour of column 13 of row 4.
 
-[`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md) keeps the
-structure. It compresses each *dimension* of the array separately down
-to a few informative directions, fits a generalized linear model on the
-compressed version, and then translates the fitted model back to the
-original array shape so you can look at it. Adding a sparsity penalty
-makes it also *select*: whole rows, columns, or slices that carry no
-signal are dropped, and you are told which ones survived.
+[`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md) fits the
+model on the array as it stands and returns coefficients in the same
+shape, so they can be looked at the way the data are looked at. Adding a
+sparsity penalty makes it also select: whole rows, columns, or slices
+that carry no signal are dropped, and the survivors are reported.
 
 ## Data layout
 
 Two input shapes are accepted, whichever is more convenient:
 
-1.  **A list**, `X[[i]]` being subject `i`’s matrix or array. All
-    subjects must share the same shape.
-2.  **One big array** of order `m + 1`, with subjects in the **last**
+1.  A list, `X[[i]]` being subject `i`’s matrix or array. All subjects
+    must share the same shape.
+2.  One big array of order `m + 1`, with subjects in the **last**
     dimension, e.g. `dim(X) == c(8, 6, 120)` for 120 subjects measured
     on an 8 × 6 grid.
 
@@ -63,8 +60,8 @@ The outcome `y` is a plain vector with one entry per subject: `0/1`,
 [`poisson()`](https://rdrr.io/r/stats/family.html); any numbers for
 [`gaussian()`](https://rdrr.io/r/stats/family.html).
 
-Let us simulate 200 subjects measured on an 8 × 6 grid where only the
-top-left corner drives a yes/no outcome.
+The simulation below has 200 subjects measured on an 8 × 6 grid where
+only the top-left corner drives a yes/no outcome.
 
 ``` r
 
@@ -98,7 +95,7 @@ dimension; leave it out and it is chosen for you.
 
 fit <- spgtr(X, y, u = c(1, 1))
 fit
-#> <spgtr: sparse penalized generalized tensor regression>
+#> <spgtr: sparse partial generalized tensor regression>
 #> Outcome:         binomial with logit link
 #> Subjects:        200 
 #> Array shape:     8 x 6 
@@ -108,13 +105,13 @@ fit
 #> Deviance:        183.575
 ```
 
-[`summary()`](https://rdrr.io/r/base/summary.html) adds a plain report
-of what was kept and how well the model fits.
+[`summary()`](https://rdrr.io/r/base/summary.html) reports what was kept
+and how well the model fits.
 
 ``` r
 
 summary(fit)
-#> <spgtr: sparse penalized generalized tensor regression>
+#> <spgtr: sparse partial generalized tensor regression>
 #> Outcome:         binomial with logit link
 #> Subjects:        200 
 #> Array shape:     8 x 6 
@@ -190,8 +187,8 @@ predict(fit, X_new, type = "response")
 
 `u[k]` is how many directions are kept in dimension `k`. Small values
 mean a simpler, more stable model; larger values mean more flexibility
-and more parameters (the model has `prod(u)` coefficients after
-compression, so `u = c(2, 2)` costs four).
+and more parameters — the model has `prod(u)` coefficients after
+compression, so `u = c(2, 2)` costs four.
 
 Omit `u` and an eigenvalue-ratio rule picks it:
 
@@ -202,8 +199,8 @@ auto$u
 #> [1] 1 1
 ```
 
-If you would rather choose by predictive performance, fit a few and
-compare on held-out subjects:
+To choose by predictive performance instead, fit a few and compare on
+held-out subjects:
 
 ``` r
 
@@ -235,7 +232,7 @@ sparse$selected
 #> [1] 1
 ```
 
-Rather than guessing `lambda`, let cross-validation choose it.
+Cross-validation chooses `lambda` without guesswork.
 [`spgtr_cv()`](https://www.sundayu.me/tensory/reference/spgtr_cv.md)
 fits the whole path in every fold, scores each value by held-out
 deviance, and refits at the winner.
@@ -272,9 +269,7 @@ abline(v = cvfit$lambda_min, lty = 2)
 ![Cross-validated deviance against the sparsity
 level](spgtr_files/figure-html/cvplot-1.png)
 
-The selected model uses only a few rows and columns, which is the
-interpretable output most applications want: *these* regions of the
-array, and no others, carry the signal.
+The selected model uses only a few rows and columns of the array.
 
 ``` r
 
@@ -290,10 +285,9 @@ round(as.tensor(coef(cvfit))$as_array(), 2)
 #> [8,] 0.00 0.00    0    0    0    0
 ```
 
-A caution: `lambda` selects **whole slices**, not individual cells. If
-row 3 is kept, every cell in row 3 can be non-zero. That is the right
-notion when rows and columns are meaningful units (brain regions,
-sensors, time points).
+`lambda` selects whole slices, not individual cells. If row 3 is kept,
+every cell in row 3 can be non-zero. That is the right notion when rows
+and columns are meaningful units (brain regions, sensors, time points).
 
 ## Ordinary covariates
 
@@ -333,7 +327,7 @@ cor(predict(fit_gauss), scores)
 #> [1] 0.9290174
 ```
 
-For a continuous outcome with no sparsity you can also use
+For a continuous outcome with no sparsity there is also
 [`tepls()`](https://www.sundayu.me/tensory/reference/tepls.md), the
 classical tensor envelope PLS estimator;
 `spgtr(..., family = gaussian(), basis = "simpls")` reproduces it
@@ -347,7 +341,7 @@ max(abs(as.vector(a$coef$as_array()) - b$bvec))
 #> [1] 8.841083e-11
 ```
 
-## Honest evaluation
+## Out-of-sample evaluation
 
 Everything [`summary()`](https://rdrr.io/r/base/summary.html) prints is
 in-sample and therefore optimistic. Split the subjects, or read the
@@ -369,59 +363,24 @@ n1 <- sum(yy == 1); n0 <- sum(yy == 0)
 #> [1] 0.7864583
 ```
 
-## What the algorithm does
+## How the fit is computed
 
-For readers who want the mechanics. Write `X_i` for subject `i`’s array
-of shape `p_1 x ... x p_m`, and `Z` for the ordinary covariates.
-
-1.  **Outcome enters through a working residual.** Fit the GLM of `y` on
-    `Z` alone (the intercept only when `Z` is `NULL`) and take
-    `r_i = y_i - mu_0i`. This is what makes the method work for any
-    family: the rest of the algorithm only ever sees `r`.
-2.  **Second moments.** Center the predictors and form the mode-`k`
-    marginal covariance `Sigma_k` (averaging over all other dimensions
-    and subjects) and the cross-covariance array `C` between the
-    centered predictor and `r`. The mode-`k` signal matrix is
-    `U_k = C_(k) (kron_{j != k} Sigma_j^{-1}) C_(k)'`.
-3.  **Directions per dimension.** `W_k` (size `p_k x u_k`) is estimated
-    from the pair `(U_k, Sigma_k)`. With `basis = "simpls"` it is the
-    SIMPLS deflation of Zhang & Li (2017), a closed-form eigenvector
-    recursion. With `basis = "envelope"` that basis is refined by
-    minimizing the envelope objective
-    `log|W' Sigma_k W| + log|W' (Sigma_k + U_k)^{-1} W|` over
-    semi-orthogonal `W`.
-4.  **Sparsity.** `lambda > 0` adds
-    `lambda * sum_i w_ki ||W_k[i, ]||_2`, an adaptively weighted group
-    penalty on the *rows* of `W_k`. A zero row means slice `i` of
-    dimension `k` cannot enter the model at all. The problem is solved
-    by a proximal gradient method on the Stiefel manifold whose
-    retraction is a right-multiplication, which is exactly what lets
-    zeroed rows survive re-orthonormalization.
-5.  **Fit and translate back.** Reduce each subject to scores
-    `T_i = X_i x_1 W_1' ... x_m W_m'`, fit the GLM of `y` on
-    `(Z, vec(T))`, and map the latent coefficients `D` back with
-    `B = D x_1 W_1 ... x_m W_m`. The returned `coef(fit)` is that `B`,
-    stored as a `TTensor` (core `D`, factors `W`) so the structure is
-    preserved;
-    [`as.tensor()`](https://www.sundayu.me/tensory/reference/as.tensor.md)
-    expands it.
-
-References: Zhang & Li (2017, *Technometrics*) for the tensor PLS
-estimator, Cook & Zhang (2016, *JCGS*) for envelope estimation, and
-Xiao, Liu & Yuan (2021, *SIAM J. Optim.*) for the manifold proximal
-gradient solver.
+Each dimension of the array is compressed down to a few directions, the
+generalized linear model is fitted on the compressed predictor, and the
+fitted coefficients are expanded back to the shape of the original
+array. The directions come from a closed-form deflation with
+`basis = "simpls"` and from an iterative envelope refinement with
+`basis = "envelope"`. Sun et al. give the derivation.
 
 ## Performance notes
 
-The two expensive steps – the mode-wise covariances and the manifold
-solver – are compiled kernels calling BLAS/LAPACK directly, and the
+The two expensive steps — the mode-wise covariances and the manifold
+solver — are compiled kernels calling BLAS/LAPACK directly, and the
 score computation reuses the package’s compiled
 [`ttm()`](https://www.sundayu.me/tensory/reference/ttm.md). Reference
 implementations in R are used automatically if the package was built
 without compilation; the two paths agree to numerical tolerance and are
 checked against each other in the test suite.
-
-Practical guidance:
 
 - A single
   [`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md) fit on
@@ -440,16 +399,13 @@ Practical guidance:
   the previous one, so a 20-point path costs far less than 20 separate
   fits.
 
-## Limitations
+## Reference
 
-- Sparsity is by slice, not by cell.
-- All subjects must share one array shape; missing cells are not
-  supported.
-- In-sample statistics are optimistic; use held-out data.
-- Standard errors and p-values are not provided. The model is selected
-  from the data, so naive intervals would be wrong; use resampling if
-  you need uncertainty.
-- With a binary outcome and very strong signal the score-level GLM can
-  separate perfectly, in which case
-  [`glm.fit()`](https://rdrr.io/r/stats/glm.html) warns and the
-  coefficients grow. Reduce `u` or increase `lambda` if that happens.
+- Sun, D., Peng, L., Qiu, Z., Stevens, J., Manatunga, A. and Guo, Y.
+  Sparse partial generalized tensor regression with application to
+  neuroimaging data. Submitted.
+- Zhang, X. and Li, L. (2017). Tensor envelope partial least-squares
+  regression. *Technometrics* **59**(4), 426–436.
+- Xiao, N., Liu, X. and Yuan, Y. (2021). Exact penalty function for L21
+  norm minimization over the Stiefel manifold. *SIAM Journal on
+  Optimization* **31**(4), 3097–3126.

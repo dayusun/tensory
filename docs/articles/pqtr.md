@@ -23,22 +23,21 @@ library(tensory)
 
 Each subject contributes a whole **array** — an image, a
 region-by-region connectivity matrix, a sensor-by-time grid — and one
-continuous outcome. The usual question is “how does the array move the
-*average* outcome?”.
-[`pqtr()`](https://www.sundayu.me/tensory/reference/pqtr.md) asks a
-different one: **how does the array move a particular quantile of the
-outcome?**
+continuous outcome. Mean regression asks how the array moves the
+*average* outcome.
+[`pqtr()`](https://www.sundayu.me/tensory/reference/pqtr.md) asks how it
+moves a particular quantile.
 
-That distinction matters whenever the interesting subjects are not the
-average ones. A brain region may barely shift mean cognitive score while
-strongly predicting who ends up in the bottom decile. A predictor may
-leave the median alone and widen the spread. Mean regression cannot see
-either effect; fitting `tau = 0.1` and `tau = 0.9` and comparing the two
-coefficient arrays can.
+The two questions come apart whenever the interesting subjects are not
+the average ones. A brain region may barely shift mean cognitive score
+while strongly predicting who ends up in the bottom decile. A predictor
+may leave the median alone and widen the spread. Mean regression sees
+neither effect; fitting `tau = 0.1` and `tau = 0.9` and comparing the
+two coefficient arrays does.
 
-Quantile regression is also robust: it makes no assumption about the
-error distribution and is unmoved by outliers in the outcome, which is
-worth having on its own when the response is skewed or heavy-tailed.
+Quantile regression also makes no assumption about the error
+distribution and is unmoved by outliers in the outcome, which is worth
+having on its own when the response is skewed or heavy-tailed.
 
 The obstacle is size. A 32 x 32 image is 1,024 predictors; with 200
 subjects the flattened quantile regression has no unique solution, and
@@ -78,8 +77,8 @@ dim(X[[1]])
 #> [1] 16 12
 ```
 
-**One big array with subjects in the *last* mode.** If your data already
-arrives as a `16 x 12 x 300` block, hand it over directly.
+**One big array with subjects in the *last* mode.** Data that already
+arrives as a `16 x 12 x 300` block can be handed over directly.
 
 ``` r
 
@@ -94,10 +93,9 @@ outcome at a time — a quantile is defined for a scalar.
 
 ## Quick start
 
-We plant a signal in the top-left corner of the image, and make the
-noise grow with it. The corner therefore shifts the median, and shifts
-the upper tail by more: the coefficient array genuinely depends on which
-quantile you ask about.
+The signal below sits in the top-left corner of the image, and the noise
+grows with it. The corner shifts the median and shifts the upper tail by
+more, so the coefficient array depends on which quantile is asked for.
 
 ``` r
 
@@ -116,10 +114,10 @@ med
 #> Check loss:      423.395
 ```
 
-That is the whole call. `u` was not supplied, so
+`u` was not supplied, so
 [`pqtr()`](https://www.sundayu.me/tensory/reference/pqtr.md) chose the
-number of directions per mode itself. The coefficient is an array of the
-same shape as one subject’s data:
+number of directions per mode. The coefficient is an array of the same
+shape as one subject’s data:
 
 ``` r
 
@@ -134,8 +132,8 @@ round(B_med[1:4, 1:4], 2)
 #> [4,] -0.64  0.04 -0.09  0.00
 ```
 
-Now the same data at three quantiles. We fix `u` here so the three fits
-are compared on equal terms:
+The same data at three quantiles, with `u` fixed so the three fits are
+compared on equal terms:
 
 ``` r
 
@@ -146,8 +144,8 @@ vapply(fits, function(f) sqrt(sum(f$bvec^2)), numeric(1))
 #>  1.749349  3.234018  3.685464
 ```
 
-The coefficient grows as we move up the distribution, which is exactly
-how the data were generated. Pictures make it plain:
+The coefficient grows moving up the distribution, which is how the data
+were generated:
 
 ``` r
 
@@ -178,12 +176,11 @@ c(below_q10 = mean(y < q10), below_q90 = mean(y < q90))
 ```
 
 About 10% of subjects fall below the fitted 10th percentile and about
-90% below the fitted 90th. That calibration is automatic — it is what
-minimizing the check loss enforces — and it is a quick sanity check on
-any fit.
+90% below the fitted 90th; minimizing the check loss forces that
+calibration in sample.
 
-The gap between the two is a **prediction interval** for a new subject,
-one that widens where the model says the outcome is more variable:
+The gap between the two is a prediction interval for a new subject, one
+that widens where the model says the outcome is more variable:
 
 ``` r
 
@@ -222,7 +219,7 @@ pqtr(X, y, tau = 0.5, u = 2)$u
 #> [1] 2 2
 ```
 
-When you do not, cross-validate.
+Otherwise cross-validate.
 [`pqtr_cv()`](https://www.sundayu.me/tensory/reference/pqtr_cv.md)
 scores a grid by out-of-fold check loss and returns the model refitted
 at the winner:
@@ -256,11 +253,11 @@ parameters in the quantile regression and start fitting noise.
 
 ## Covariates that should not be reduced
 
-Age, sex, batch, scanner — variables you want adjusted for but not
-compressed — go in `Z`. They enter the model unreduced, and they also
-enter the *first* step, where the outcome is replaced by its working
-residual from a quantile regression on `Z` alone. That is what makes the
-extracted directions describe the part of the array not already
+Age, sex, batch, scanner — variables to adjust for but not compress — go
+in `Z`. They enter the model unreduced, and they also enter the
+dimension reduction, where the outcome is replaced by its working
+residual from a quantile regression on `Z` alone. The extracted
+directions therefore describe the part of the array not already
 explained by the covariates.
 
 ``` r
@@ -307,9 +304,9 @@ names(med)
 - `scores` — the `n x prod(u)` compressed coordinates, useful for
   plotting or as input to another model.
 
-The per-mode directions are interpretable on their own. Here the first
-mode’s direction should concentrate on rows 1 and 2 and the second
-mode’s on column 1:
+The per-mode directions are interpretable on their own. The first mode’s
+direction should concentrate on rows 1 and 2 and the second mode’s on
+column 1:
 
 ``` r
 
@@ -327,7 +324,7 @@ round(med$W[[2]][1:4, 1, drop = FALSE], 3)
 #> [4,] -0.004
 ```
 
-## Evaluating honestly
+## Out-of-sample check loss
 
 In-sample calibration is guaranteed by construction, so it proves
 nothing. Hold data out and score with the same check loss the method
@@ -369,75 +366,38 @@ try(predict(f, lapply(1:5, function(i) matrix(0, 3, 3))))
 #>   newX dimensions must match the fitted predictor dimensions.
 ```
 
-## A caveat: quantile crossing
-
-Each quantile is fit separately, so nothing forces the fitted 10th
-percentile to stay below the fitted 90th for every subject. In practice
-crossings are rare and confined to the edges of the predictor space, but
-they are worth checking:
-
-``` r
-
-mean(q90 < q10)
-#> [1] 0
-```
-
-If crossings do appear, they usually mean `u` is too large for the
-sample size at one of the quantiles, or that the extreme `tau` you asked
-for is not supported by enough data.
-
 ## How it works
 
 [`pqtr()`](https://www.sundayu.me/tensory/reference/pqtr.md) implements
-the algorithm of Sun et al. (2024).
+the algorithm of Sun et al. (2024). The outcome enters the dimension
+reduction only through its working residual from a quantile regression
+on `Z` alone (the sample quantile when `Z` is absent); each mode of the
+array is compressed to a few directions associated with that residual,
+the quantile regression is refitted on the compressed predictor together
+with the covariates, and the reduced coefficient is expanded back to the
+shape of the original array. No `prod(p) x prod(p)` matrix is inverted,
+only the per-mode `p_k x p_k` ones, which is why the number of subjects
+can be far smaller than the number of cells in the array. Only the
+dimension reduction is approximate: the final fit is an exact linear
+quantile regression on the scores. Sun et al. (2024) give the
+derivation.
 
-1.  **Nuisance fit.** Fit the quantile regression of the outcome on `Z`
-    alone (just the intercept when `Z` is absent, which is the sample
-    quantile), and form the working residual
-    `tau - 1{y below that fit}`. This is the subgradient of the check
-    loss, and it is the only way the outcome enters the
-    dimension-reduction step.
-2.  **Center** the predictor.
-3.  **Marginal covariances.** For each mode `k`, `Sigma_k` averages
-    `X_(k) X_(k)'` over subjects — how variable the array is along that
-    mode. (This step runs in C++ when the compiled kernel is available.)
-4.  **Partial quantile covariance.** `C` is the array of covariances
-    between each predictor cell and the working residual — where the
-    quantile signal is.
-5.  **Per-mode signal matrix.**
-    `U_k = C_(k) (kron_{j != k} Sigma_j^-1) C_(k)'` standardizes `C`
-    along every mode but `k`, so `U_k` measures signal in mode `k` after
-    accounting for the others.
-6.  **Deflation.** The leading eigenvector of `U_k` is the first
-    direction; project it out and repeat, `u[k]` times, giving the
-    weight matrix `W_k`.
-7.  **Reduced quantile regression.** Project every subject onto
-    `W_1 kron ... kron W_m` and fit the quantile regression of the
-    outcome on the covariates and the resulting `prod(u)` scores.
-8.  **Map back.** The coefficient array is the latent coefficient
-    expanded through the weight matrices, `B = D x_1 W_1 ... x_m W_m`.
-
-Nothing here inverts a `prod(p) x prod(p)` matrix — only the per-mode
-`p_k x p_k` ones — which is why the number of subjects can be far
-smaller than the number of cells in the array. Only the
-dimension-reduction step is approximate; the final fit is an exact
-linear quantile regression on the scores.
-
-**Relation to the reference implementation.** This is a port of the
-MATLAB code released with the paper (<https://github.com/dayusun/PQTR>),
-with three deliberate differences.
+**Relation to the reference implementation.**
+[`pqtr()`](https://www.sundayu.me/tensory/reference/pqtr.md) is a port
+of the MATLAB code released with the paper
+(<https://github.com/dayusun/PQTR>), with deliberate differences.
 
 - The inner quantile regressions use the MM algorithm of Hunter & Lange
   (2000), whose surrogate is matched to the check loss, rather than
   MATLAB’s `fminunc`, a smooth solver applied to a non-smooth objective.
 - The predictor is centered before the latent scores are formed. This
-  changes what `alpha` means (it is now the intercept at the training
-  means) but leaves the coefficient array identical.
+  changes what `alpha` means — it is now the intercept at the training
+  means — but leaves the coefficient array identical.
 - Cross-validated selection lives in
   [`pqtr_cv()`](https://www.sundayu.me/tensory/reference/pqtr_cv.md),
   which takes an explicit grid instead of enumerating every combination
-  of per-mode dimensions — the default grid uses one common dimension,
-  and anything else you can pass by hand.
+  of per-mode dimensions; the default grid uses one common dimension,
+  and anything else can be passed by hand.
 - The eigenvalue-ratio rule searches at most five candidate dimensions
   per mode instead of about `sqrt(n)` of them. Past the rank of the
   signal matrix the eigenvalues are noise, and the largest ratio among
@@ -446,36 +406,20 @@ with three deliberate differences.
   [`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md) and
   [`tepls()`](https://www.sundayu.me/tensory/reference/tepls.md) use.
 
-The deflation in step 6 is the one used by the reference code: the
-oblique projector `I - Sigma_k W (W' Sigma_k W)^-1 W'`, which leaves the
-weight matrices with orthonormal columns. It is *not* the SIMPLS
-deflation used by
+The deflation follows the reference code: the oblique projector
+`I - Sigma_k W (W' Sigma_k W)^-1 W'`, which leaves the weight matrices
+with orthonormal columns. It is *not* the SIMPLS deflation used by
 [`tepls()`](https://www.sundayu.me/tensory/reference/tepls.md) and
 [`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md), which
 instead makes the latent scores uncorrelated. The two coincide when the
 signal matrix has rank one and differ otherwise.
 
-## Limits
-
-- **One outcome at a time.** A quantile is defined for a scalar
-  response; for several continuous outcomes at once, see
-  [`tepls()`](https://www.sundayu.me/tensory/reference/tepls.md).
-- **No sparsity.** Every cell of the array contributes. For “which
-  slices matter”, use
-  [`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md) with
-  `lambda > 0` — at the cost of modelling the mean rather than a
-  quantile.
-- **No standard errors.** The coefficient array is a point estimate.
-  Bootstrap the subjects if you need uncertainty.
-- **Extreme quantiles need data.** A `tau` of 0.01 with 200 subjects
-  rests on a couple of observations. Keep `tau` well inside the range
-  the sample can support.
-
 ## References
 
-Sun, D., Zhang, X. and Zhang, S. (2024). Partial quantile tensor
-regression. *Journal of the American Statistical Association*
-**120**(551).
+Sun, D., Qiu, Z., Peng, L., Guo, Y. and Manatunga, A. (2024). Partial
+quantile tensor regression. *Journal of the American Statistical
+Association* **120**(551), 1724–1735.
+<doi:10.1080/01621459.2024.2422129>
 
 Hunter, D. R. and Lange, K. (2000). Quantile regression via an MM
 algorithm. *Journal of Computational and Graphical Statistics* **9**(1),

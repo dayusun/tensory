@@ -96,8 +96,7 @@
 </h2>
 <p>Each subject contributes a whole <strong>array</strong> — an image, a
 region-by-region connectivity matrix, a sensor-by-time grid — and one or
-more <strong>continuous</strong> outcomes. You want to predict the
-outcome from the array.</p>
+more <strong>continuous</strong> outcomes to be predicted from it.</p>
 <p>Flattening the array and calling <code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm()</a></code> does not work. A
 32 × 32 image is 1,024 predictors; with 200 subjects there is no unique
 least-squares solution, and whatever a solver returns is fitting noise.
@@ -105,10 +104,10 @@ Flattening also discards the grid: it forgets that row 4 column 12 sits
 beside row 4 column 13.</p>
 <p><code><a href="../reference/tepls.html">tepls()</a></code> keeps the grid. It compresses each
 <em>dimension</em> of the array separately into a few informative
-directions, regresses the outcome on the compressed array, and then maps
-the answer back so the coefficient has the same shape as your data. A 32
-× 32 predictor reduced to 2 directions per mode leaves 4 numbers to
-estimate instead of 1,024.</p>
+directions, regresses the outcome on the compressed array, then maps the
+answer back so the coefficient has the same shape as the data. A 32 × 32
+predictor reduced to 2 directions per mode leaves 4 numbers to estimate
+instead of 1,024.</p>
 <p><strong><code><a href="../reference/tepls.html">tepls()</a></code> or <code><a href="../reference/spgtr.html">spgtr()</a></code>?</strong></p>
 <table class="table">
 <colgroup>
@@ -146,18 +145,17 @@ estimate instead of 1,024.</p>
 </table>
 <p>For a continuous outcome and no covariates the two agree exactly when
 <code><a href="../reference/spgtr.html">spgtr()</a></code> is given <code>family = gaussian()</code> and
-<code>basis = "simpls"</code>; a check at the end of this article
-confirms it. Reach for <code><a href="../reference/tepls.html">tepls()</a></code> when that is your setting —
-it is the cheaper, more direct route — and for <code><a href="../reference/spgtr.html">spgtr()</a></code> when
-you need a non-Gaussian outcome, nuisance covariates, or slice
-selection.</p>
+<code>basis = "simpls"</code>, which is checked below.
+<code><a href="../reference/tepls.html">tepls()</a></code> is the cheaper and more direct route in that
+setting; <code><a href="../reference/spgtr.html">spgtr()</a></code> is the one for a non-Gaussian outcome,
+nuisance covariates, or slice selection.</p>
 </div>
 <div class="section level2">
 <h2 id="how-to-lay-out-your-data">How to lay out your data<a class="anchor" aria-label="anchor" href="#how-to-lay-out-your-data"></a>
 </h2>
 <p>Two forms are accepted, and they are interchangeable.</p>
-<p><strong>A list, one array per subject.</strong> The most natural
-form. Every element must have the same dimensions.</p>
+<p><strong>A list, one array per subject.</strong> Every element must
+have the same dimensions.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">16</span>, <span class="fl">12</span><span class="op">)</span></span>
@@ -167,21 +165,20 @@ form. Every element must have the same dimensions.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">X</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 16 12</span></span></code></pre></div>
 <p><strong>One big array with subjects in the <em>last</em>
-mode.</strong> If your data already arrives as a
-<code>16 x 12 x 150</code> block, hand it over directly — no
-reshaping.</p>
+mode.</strong> Data that already arrives as a <code>16 x 12 x 150</code>
+block can be handed over directly, with no reshaping.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">Xbig</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/array.html" class="external-link">array</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">X</span><span class="op">)</span>, dim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">p</span>, <span class="fl">150</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">Xbig</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1]  16  12 150</span></span></code></pre></div>
 <p>The response is a numeric vector of length <code>n</code>, or an
-<code>n x r</code> matrix if you have several outcomes per subject.</p>
+<code>n x r</code> matrix for several outcomes per subject.</p>
 </div>
 <div class="section level2">
 <h2 id="quick-start">Quick start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
 </h2>
-<p>We plant a signal in the top-left corner of the image: the outcome
-depends on the array through a single rank-one pattern, plus noise.</p>
+<p>The outcome here depends on the array through a single rank-one
+pattern in the top-left corner, plus noise.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">B_true</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/outer.html" class="external-link">outer</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0</span>, <span class="va">p</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">-</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.5</span>, <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0</span>, <span class="va">p</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">X</span>, <span class="kw">function</span><span class="op">(</span><span class="va">xi</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">B_true</span> <span class="op">*</span> <span class="va">xi</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">150</span>, sd <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
@@ -192,10 +189,9 @@ depends on the array through a single rank-one pattern, plus noise.</p>
 <span><span class="co">#&gt; Predictor dims:  16 x 12 </span></span>
 <span><span class="co">#&gt; Envelope dims (u):  1 1 </span></span>
 <span><span class="co">#&gt; Response dim (r):  1</span></span></code></pre></div>
-<p>That is the whole call. <code>u</code> was not supplied, so
-<code><a href="../reference/tepls.html">tepls()</a></code> chose the number of directions per mode for you.
-The estimated coefficient is an array of the same shape as a subject’s
-data:</p>
+<p><code>u</code> was not supplied, so <code><a href="../reference/tepls.html">tepls()</a></code> chose the
+number of directions per mode. The estimated coefficient is an array of
+the same shape as a subject’s data:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">B_hat</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as.tensor.html">as.tensor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="fu">as_array</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">B_hat</span><span class="op">)</span></span>
@@ -206,8 +202,7 @@ data:</p>
 <span><span class="co">#&gt; [2,]  0.99 -0.07  0.11 -0.15</span></span>
 <span><span class="co">#&gt; [3,] -0.17  0.01 -0.02  0.03</span></span>
 <span><span class="co">#&gt; [4,] -0.08  0.01 -0.01  0.01</span></span></code></pre></div>
-<p>Only the corner is large, which is where we put the signal. A picture
-makes the point faster than the numbers:</p>
+<p>Only the corner is large, which is where the signal was planted:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">op</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>, mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">2</span>, <span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/image.html" class="external-link">image</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="va">B_true</span><span class="op">[</span><span class="va">p</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">:</span><span class="fl">1</span>, <span class="op">]</span><span class="op">)</span>, main <span class="op">=</span> <span class="st">"truth"</span>, axes <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -232,8 +227,8 @@ three and two. Larger <code>u</code> means a more flexible fit and more
 parameters — <code>prod(u)</code> of them.</p>
 <p>Left at its default <code>NULL</code>, <code><a href="../reference/tepls.html">tepls()</a></code> picks
 each mode’s value from the largest gap between consecutive eigenvalues
-of that mode’s signal matrix — the same rule <code><a href="../reference/spgtr.html">spgtr()</a></code> uses.
-It is fast and usually sensible:</p>
+of that mode’s signal matrix — the same rule <code><a href="../reference/spgtr.html">spgtr()</a></code>
+uses:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">u</span></span>
 <span><span class="co">#&gt; [1] 1 1</span></span></code></pre></div>
@@ -243,9 +238,8 @@ It is fast and usually sensible:</p>
 <span><span class="co">#&gt; [1] 1 1</span></span>
 <span><span class="fu"><a href="../reference/tepls.html">tepls</a></span><span class="op">(</span><span class="va">X</span>, <span class="va">y</span>, u <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">$</span><span class="va">u</span> <span class="co"># a scalar is recycled across modes</span></span>
 <span><span class="co">#&gt; [1] 2 2</span></span></code></pre></div>
-<p>When you do not, cross-validate. There is no <code>tepls_cv()</code>;
-the fit is cheap enough that an explicit loop is clearer than a
-wrapper:</p>
+<p>Otherwise cross-validate. There is no <code>tepls_cv()</code>; the
+fit is cheap enough that an explicit loop over a grid does the job:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cv_tepls</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">X</span>, <span class="va">y</span>, <span class="va">u</span>, <span class="va">nfolds</span> <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">n</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">X</span><span class="op">)</span></span>
@@ -291,9 +285,8 @@ slice per outcome.</p>
 <span><span class="co">#&gt; [1] 16 12  2</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">mfit</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 150   2</span></span></code></pre></div>
-<p>Sharing the directions is the point: the two outcomes here are driven
-by the same image pattern, and fitting them together estimates that
-pattern from twice the data.</p>
+<p>The two outcomes here are driven by the same image pattern, so
+fitting them together estimates that pattern from twice the data.</p>
 </div>
 <div class="section level2">
 <h2 id="what-is-in-the-fit">What is in the fit<a class="anchor" aria-label="anchor" href="#what-is-in-the-fit"></a>
@@ -305,12 +298,11 @@ pattern from twice the data.</p>
 <ul>
 <li>
 <code>coef</code> — the coefficient <code>Tensor</code>, in the
-shape of your predictor (with a trailing response mode when there is
-more than one outcome). Also reachable as <code>coef(fit)</code>.</li>
+shape of the predictor (with a trailing response mode when there is more
+than one outcome). Also reachable as <code>coef(fit)</code>.</li>
 <li>
 <code>W</code> — one matrix per mode, <code>p_k x u[k]</code>, whose
-columns are the directions kept in that mode. These are what the method
-learns.</li>
+columns are the directions kept in that mode.</li>
 <li>
 <code>u</code>, <code>dims</code>, <code>r</code> — the shape of the
 problem.</li>
@@ -321,9 +313,9 @@ both.</li>
 <li>
 <code>fitted</code> — in-sample predictions.</li>
 </ul>
-<p>The per-mode directions are interpretable on their own. Here the
-first mode’s direction should be concentrated on rows 1 and 2, and the
-second mode’s on column 1:</p>
+<p>The per-mode directions are interpretable on their own. The first
+mode’s direction should be concentrated on rows 1 and 2, and the second
+mode’s on column 1:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">W</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">4</span>, <span class="fl">1</span>, drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="co">#&gt;        [,1]</span></span>
@@ -337,10 +329,9 @@ second mode’s on column 1:</p>
 <span><span class="co">#&gt; [2,] -0.070</span></span>
 <span><span class="co">#&gt; [3,]  0.102</span></span>
 <span><span class="co">#&gt; [4,] -0.147</span></span></code></pre></div>
-<p>Subjects’ compressed coordinates — the <em>latent scores</em> — are
-the centered predictor projected onto those directions —
-<code>prod(u)</code> numbers per subject, so just one apiece here. They
-are useful for plotting or as input to another model:</p>
+<p>The <em>latent scores</em> are the centered predictor projected onto
+those directions, <code>prod(u)</code> numbers per subject — one apiece
+here. They serve for plotting or as input to another model:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">scores</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">X</span>, <span class="kw">function</span><span class="op">(</span><span class="va">xi</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/crossprod.html" class="external-link">crossprod</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">W</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, <span class="op">(</span><span class="va">xi</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">Xbar</span>, <span class="va">p</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="va">p</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="../reference/grapes-times-grapes.html">%*%</a></span> <span class="va">fit</span><span class="op">$</span><span class="va">W</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
@@ -349,7 +340,7 @@ are useful for plotting or as input to another model:</p>
 <span><span class="co">#&gt;  num [1:150] -1.131 -0.85 2.151 1.72 -0.459 ...</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="evaluating-honestly">Evaluating honestly<a class="anchor" aria-label="anchor" href="#evaluating-honestly"></a>
+<h2 id="out-of-sample-prediction">Out-of-sample prediction<a class="anchor" aria-label="anchor" href="#out-of-sample-prediction"></a>
 </h2>
 <p>In-sample <code>R^2</code> is optimistic. Hold data out.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
@@ -376,52 +367,24 @@ checks that its dimensions match the fit:</p>
 <div class="section level2">
 <h2 id="how-it-works">How it works<a class="anchor" aria-label="anchor" href="#how-it-works"></a>
 </h2>
-<p><code><a href="../reference/tepls.html">tepls()</a></code> implements Algorithm 4 of Zhang &amp; Li
-(2017).</p>
-<ol style="list-style-type: decimal">
-<li>
-<strong>Center</strong> the predictor and response.</li>
-<li>
-<strong>Marginal covariances.</strong> For each mode <code>k</code>,
-<code>Sigma_k</code> averages <code>X_(k) X_(k)'</code> over subjects —
-how variable the array is along that mode. (This step runs in C++ when
-the compiled kernel is available.)</li>
-<li>
-<strong>Cross-covariance.</strong> <code>C</code> is the array of
-covariances between each predictor cell and the response — where the
-signal is.</li>
-<li>
-<strong>Per-mode signal matrix.</strong>
-<code>M_k = C_(k) (kron_{j != k} Sigma_j^-1) C_(k)'</code> standardizes
-<code>C</code> along every mode but <code>k</code>, so <code>M_k</code>
-measures signal in mode <code>k</code> after accounting for the
-others.</li>
-<li>
-<strong>SIMPLS deflation.</strong> The leading eigenvector of
-<code>M_k</code> is the first direction; project it out (in the
-<code>Sigma_k</code> metric) and repeat, <code>u[k]</code> times. This
-gives <code>W_k</code>.</li>
-<li>
-<strong>Reduced regression.</strong> Project every subject onto
-<code>W_1 kron ... kron W_m</code> and regress the response on the
-resulting <code>prod(u)</code> scores by least squares.</li>
-<li>
-<strong>Map back.</strong> <code>B = W (reduced coefficient)</code>,
-reshaped to the predictor’s shape (their Lemma 2).</li>
-</ol>
-<p>Nothing here is iterative, and nothing inverts a
-<code>prod(p) x prod(p)</code> matrix — only the per-mode
-<code>p_k x p_k</code> ones. That is why <code>n</code> can be far
-smaller than <code>prod(p)</code>.</p>
+<p><code><a href="../reference/tepls.html">tepls()</a></code> implements Algorithm 4 of Zhang &amp; Li (2017):
+each mode of the array is compressed to a few directions chosen for
+their association with the response, the response is regressed on the
+compressed predictor by least squares, and the reduced coefficient is
+expanded back to the shape of the original array. Nothing is iterative.
+No <code>prod(p) x prod(p)</code> matrix is inverted, only the per-mode
+<code>p_k x p_k</code> ones, which is why <code>n</code> can be far
+smaller than <code>prod(p)</code>. Zhang &amp; Li (2017) give the
+derivation.</p>
 <p><strong>Relation to the reference implementation.</strong> The
-mode-<code>k</code> second-moment matrix built in step 4 is identical to
-the <code>U U'</code> matrix in <code>TEReg::TensPLS_fit</code>. Two
-deliberate divergences: that package estimates each mode’s basis with an
-envelope (<code>EnvMU</code>) optimizer, whereas <code><a href="../reference/tepls.html">tepls()</a></code>
-runs the SIMPLS deflation of Algorithm 4 exactly; and the reduced
-regression here is plain least squares on the latent scores (Step 6),
-which is invariant to the scale ambiguity of the separable covariance,
-so no Kronecker scale needs pinning.</p>
+mode-<code>k</code> second-moment matrix is identical to the
+<code>U U'</code> matrix in <code>TEReg::TensPLS_fit</code>. Two
+divergences are deliberate: that package estimates each mode’s basis
+with an envelope (<code>EnvMU</code>) optimizer, whereas
+<code><a href="../reference/tepls.html">tepls()</a></code> runs the SIMPLS deflation of Algorithm 4 exactly;
+and the reduced regression here is plain least squares on the latent
+scores (Algorithm 4, Step 6), which is invariant to the scale ambiguity
+of the separable covariance, so no Kronecker scale needs pinning.</p>
 </div>
 <div class="section level2">
 <h2 id="two-identities-worth-knowing">Two identities worth knowing<a class="anchor" aria-label="anchor" href="#two-identities-worth-knowing"></a>
@@ -446,34 +409,6 @@ basis is the same model.</strong></p>
 <span><span class="va">b</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spgtr.html">spgtr</a></span><span class="op">(</span><span class="va">X</span>, <span class="va">y</span>, u <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>, basis <span class="op">=</span> <span class="st">"simpls"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="fu"><a href="../reference/as.tensor.html">as.tensor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">a</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="fu">as_array</span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">-</span> <span class="va">b</span><span class="op">$</span><span class="va">bvec</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 9.763435e-11</span></span></code></pre></div>
-<p>If either identity ever breaks, something is wrong with the
-centering, the score map, or the reconstruction — both are in the test
-suite for that reason.</p>
-</div>
-<div class="section level2">
-<h2 id="limits">Limits<a class="anchor" aria-label="anchor" href="#limits"></a>
-</h2>
-<ul>
-<li>
-<strong>Continuous outcomes only.</strong> Binary or count outcomes
-belong in <code><a href="../reference/spgtr.html">spgtr()</a></code>.</li>
-<li>
-<strong>No covariates.</strong> Age, sex, batch and the like cannot
-be entered unpenalized; <code><a href="../reference/spgtr.html">spgtr()</a></code>’s <code>Z</code> argument
-does that.</li>
-<li>
-<strong>No sparsity.</strong> Every row and column of the array
-contributes. When you need “which slices matter”, use
-<code><a href="../reference/spgtr.html">spgtr()</a></code> with <code>lambda &gt; 0</code>.</li>
-<li>
-<strong>No standard errors.</strong> The coefficient is a point
-estimate. Bootstrap the subjects if you need uncertainty.</li>
-<li>
-<strong><code>u</code> is not free.</strong> Choose it by
-cross-validation when the eigenvalue-gap default is not obviously right
-— with <code>prod(u)</code> parameters, a too-large <code>u</code>
-overfits like any other model.</li>
-</ul>
 </div>
 <div class="section level2">
 <h2 id="reference">Reference<a class="anchor" aria-label="anchor" href="#reference"></a>

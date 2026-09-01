@@ -96,19 +96,19 @@
 </h2>
 <p>Each subject contributes a whole <strong>array</strong> — an image, a
 region-by-region connectivity matrix, a sensor-by-time grid — and one
-continuous outcome. The usual question is “how does the array move the
-<em>average</em> outcome?”. <code><a href="../reference/pqtr.html">pqtr()</a></code> asks a different one:
-<strong>how does the array move a particular quantile of the
-outcome?</strong></p>
-<p>That distinction matters whenever the interesting subjects are not
-the average ones. A brain region may barely shift mean cognitive score
-while strongly predicting who ends up in the bottom decile. A predictor
-may leave the median alone and widen the spread. Mean regression cannot
-see either effect; fitting <code>tau = 0.1</code> and
-<code>tau = 0.9</code> and comparing the two coefficient arrays can.</p>
-<p>Quantile regression is also robust: it makes no assumption about the
-error distribution and is unmoved by outliers in the outcome, which is
-worth having on its own when the response is skewed or heavy-tailed.</p>
+continuous outcome. Mean regression asks how the array moves the
+<em>average</em> outcome. <code><a href="../reference/pqtr.html">pqtr()</a></code> asks how it moves a
+particular quantile.</p>
+<p>The two questions come apart whenever the interesting subjects are
+not the average ones. A brain region may barely shift mean cognitive
+score while strongly predicting who ends up in the bottom decile. A
+predictor may leave the median alone and widen the spread. Mean
+regression sees neither effect; fitting <code>tau = 0.1</code> and
+<code>tau = 0.9</code> and comparing the two coefficient arrays
+does.</p>
+<p>Quantile regression also makes no assumption about the error
+distribution and is unmoved by outliers in the outcome, which is worth
+having on its own when the response is skewed or heavy-tailed.</p>
 <p>The obstacle is size. A 32 x 32 image is 1,024 predictors; with 200
 subjects the flattened quantile regression has no unique solution, and
 flattening also throws away the grid — it forgets that row 4 column 12
@@ -180,8 +180,8 @@ have the same dimensions.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">X</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 16 12</span></span></code></pre></div>
 <p><strong>One big array with subjects in the <em>last</em>
-mode.</strong> If your data already arrives as a
-<code>16 x 12 x 300</code> block, hand it over directly.</p>
+mode.</strong> Data that already arrives as a <code>16 x 12 x 300</code>
+block can be handed over directly.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">Xbig</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/array.html" class="external-link">array</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">X</span><span class="op">)</span>, dim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">p</span>, <span class="va">n</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">Xbig</span><span class="op">)</span></span>
@@ -193,10 +193,10 @@ a scalar.</p>
 <div class="section level2">
 <h2 id="quick-start">Quick start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
 </h2>
-<p>We plant a signal in the top-left corner of the image, and make the
-noise grow with it. The corner therefore shifts the median, and shifts
-the upper tail by more: the coefficient array genuinely depends on which
-quantile you ask about.</p>
+<p>The signal below sits in the top-left corner of the image, and the
+noise grows with it. The corner shifts the median and shifts the upper
+tail by more, so the coefficient array depends on which quantile is
+asked for.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">B_true</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/outer.html" class="external-link">outer</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0</span>, <span class="va">p</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">-</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.5</span>, <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0</span>, <span class="va">p</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">signal</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">X</span>, <span class="kw">function</span><span class="op">(</span><span class="va">xi</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">B_true</span> <span class="op">*</span> <span class="va">xi</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
@@ -211,9 +211,9 @@ quantile you ask about.</p>
 <span><span class="co">#&gt; Directions (u):  1 1 (1 latent score) </span></span>
 <span><span class="co">#&gt; Covariates (Z):  0 </span></span>
 <span><span class="co">#&gt; Check loss:      423.395</span></span></code></pre></div>
-<p>That is the whole call. <code>u</code> was not supplied, so
-<code><a href="../reference/pqtr.html">pqtr()</a></code> chose the number of directions per mode itself. The
-coefficient is an array of the same shape as one subject’s data:</p>
+<p><code>u</code> was not supplied, so <code><a href="../reference/pqtr.html">pqtr()</a></code> chose the
+number of directions per mode. The coefficient is an array of the same
+shape as one subject’s data:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">B_med</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/as.tensor.html">as.tensor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">med</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="fu">as_array</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">B_med</span><span class="op">)</span></span>
@@ -224,16 +224,16 @@ coefficient is an array of the same shape as one subject’s data:</p>
 <span><span class="co">#&gt; [2,]  0.77 -0.05  0.11  0.00</span></span>
 <span><span class="co">#&gt; [3,] -0.14  0.01 -0.02  0.00</span></span>
 <span><span class="co">#&gt; [4,] -0.64  0.04 -0.09  0.00</span></span></code></pre></div>
-<p>Now the same data at three quantiles. We fix <code>u</code> here so
-the three fits are compared on equal terms:</p>
+<p>The same data at three quantiles, with <code>u</code> fixed so the
+three fits are compared on equal terms:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fits</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.5</span>, <span class="fl">0.9</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">t</span><span class="op">)</span> <span class="fu"><a href="../reference/pqtr.html">pqtr</a></span><span class="op">(</span><span class="va">X</span>, <span class="va">y</span>, tau <span class="op">=</span> <span class="va">t</span>, u <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">fits</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"tau = 0.1"</span>, <span class="st">"tau = 0.5"</span>, <span class="st">"tau = 0.9"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">fits</span>, <span class="kw">function</span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">f</span><span class="op">$</span><span class="va">bvec</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; tau = 0.1 tau = 0.5 tau = 0.9 </span></span>
 <span><span class="co">#&gt;  1.749349  3.234018  3.685464</span></span></code></pre></div>
-<p>The coefficient grows as we move up the distribution, which is
-exactly how the data were generated. Pictures make it plain:</p>
+<p>The coefficient grows moving up the distribution, which is how the
+data were generated:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">op</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">4</span><span class="op">)</span>, mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/image.html" class="external-link">image</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="va">B_true</span><span class="op">[</span><span class="va">p</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">:</span><span class="fl">1</span>, <span class="op">]</span><span class="op">)</span>, main <span class="op">=</span> <span class="st">"truth"</span>, axes <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -253,12 +253,10 @@ conditional means:</p>
 <span><span class="co">#&gt; below_q10 below_q90 </span></span>
 <span><span class="co">#&gt;       0.1       0.9</span></span></code></pre></div>
 <p>About 10% of subjects fall below the fitted 10th percentile and about
-90% below the fitted 90th. That calibration is automatic — it is what
-minimizing the check loss enforces — and it is a quick sanity check on
-any fit.</p>
-<p>The gap between the two is a <strong>prediction interval</strong> for
-a new subject, one that widens where the model says the outcome is more
-variable:</p>
+90% below the fitted 90th; minimizing the check loss forces that
+calibration in sample.</p>
+<p>The gap between the two is a prediction interval for a new subject,
+one that widens where the model says the outcome is more variable:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">width</span> <span class="op">&lt;-</span> <span class="va">q90</span> <span class="op">-</span> <span class="va">q10</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">width</span><span class="op">)</span></span>
@@ -287,9 +285,8 @@ modes:</p>
 <span><span class="co">#&gt; [1] 1 1</span></span>
 <span><span class="fu"><a href="../reference/pqtr.html">pqtr</a></span><span class="op">(</span><span class="va">X</span>, <span class="va">y</span>, tau <span class="op">=</span> <span class="fl">0.5</span>, u <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">$</span><span class="va">u</span></span>
 <span><span class="co">#&gt; [1] 2 2</span></span></code></pre></div>
-<p>When you do not, cross-validate. <code><a href="../reference/pqtr_cv.html">pqtr_cv()</a></code> scores a grid
-by out-of-fold check loss and returns the model refitted at the
-winner:</p>
+<p>Otherwise cross-validate. <code><a href="../reference/pqtr_cv.html">pqtr_cv()</a></code> scores a grid by
+out-of-fold check loss and returns the model refitted at the winner:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="va">cv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pqtr_cv.html">pqtr_cv</a></span><span class="op">(</span><span class="va">X</span>, <span class="va">y</span>, tau <span class="op">=</span> <span class="fl">0.5</span>, u_grid <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">4</span>, nfolds <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
@@ -314,12 +311,12 @@ noise.</p>
 <div class="section level2">
 <h2 id="covariates-that-should-not-be-reduced">Covariates that should not be reduced<a class="anchor" aria-label="anchor" href="#covariates-that-should-not-be-reduced"></a>
 </h2>
-<p>Age, sex, batch, scanner — variables you want adjusted for but not
-compressed — go in <code>Z</code>. They enter the model unreduced, and
-they also enter the <em>first</em> step, where the outcome is replaced
-by its working residual from a quantile regression on <code>Z</code>
-alone. That is what makes the extracted directions describe the part of
-the array not already explained by the covariates.</p>
+<p>Age, sex, batch, scanner — variables to adjust for but not compress —
+go in <code>Z</code>. They enter the model unreduced, and they also
+enter the dimension reduction, where the outcome is replaced by its
+working residual from a quantile regression on <code>Z</code> alone. The
+extracted directions therefore describe the part of the array not
+already explained by the covariates.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">Z</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span>age <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span>, male <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html" class="external-link">rbinom</a></span><span class="op">(</span><span class="va">n</span>, <span class="fl">1</span>, <span class="fl">0.5</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">y_adj</span> <span class="op">&lt;-</span> <span class="va">y</span> <span class="op">+</span> <span class="va">Z</span> <span class="op"><a href="../reference/grapes-times-grapes.html">%*%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="op">-</span><span class="fl">1</span><span class="op">)</span></span>
@@ -367,8 +364,8 @@ loss.</li>
 <code>scores</code> — the <code>n x prod(u)</code> compressed
 coordinates, useful for plotting or as input to another model.</li>
 </ul>
-<p>The per-mode directions are interpretable on their own. Here the
-first mode’s direction should concentrate on rows 1 and 2 and the second
+<p>The per-mode directions are interpretable on their own. The first
+mode’s direction should concentrate on rows 1 and 2 and the second
 mode’s on column 1:</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">med</span><span class="op">$</span><span class="va">W</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">4</span>, <span class="fl">1</span>, drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span>, <span class="fl">3</span><span class="op">)</span></span>
@@ -385,7 +382,7 @@ mode’s on column 1:</p>
 <span><span class="co">#&gt; [4,] -0.004</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="evaluating-honestly">Evaluating honestly<a class="anchor" aria-label="anchor" href="#evaluating-honestly"></a>
+<h2 id="out-of-sample-check-loss">Out-of-sample check loss<a class="anchor" aria-label="anchor" href="#out-of-sample-check-loss"></a>
 </h2>
 <p>In-sample calibration is guaranteed by construction, so it proves
 nothing. Hold data out and score with the same check loss the method
@@ -418,70 +415,24 @@ checks the dimensions:</p>
 <span><span class="co">#&gt;   newX dimensions must match the fitted predictor dimensions.</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="a-caveat-quantile-crossing">A caveat: quantile crossing<a class="anchor" aria-label="anchor" href="#a-caveat-quantile-crossing"></a>
-</h2>
-<p>Each quantile is fit separately, so nothing forces the fitted 10th
-percentile to stay below the fitted 90th for every subject. In practice
-crossings are rare and confined to the edges of the predictor space, but
-they are worth checking:</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">q90</span> <span class="op">&lt;</span> <span class="va">q10</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 0</span></span></code></pre></div>
-<p>If crossings do appear, they usually mean <code>u</code> is too large
-for the sample size at one of the quantiles, or that the extreme
-<code>tau</code> you asked for is not supported by enough data.</p>
-</div>
-<div class="section level2">
 <h2 id="how-it-works">How it works<a class="anchor" aria-label="anchor" href="#how-it-works"></a>
 </h2>
-<p><code><a href="../reference/pqtr.html">pqtr()</a></code> implements the algorithm of Sun et
-al. (2024).</p>
-<ol style="list-style-type: decimal">
-<li>
-<strong>Nuisance fit.</strong> Fit the quantile regression of the
-outcome on <code>Z</code> alone (just the intercept when <code>Z</code>
-is absent, which is the sample quantile), and form the working residual
-<code>tau - 1{y below that fit}</code>. This is the subgradient of the
-check loss, and it is the only way the outcome enters the
-dimension-reduction step.</li>
-<li>
-<strong>Center</strong> the predictor.</li>
-<li>
-<strong>Marginal covariances.</strong> For each mode <code>k</code>,
-<code>Sigma_k</code> averages <code>X_(k) X_(k)'</code> over subjects —
-how variable the array is along that mode. (This step runs in C++ when
-the compiled kernel is available.)</li>
-<li>
-<strong>Partial quantile covariance.</strong> <code>C</code> is the
-array of covariances between each predictor cell and the working
-residual — where the quantile signal is.</li>
-<li>
-<strong>Per-mode signal matrix.</strong>
-<code>U_k = C_(k) (kron_{j != k} Sigma_j^-1) C_(k)'</code> standardizes
-<code>C</code> along every mode but <code>k</code>, so <code>U_k</code>
-measures signal in mode <code>k</code> after accounting for the
-others.</li>
-<li>
-<strong>Deflation.</strong> The leading eigenvector of
-<code>U_k</code> is the first direction; project it out and repeat,
-<code>u[k]</code> times, giving the weight matrix <code>W_k</code>.</li>
-<li>
-<strong>Reduced quantile regression.</strong> Project every subject
-onto <code>W_1 kron ... kron W_m</code> and fit the quantile regression
-of the outcome on the covariates and the resulting <code>prod(u)</code>
-scores.</li>
-<li>
-<strong>Map back.</strong> The coefficient array is the latent
-coefficient expanded through the weight matrices,
-<code>B = D x_1 W_1 ... x_m W_m</code>.</li>
-</ol>
-<p>Nothing here inverts a <code>prod(p) x prod(p)</code> matrix — only
-the per-mode <code>p_k x p_k</code> ones — which is why the number of
-subjects can be far smaller than the number of cells in the array. Only
-the dimension-reduction step is approximate; the final fit is an exact
-linear quantile regression on the scores.</p>
-<p><strong>Relation to the reference implementation.</strong> This is a
-port of the MATLAB code released with the paper (<a href="https://github.com/dayusun/PQTR" class="external-link uri">https://github.com/dayusun/PQTR</a>), with three deliberate
+<p><code><a href="../reference/pqtr.html">pqtr()</a></code> implements the algorithm of Sun et al. (2024).
+The outcome enters the dimension reduction only through its working
+residual from a quantile regression on <code>Z</code> alone (the sample
+quantile when <code>Z</code> is absent); each mode of the array is
+compressed to a few directions associated with that residual, the
+quantile regression is refitted on the compressed predictor together
+with the covariates, and the reduced coefficient is expanded back to the
+shape of the original array. No <code>prod(p) x prod(p)</code> matrix is
+inverted, only the per-mode <code>p_k x p_k</code> ones, which is why
+the number of subjects can be far smaller than the number of cells in
+the array. Only the dimension reduction is approximate: the final fit is
+an exact linear quantile regression on the scores. Sun et al. (2024)
+give the derivation.</p>
+<p><strong>Relation to the reference implementation.</strong>
+<code><a href="../reference/pqtr.html">pqtr()</a></code> is a port of the MATLAB code released with the paper
+(<a href="https://github.com/dayusun/PQTR" class="external-link uri">https://github.com/dayusun/PQTR</a>), with deliberate
 differences.</p>
 <ul>
 <li>The inner quantile regressions use the MM algorithm of Hunter &amp;
@@ -489,12 +440,12 @@ Lange (2000), whose surrogate is matched to the check loss, rather than
 MATLAB’s <code>fminunc</code>, a smooth solver applied to a non-smooth
 objective.</li>
 <li>The predictor is centered before the latent scores are formed. This
-changes what <code>alpha</code> means (it is now the intercept at the
-training means) but leaves the coefficient array identical.</li>
+changes what <code>alpha</code> means — it is now the intercept at the
+training means — but leaves the coefficient array identical.</li>
 <li>Cross-validated selection lives in <code><a href="../reference/pqtr_cv.html">pqtr_cv()</a></code>, which
 takes an explicit grid instead of enumerating every combination of
-per-mode dimensions — the default grid uses one common dimension, and
-anything else you can pass by hand.</li>
+per-mode dimensions; the default grid uses one common dimension, and
+anything else can be passed by hand.</li>
 <li>The eigenvalue-ratio rule searches at most five candidate dimensions
 per mode instead of about <code>sqrt(n)</code> of them. Past the rank of
 the signal matrix the eigenvalues are noise, and the largest ratio among
@@ -503,42 +454,19 @@ them wins: on the data above the wider search returns
 subjects. This is the same cap <code><a href="../reference/spgtr.html">spgtr()</a></code> and
 <code><a href="../reference/tepls.html">tepls()</a></code> use.</li>
 </ul>
-<p>The deflation in step 6 is the one used by the reference code: the
-oblique projector <code>I - Sigma_k W (W' Sigma_k W)^-1 W'</code>, which
-leaves the weight matrices with orthonormal columns. It is <em>not</em>
-the SIMPLS deflation used by <code><a href="../reference/tepls.html">tepls()</a></code> and
-<code><a href="../reference/spgtr.html">spgtr()</a></code>, which instead makes the latent scores
-uncorrelated. The two coincide when the signal matrix has rank one and
-differ otherwise.</p>
-</div>
-<div class="section level2">
-<h2 id="limits">Limits<a class="anchor" aria-label="anchor" href="#limits"></a>
-</h2>
-<ul>
-<li>
-<strong>One outcome at a time.</strong> A quantile is defined for a
-scalar response; for several continuous outcomes at once, see
-<code><a href="../reference/tepls.html">tepls()</a></code>.</li>
-<li>
-<strong>No sparsity.</strong> Every cell of the array contributes.
-For “which slices matter”, use <code><a href="../reference/spgtr.html">spgtr()</a></code> with
-<code>lambda &gt; 0</code> — at the cost of modelling the mean rather
-than a quantile.</li>
-<li>
-<strong>No standard errors.</strong> The coefficient array is a
-point estimate. Bootstrap the subjects if you need uncertainty.</li>
-<li>
-<strong>Extreme quantiles need data.</strong> A <code>tau</code> of
-0.01 with 200 subjects rests on a couple of observations. Keep
-<code>tau</code> well inside the range the sample can support.</li>
-</ul>
+<p>The deflation follows the reference code: the oblique projector
+<code>I - Sigma_k W (W' Sigma_k W)^-1 W'</code>, which leaves the weight
+matrices with orthonormal columns. It is <em>not</em> the SIMPLS
+deflation used by <code><a href="../reference/tepls.html">tepls()</a></code> and <code><a href="../reference/spgtr.html">spgtr()</a></code>, which
+instead makes the latent scores uncorrelated. The two coincide when the
+signal matrix has rank one and differ otherwise.</p>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
 </h2>
-<p>Sun, D., Zhang, X. and Zhang, S. (2024). Partial quantile tensor
-regression. <em>Journal of the American Statistical Association</em>
-<strong>120</strong>(551).</p>
+<p>Sun, D., Qiu, Z., Peng, L., Guo, Y. and Manatunga, A. (2024). Partial
+quantile tensor regression. <em>Journal of the American Statistical
+Association</em> <strong>120</strong>(551), 1724–1735. <a href="doi:10.1080/01621459.2024.2422129" class="uri">doi:10.1080/01621459.2024.2422129</a></p>
 <p>Hunter, D. R. and Lange, K. (2000). Quantile regression via an MM
 algorithm. <em>Journal of Computational and Graphical Statistics</em>
 <strong>9</strong>(1), 60–77.</p>

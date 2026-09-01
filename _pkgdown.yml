@@ -7,11 +7,12 @@ template:
     code_font: {google: "JetBrains Mono"}
 
 home:
-  title: Modern tensor operations for R
+  title: Tensor algebra and tensor regression for R
   description: >
-    Dense, sparse, and decomposed tensor classes with a MATLAB Tensor
-    Toolbox-style API, compiled xtensor/BLAS kernels, tensor decompositions,
-    and regression with tensor-valued predictors.
+    Dense, sparse, symmetric and factorized tensor classes with a MATLAB Tensor
+    Toolbox-style API, compiled xtensor/BLAS kernels, the CP and Tucker
+    decomposition families, and three regression models that relate an
+    array-valued predictor to a scalar outcome.
 
 navbar:
   structure:
@@ -142,6 +143,22 @@ reference:
   - eig_sshopm
   - eig_geap
 
+- title: Regression with tensor predictors
+  desc: >
+    Supervised models where each subject's predictor is a whole array: sparse
+    partial generalized tensor regression, tensor envelope PLS, and partial
+    quantile tensor regression.
+  contents:
+  - spgtr
+  - spgtr_cv
+  - predict.spgtr
+  - summary.spgtr
+  - tepls
+  - predict.tepls
+  - pqtr
+  - pqtr_cv
+  - predict.pqtr
+
 - title: Working with CP factors
   desc: Post-processing, comparison, and visualization of `KTensor` fits.
   contents:
@@ -154,22 +171,6 @@ reference:
   - redistribute
   - tovec
   - viz
-
-- title: Regression with tensor predictors
-  desc: >
-    Supervised models where each observation is a whole array: sparse
-    penalized generalized tensor regression, tensor envelope PLS, and partial
-    quantile tensor regression.
-  contents:
-  - spgtr
-  - spgtr_cv
-  - predict.spgtr
-  - summary.spgtr
-  - tepls
-  - predict.tepls
-  - pqtr
-  - pqtr_cv
-  - predict.pqtr
 
 - title: Import and export
   contents:

@@ -67,6 +67,11 @@ fit$lambda_min
 fit$cv
 fit$selected # rows kept in each dimension
 }
+\references{
+Sun, D., Peng, L., Qiu, Z., Stevens, J., Manatunga, A. and Guo, Y. Sparse
+partial generalized tensor regression with application to neuroimaging
+data. Submitted.
+}
 \seealso{
 \code{\link[=spgtr]{spgtr()}}, \code{\link[=summary.spgtr]{summary.spgtr()}}
 }

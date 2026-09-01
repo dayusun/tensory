@@ -1,15 +1,11 @@
-# Sparse Penalized Generalized Tensor Regression (SPGTR)
+# Sparse Partial Generalized Tensor Regression (SPGTR)
 
-Fits a regression model in which each subject contributes a whole array
-of measurements – an image, a connectivity matrix, a spectrogram, a
-space-by-time grid – and the outcome is a single number per subject,
-such as a yes/no diagnosis, a count, or a continuous score. Ordinary
-regression cannot be used directly here because one array holds far more
-numbers than there are subjects. `spgtr()` solves that by compressing
-every dimension of the array down to a handful of informative directions
-and fitting the generalized linear model on those, then translating the
-answer back to the original array shape so it can be read off like a
-picture.
+Fits a regression in which each subject's predictor is a whole array – a
+brain image, say – and the outcome is a single number, such as a yes/no
+diagnosis, a count, or a continuous score. One such array holds far more
+numbers than there are subjects, which rules out ordinary regression.
+`spgtr()` fits such a model, and with `lambda > 0` selects the rows,
+columns, or slices of the array that enter it.
 
 ## Usage
 
@@ -140,73 +136,51 @@ An object of class `spgtr`, a list whose most useful elements are:
 
 ## What you get back
 
-The main output is a coefficient array of exactly the same shape as one
-subject's data, available through `coef(fit)`. A large positive entry
-means "a high value at this position pushes the outcome up"; a zero
-entry means the position was not used. With `lambda > 0` whole rows,
-columns, or slices are set to zero, so the fit also tells you which
-parts of the array matter at all (see `fit$selected` and
-[`summary.spgtr()`](https://www.sundayu.me/tensory/reference/summary.spgtr.md)).
+`coef(fit)` is a coefficient array of the same shape as one subject's
+data. A large positive entry means a high value at that position pushes
+the outcome up; a zero entry means the position went unused. With
+`lambda > 0` whole rows, columns, or slices are zero, so `fit$selected`
+and
+[`summary.spgtr()`](https://www.sundayu.me/tensory/reference/summary.spgtr.md)
+report which parts of the array entered the model.
 
-## How to use it (short version)
+## How to use it
 
-1.  Put your data in a list: `X[[i]]` is subject `i`'s matrix or array,
-    all the same shape. `y` is a vector with one entry per subject.
+1.  Put the data in a list: `X[[i]]` is subject `i`'s matrix or array,
+    all the same shape; `y` is a vector with one entry per subject.
 
-2.  Run `fit <- spgtr(X, y)` for a yes/no outcome, or add
-    `family = poisson()` / `family = gaussian()` for counts / continuous
-    outcomes.
+2.  `fit <- spgtr(X, y)` fits a yes/no outcome; add `family = poisson()`
+    or `family = gaussian()` for counts or continuous outcomes.
 
-3.  Look at `summary(fit)`, view `coef(fit)`, and predict new subjects
-    with `predict(fit, newX)`.
+3.  `summary(fit)` and `coef(fit)` describe the fit, and
+    `predict(fit, newX)` predicts new subjects.
 
-4.  To also *select* which parts of the array matter, use
-    [`spgtr_cv()`](https://www.sundayu.me/tensory/reference/spgtr_cv.md),
-    which picks the amount of sparsity for you by cross-validation.
+4.  [`spgtr_cv()`](https://www.sundayu.me/tensory/reference/spgtr_cv.md)
+    chooses the amount of sparsity by cross-validation, and with it
+    which parts of the array enter the model.
 
-## How it works (technical)
+## How it works
 
-The outcome enters through the working residual `y - mu_0`, where `mu_0`
-is the fitted mean of the GLM of `y` on the nuisance covariates `Z`
-alone (the intercept only, when `Z` is `NULL`). Writing `Sigma_k` for
-the mode-`k` marginal covariance of the centered predictor and `C` for
-its cross-covariance with that residual, the mode-`k` signal matrix is
-`U_k = C_(k) (kron_{j != k} Sigma_j^-1) C_(k)'`.
-
-With `basis = "simpls"` the factor matrix `W_k` collects the first
-`u[k]` SIMPLS directions of `(U_k, Sigma_k)`, exactly as in
-[`tepls()`](https://www.sundayu.me/tensory/reference/tepls.md). With
-`basis = "envelope"` (the default) that basis is refined by minimizing
-the envelope objective
-`log|W' Sigma_k W| + log|W' (Sigma_k + U_k)^-1 W|` over the Stiefel
-manifold. A positive `lambda` adds the adaptively weighted row-wise
-penalty `lambda * sum_i w_ki ||W_k[i, ]||_2`, whose proximal operator
-zeroes entire rows of `W_k` and therefore drops the corresponding
-mode-`k` slices of the predictor from the model. Weights `w_ki` are the
-inverse row norms of the unpenalized SIMPLS basis.
-
-The penalized problem is solved by the sequential linearized proximal
-gradient method of Xiao, Liu & Yuan (2021) with alternating
-Barzilai-Borwein step sizes. Its retraction is the polar factor
-`W (W'W)^-1/2`, a right-multiplication, which is what allows the zero
-rows created by the proximal step to survive orthonormalization.
-
-Finally the predictor is reduced to latent scores
-`T_i = X_i x_1 W_1' ... x_m W_m'`, the GLM of `y` on `(Z, vec(T))` is
-fit by [`stats::glm.fit()`](https://rdrr.io/r/stats/glm.html), and the
-coefficient array is reconstructed as `B = D x_1 W_1 ... x_m W_m` from
-the latent coefficients `D`.
+Each mode of the array is compressed to a few directions carrying the
+association with the outcome, the generalized linear model is fitted on
+the compressed predictor by
+[`stats::glm.fit()`](https://rdrr.io/r/stats/glm.html), and its
+coefficients are expanded back to the shape of one subject's array. See
+the reference below for the estimator and its properties.
 
 ## Speed
 
-The mode-wise covariances and the manifold solver are compiled kernels
-(`spgtr_mode_covs_cpp`, `spgtr_slpg_cpp`); the score computation reuses
-the package's compiled
+The mode-wise covariances and the manifold solver are compiled kernels,
+and the latent scores go through the compiled
 [`ttm()`](https://www.sundayu.me/tensory/reference/ttm.md). Reference
 implementations in R are used automatically if the package was installed
 without compilation, and the two paths agree to numerical tolerance.
 
 ## References
+
+Sun, D., Peng, L., Qiu, Z., Stevens, J., Manatunga, A. and Guo, Y.
+Sparse partial generalized tensor regression with application to
+neuroimaging data. Submitted.
 
 Zhang, X. and Li, L. (2017). Tensor envelope partial least-squares
 regression. Technometrics 59(4), 426-436.
@@ -240,7 +214,7 @@ y <- rbinom(120, 1, 1 / (1 + exp(-eta)))
 
 fit <- spgtr(X, y, u = c(1, 1))
 summary(fit)
-#> <spgtr: sparse penalized generalized tensor regression>
+#> <spgtr: sparse partial generalized tensor regression>
 #> Outcome:         binomial with logit link
 #> Subjects:        120 
 #> Array shape:     8 x 6 

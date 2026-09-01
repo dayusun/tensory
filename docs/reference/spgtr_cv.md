@@ -67,6 +67,12 @@ first proximal step would zero every row of every factor matrix. That
 endpoint is a heuristic, so inspect `fit$cv` and widen `lambda_ratio` if
 the selected value sits at either end of the grid.
 
+## References
+
+Sun, D., Peng, L., Qiu, Z., Stevens, J., Manatunga, A. and Guo, Y.
+Sparse partial generalized tensor regression with application to
+neuroimaging data. Submitted.
+
 ## See also
 
 [`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md),

@@ -209,24 +209,24 @@ primitives):
   [`pqtr()`](https://www.sundayu.me/tensory/reference/pqtr.md)/[`pqtr_cv()`](https://www.sundayu.me/tensory/reference/pqtr_cv.md),
   the **quantile** counterpart of
   [`tepls()`](https://www.sundayu.me/tensory/reference/tepls.md) (port
-  of <https://github.com/dayusun/PQTR>, the MATLAB code for Sun, Zhang &
-  Zhang 2024, JASA). The response enters through the working residual
-  `tau - 1{y < Q_tau(y | Z)}` — the subgradient of the check loss at the
-  nuisance-only quantile fit — after which the per-mode signal matrices
-  and the reduced fit are structurally the same as `spgtr`’s. Three
-  shared helpers make that possible: `.pls_signal()` (in `spgtr.R`, also
-  used by `.spgtr_prepare`), `.spgtr_auto_u`, and `.tepls_simpls_mode`.
-  **`.tepls_simpls_mode` gained an `orth` argument**: `"scores"`
-  (default, de Jong SIMPLS, `w_s' Sigma w_t = 0`) for `tepls`/`spgtr`,
-  `"weights"` (oblique projector `I - Sigma W (W' Sigma W)^-1 W'`,
-  leaving `W'W = I`) for `pqtr`, because that is what
-  `pls_tensor_core.m` does. The two span the same subspace only when the
-  signal matrix is rank one — `test-pqtr.R` pins both the difference and
-  that coincidence. Quantile regressions are solved by `.rq_fit()`, an
-  MM iteration (Hunter & Lange 2000) annealing `eps` from 1e-1 to 1e-8;
-  deliberately no `quantreg` dependency. Documented divergences from
-  MATLAB: MM instead of `fminunc`, predictor centered before scoring
-  (changes `alpha`, not `B`),
+  of <https://github.com/dayusun/PQTR>, the MATLAB code for Sun, Qiu,
+  Peng, Guo & Manatunga 2024, JASA). The response enters through the
+  working residual `tau - 1{y < Q_tau(y | Z)}` — the subgradient of the
+  check loss at the nuisance-only quantile fit — after which the
+  per-mode signal matrices and the reduced fit are structurally the same
+  as `spgtr`’s. Three shared helpers make that possible: `.pls_signal()`
+  (in `spgtr.R`, also used by `.spgtr_prepare`), `.spgtr_auto_u`, and
+  `.tepls_simpls_mode`. **`.tepls_simpls_mode` gained an `orth`
+  argument**: `"scores"` (default, de Jong SIMPLS, `w_s' Sigma w_t = 0`)
+  for `tepls`/`spgtr`, `"weights"` (oblique projector
+  `I - Sigma W (W' Sigma W)^-1 W'`, leaving `W'W = I`) for `pqtr`,
+  because that is what `pls_tensor_core.m` does. The two span the same
+  subspace only when the signal matrix is rank one — `test-pqtr.R` pins
+  both the difference and that coincidence. Quantile regressions are
+  solved by `.rq_fit()`, an MM iteration (Hunter & Lange 2000) annealing
+  `eps` from 1e-1 to 1e-8; deliberately no `quantreg` dependency.
+  Documented divergences from MATLAB: MM instead of `fminunc`, predictor
+  centered before scoring (changes `alpha`, not `B`),
   [`pqtr_cv()`](https://www.sundayu.me/tensory/reference/pqtr_cv.md)
   takes an explicit `u_grid` instead of enumerating `d^m` combinations,
   and the eigenvalue-ratio search is capped at 5 candidates per mode

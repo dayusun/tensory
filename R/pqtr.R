@@ -214,8 +214,9 @@ NULL
 #'       residuals, and the attained check loss.}
 #'   }
 #' @references
-#' Sun, D., Zhang, X. and Zhang, S. (2024). Partial quantile tensor regression.
-#' Journal of the American Statistical Association 120(551).
+#' Sun, D., Qiu, Z., Peng, L., Guo, Y. and Manatunga, A. (2024). Partial
+#' quantile tensor regression. Journal of the American Statistical Association
+#' 120(551), 1724-1735. doi:10.1080/01621459.2024.2422129
 #'
 #' Hunter, D. R. and Lange, K. (2000). Quantile regression via an MM algorithm.
 #' Journal of Computational and Graphical Statistics 9(1), 60-77.
