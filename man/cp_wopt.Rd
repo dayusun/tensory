@@ -11,7 +11,8 @@ cp_wopt(
   init = "random",
   maxiters = 500L,
   factr = 1e+07,
-  printitn = 0L
+  printitn = 0L,
+  ridge = 0
 )
 }
 \arguments{
@@ -29,14 +30,29 @@ typically 0).}
 \item{factr}{\code{optim} L-BFGS-B \code{factr} convergence parameter.}
 
 \item{printitn}{If positive, print the optimizer trace.}
+
+\item{ridge}{Nonnegative ridge (Tikhonov) weight on the factor matrices
+(default \code{0}, no penalty).}
 }
 \value{
 A \code{KTensor}.
 }
 \description{
 Fits a CP model to data with a weight (indicator) tensor by minimizing
-\verb{||W * (X - K)||^2}, mirroring the MATLAB Tensor Toolbox \code{cp_wopt}. Use a
-0/1 weight tensor to fit in the presence of missing entries.
+\verb{||W * (X - K)||^2 + ridge * sum_n ||U_n||_F^2}, mirroring the MATLAB Tensor
+Toolbox \code{cp_wopt}. Use a 0/1 weight tensor to fit in the presence of missing
+entries.
+}
+\details{
+The ridge penalty is an addition to the MATLAB interface. With sparse
+weights, rows of a factor matrix that are supported by few observed entries
+are otherwise unconstrained and can grow without bound, which makes
+predictions for held-out entries unstable; a small \code{ridge} keeps them
+bounded. \code{ridge = 0} (the default) gives the unpenalized fit. Because the
+CP scale indeterminacy is spread across modes, the penalty acts on the
+balanced factors, as in the usual regularized tensor-completion objective.
+For very sparse weights the default \code{factr} can stop the optimizer early; a
+smaller value (e.g. \code{10}) and small random starting factors help.
 }
 \examples{
 set.seed(1)

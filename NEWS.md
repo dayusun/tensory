@@ -114,6 +114,10 @@ First development version. Everything below is new.
   updates), `cp_apr()` (Poisson), `cp_opt()` and `cp_wopt()` (L-BFGS-B on the
   exact gradient, the latter handling missing data), `cp_arls()` (randomized
   ALS), and `cp_sym()` (symmetric CP).
+* `cp_wopt()` takes a `ridge` argument, a penalty `ridge * sum_n ||U_n||_F^2` on
+  the factor matrices (default `0`, no penalty). With sparse weights it keeps
+  factor rows that rest on few observed entries bounded; it is an addition to
+  the MATLAB interface.
 * Tucker: `tucker_als()`, `tucker_sym()`, and `hosvd()`.
 * Generalized CP with a loss catalog: `gcp_opt()`.
 * Tensor eigenpairs: `eig_sshopm()` and `eig_geap()`, following Kolda & Mayo

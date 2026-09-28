@@ -281,8 +281,19 @@ cp_opt <- function(X, R,
 #' Weighted CP Decomposition via Direct Optimization
 #'
 #' Fits a CP model to data with a weight (indicator) tensor by minimizing
-#' `||W * (X - K)||^2`, mirroring the MATLAB Tensor Toolbox `cp_wopt`. Use a
-#' 0/1 weight tensor to fit in the presence of missing entries.
+#' `||W * (X - K)||^2 + ridge * sum_n ||U_n||_F^2`, mirroring the MATLAB Tensor
+#' Toolbox `cp_wopt`. Use a 0/1 weight tensor to fit in the presence of missing
+#' entries.
+#'
+#' The ridge penalty is an addition to the MATLAB interface. With sparse
+#' weights, rows of a factor matrix that are supported by few observed entries
+#' are otherwise unconstrained and can grow without bound, which makes
+#' predictions for held-out entries unstable; a small `ridge` keeps them
+#' bounded. `ridge = 0` (the default) gives the unpenalized fit. Because the
+#' CP scale indeterminacy is spread across modes, the penalty acts on the
+#' balanced factors, as in the usual regularized tensor-completion objective.
+#' For very sparse weights the default `factr` can stop the optimizer early; a
+#' smaller value (e.g. `10`) and small random starting factors help.
 #'
 #' @param X A Tensor or array-like object (missing entries may hold any value,
 #'   typically 0).
@@ -292,6 +303,8 @@ cp_opt <- function(X, R,
 #' @param maxiters Maximum optimizer iterations (default `500`).
 #' @param factr `optim` L-BFGS-B `factr` convergence parameter.
 #' @param printitn If positive, print the optimizer trace.
+#' @param ridge Nonnegative ridge (Tikhonov) weight on the factor matrices
+#'   (default `0`, no penalty).
 #' @return A `KTensor`.
 #' @examples
 #' set.seed(1)
@@ -303,7 +316,11 @@ cp_wopt <- function(X, W, R,
                     init = "random",
                     maxiters = 500L,
                     factr = 1e7,
-                    printitn = 0L) {
+                    printitn = 0L,
+                    ridge = 0) {
+  if (!is.numeric(ridge) || length(ridge) != 1L || !is.finite(ridge) || ridge < 0) {
+    stop("ridge must be a single nonnegative number.")
+  }
   chk <- .cp_check_input(X, R, "cp_wopt")
   X <- .tensor_as_dense(chk$X); R <- chk$R; dims <- chk$dims; N <- chk$N
   W <- .tensor_as_dense(W)
@@ -330,6 +347,10 @@ cp_wopt <- function(X, W, R,
     f <- sum(D * (M - X$data))
     Dt <- Tensor$new(D, dims = dims, fast = TRUE)
     grad <- lapply(.mttkrp_all(Dt, U), function(G) 2 * G)
+    if (ridge > 0) {
+      f <- f + ridge * sum(vapply(U, function(M) sum(M * M), numeric(1)))
+      for (n in seq_len(N)) grad[[n]] <- grad[[n]] + 2 * ridge * U[[n]]
+    }
     list(value = f, gradient = .factors_to_vec(grad))
   }
   obj <- .fg_cached(fg)

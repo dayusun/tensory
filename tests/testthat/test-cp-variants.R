@@ -75,6 +75,39 @@ test_that("cp_wopt recovers a low-rank tensor with missing entries", {
   expect_gt(fit_of(K, prob$X), 0.98)
 })
 
+test_that("cp_wopt ridge = 0 matches the unpenalized fit", {
+  prob <- make_lowrank(21, dims = c(6, 5, 4), R = 2)
+  set.seed(22)
+  W <- tensor(array(rbinom(120, 1, 0.7), dim = c(6, 5, 4)))
+  U0 <- lapply(c(6, 5, 4), function(d) matrix(rnorm(d * 2, sd = 0.3), d, 2))
+  K0 <- cp_wopt(prob$X, W, 2, init = U0, maxiters = 300L, factr = 1e1)
+  K1 <- cp_wopt(prob$X, W, 2, init = U0, maxiters = 300L, factr = 1e1, ridge = 0)
+  expect_equal(as.tensor(K1)$data, as.tensor(K0)$data)
+})
+
+test_that("cp_wopt ridge shrinks the factors and bounds poorly supported rows", {
+  prob <- make_lowrank(23, dims = c(10, 6, 5), R = 2)
+  set.seed(24)
+  W <- array(rbinom(300, 1, 0.6), dim = c(10, 6, 5))
+  W[10, , ] <- 0; W[10, 1, 1] <- 1            # row 10 of mode 1 rests on one entry
+  W <- tensor(W)
+  U0 <- lapply(c(10, 6, 5), function(d) matrix(rnorm(d * 2, sd = 0.3), d, 2))
+  nrm <- function(K) sum(vapply(seq_along(K$U), function(n) sum((K$U[[n]] %*% diag(abs(K$lambda)^(1 / 3), 2, 2))^2),
+                                numeric(1)))
+  fits <- lapply(c(0, 0.1, 10), function(r) cp_wopt(prob$X, W, 2, init = U0, maxiters = 500L, factr = 1e1, ridge = r))
+  n <- vapply(fits, nrm, numeric(1))
+  expect_true(n[2] < n[1])
+  expect_true(n[3] < n[2])
+  expect_lt(n[3], 1e-2 * n[1])               # a heavy penalty drives the factors toward zero
+})
+
+test_that("cp_wopt rejects an invalid ridge", {
+  prob <- make_lowrank(25, dims = c(4, 3, 3), R = 1)
+  W <- tensor(array(1, dim = c(4, 3, 3)))
+  expect_error(cp_wopt(prob$X, W, 1, ridge = -1), "ridge")
+  expect_error(cp_wopt(prob$X, W, 1, ridge = c(1, 2)), "ridge")
+})
+
 test_that("cp_arls converges on a low-rank problem", {
   prob <- make_lowrank(9, dims = c(10, 9, 8), R = 2)
   set.seed(10)
