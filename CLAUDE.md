@@ -14,6 +14,7 @@ R package built with roxygen2 + Rcpp + testthat 3.
 - Full check (run before tagging a release): `R -e 'devtools::check()'`
 - Build vignettes: `R -e 'devtools::build_vignettes()'`
 - Benchmark the compiled kernels against an installed build: `R_LIBS=<lib> Rscript bench/kernels.R out.csv label`, then `Rscript bench/compare.R old.csv new.csv` (prints speedups and exits non-zero if the two builds' results differ). Install each build with `R CMD INSTALL --library=<lib> .` so it gets R's normal `-O2` flags.
+- Large-tensor sweep of `ttm`/`mttkrp`/`mttkrps` over every mode of order-3 to order-6 tensors (~64M elements; needs ~5 GB RAM for the old kernels): `R_LIBS=<lib> Rscript bench/sweep.R out.csv label`, compared the same way with `bench/compare.R`.
 
 The C++ kernels need only Rcpp and a C++11-or-later compiler; no headers are vendored or fetched. `src/Makevars` sets only `PKG_LIBS` — the language standard is R's default and optimization flags come from R's own `CXXFLAGS`/`CXX17FLAGS` (typically `-O2`), because `R CMD check` warns about any `-O`/`-f`/`-m` tuning set in `PKG_CXXFLAGS`. Put local tuning (e.g. `-funroll-loops`) in `~/.R/Makevars`. Note `pkgbuild::compile_dll()` defaults to a `-O0` debug build — pass `debug = FALSE` before benchmarking.
 
