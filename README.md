@@ -79,9 +79,10 @@ dimensions by cross-validation.
 ## Implementation
 
 Performance-critical kernels — `ttm`, `mttkrp`, the mode covariances and the
-manifold solver — are compiled C++ built on xtensor and on whichever
-BLAS/LAPACK R itself was built against. Compiling them requires a C++20
-compiler. Every compiled kernel is optional: an equivalent pure-R path runs when
+manifold solver — are compiled C++ (plain Rcpp, operating on R's own array
+storage without copying) calling whichever BLAS/LAPACK R itself was built
+against, so linking R to an optimized BLAS such as OpenBLAS or MKL speeds them
+up directly. Every compiled kernel is optional: an equivalent pure-R path runs when
 the package is installed without compilation, and the two paths are tested
 against each other.
 

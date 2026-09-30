@@ -1,6 +1,11 @@
-// tensory.h - Main header file for tensory package
-// This file provides the main includes for xtensor functionality
+// tensory.h - package header included by src/RcppExports.cpp.
+//
+// The compiled kernels take tensor storage as Rcpp::NumericVector (R's own
+// buffer, not copied) and need nothing beyond Rcpp; see src/tensor_array.h
+// for the shape helpers.
+#ifndef TENSORY_H
+#define TENSORY_H
 
-// Include minimal necessary components
-#include "xtensor-r/rarray.hpp"
-#include "xtensor-r/roptional.hpp"
+#include <Rcpp.h>
+
+#endif

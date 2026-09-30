@@ -5,7 +5,7 @@
 `tensory` is an R package for tensor algebra that combines:
 
 - an R6 and S3 frontend for user-facing tensor objects and operators
-- `xtensor`-based compiled C++ kernels for heavy dense contractions
+- compiled C++ kernels (plain Rcpp, no tensor library) for heavy dense contractions
 - BLAS-backed matrix multiplications for performance-critical paths
 
 The design goal is not to move every tensor operation into C++. The package is built around a split architecture: keep dispatch, shape management, and compatibility helpers simple in R, while pushing fixed-layout dense kernels into compiled code.
@@ -28,22 +28,18 @@ The package also exposes `Tenmat`, `KTensor`, and `TTensor` objects, with dense 
 
 ### 2. Memory and Tensor Representation
 
-The package uses `xtensor` as the native multidimensional representation layer in C++, primarily through `xt::rarray` from `xtensor-r`. In practice this gives:
+Compiled kernels take tensor storage as `Rcpp::NumericVector`, which aliases R's own column-major `REALSXP` buffer without copying (integer and logical arrays are converted to double once, as `as.double()` would). The shape is the array's `dim` attribute. `src/tensor_array.h` holds the few shared helpers: `array_dims()` (dim attribute, or length for a plain vector), `column_major_strides()`, `product_of_dims()`, and `alloc_array()`, which allocates an uninitialised R array with a `dim` attribute so a kernel can write its result directly into the object returned to R.
 
-- direct access to R-backed arrays through a tensor-aware C++ container
-- shape and stride metadata without manually rebuilding tensor descriptors
-- a consistent way to construct temporary tensor views and result arrays inside compiled kernels
+Earlier versions wrapped the storage in `xt::rarray` from `xtensor-r`. The kernels only ever used its data pointer and shape, while xtensor itself required C++20, headers fetched at build time, and an extra result copy in `ttm`, so it was dropped with no change in results or speed.
 
-This means `xtensor` is not just an implementation detail for interop. It is the C++ tensor abstraction that the backend uses to reason about dimensions, layouts, and result containers before handing dense matrix products to BLAS.
-
-This is best understood as **SEXP-backed / low-copy integration where possible**, not as a blanket zero-copy guarantee for every operation. Some kernels still need explicit reordering or temporary buffers to achieve correct BLAS-compatible layouts.
+Reading input is zero-copy. Kernels are not zero-copy overall: some still gather into temporary buffers to reach a BLAS-compatible layout (see `ttm` and `mttkrp` below).
 
 ### 3. Current R vs C++ Split
 
 The current codebase uses a pragmatic split:
 
 - **R** handles object construction, S3 dispatch, shape validation, simple reductions, compatibility wrappers, and dense helper methods.
-- **C++ + xtensor** is used where a dense kernel benefits from explicit control over tensor layout, shape metadata, and BLAS invocation.
+- **C++ (Rcpp + BLAS)** is used where a dense kernel benefits from explicit control over tensor layout, shape metadata, and BLAS invocation.
 
 At the moment:
 
@@ -60,15 +56,14 @@ This split is intentional. The package does not assume that a generic C++ tensor
 
 ### 4. Linear Algebra Backend
 
-The core dense contraction path in `ttm` uses `xtensor` containers together with direct BLAS `dgemm` calls from C++, with explicit column-major indexing and data reordering. The implementation is optimized around:
+The core dense contraction path in `ttm` uses direct BLAS `dgemm` calls from C++ on R-owned storage, with explicit column-major indexing and data reordering. The implementation is optimized around:
 
-- `xtensor` for tensor-shaped storage, shape/stride access, and result containers
 - predictable memory layout
 - explicit stride computation
 - one large BLAS call where possible
 - avoiding repeated high-level tensor permutations in the hot loop
 
-This is a handcrafted `xtensor` + BLAS integration, not a high-level `xtensor-blas` tensor contraction layer.
+Performance therefore comes from the BLAS R is linked against (OpenBLAS, MKL or Accelerate rather than reference BLAS) and from how much memory the kernel moves around each BLAS call, not from a C++ tensor library.
 
 ### 5. MATLAB Tensor Toolbox Compatibility
 
@@ -99,7 +94,10 @@ This keeps tensor shape behavior explicit and consistent with the package's obje
 - `R/tensor_ttt.R`: dense tensor-times-tensor contractions in R
 - `R/tensor_dense_methods.R`: dense tensor helper methods and compatibility functions
 - `R/tepls.R`, `R/spgtr.R`: supervised tensor-predictor regression (continuous and GLM)
+- `src/tensor_array.h`: shared shape/stride helpers for the compiled kernels
 - `src/tensor_ttm.cpp`: compiled `ttm` kernel using explicit layout handling and BLAS
+- `src/tensor_dense.cpp`, `src/tensor_decomposition.cpp`: `mttkrp`, `fibers`, `contract`, `mask`, `issymmetric`, Khatri-Rao kernels
+- `bench/kernels.R`, `bench/compare.R`: kernel benchmark harness and build-to-build comparison
 - `src/tensor_spgtr.cpp`: compiled mode-covariance and manifold-solver kernels for `spgtr`
 
 ## Target Architecture
@@ -109,13 +107,13 @@ This keeps tensor shape behavior explicit and consistent with the package's obje
 The target architecture is:
 
 - **R for orchestration**
-- **xtensor-based C++ for dense kernels**
+- **Rcpp + BLAS C++ for dense kernels**
 
 That means:
 
 - keep public object semantics, dispatch, and lightweight wrappers in R
 - move repeated heavy dense kernels into compiled code when they are layout-sensitive or benchmark-significant
-- use `xtensor` as the standard tensor representation inside those compiled kernels rather than ad hoc raw-pointer tensor bookkeeping
+- share shape, stride and allocation helpers through `src/tensor_array.h` rather than reimplementing them per file
 
 ### 2. Dense Hotspots to Compile
 
@@ -137,9 +135,9 @@ These functions all depend on the same small set of low-level operations:
 
 Those helpers should be shared rather than reimplemented piecemeal in R. The preferred implementation style is:
 
-- `xtensor` for tensor containers, shapes, and safe indexing support
+- R-owned storage accessed through `Rcpp::NumericVector`, with results allocated as R arrays and written in place
 - direct BLAS for the matrix multiply core when the kernel reduces cleanly to GEMM-like work
-- small handcrafted layout helpers where `xtensor` views alone do not yield the desired memory order
+- small handcrafted layout helpers, preferring strided BLAS calls on slices over gathering into temporary buffers
 
 ### 3. R-Level Functions That Can Stay in R
 
@@ -172,7 +170,7 @@ Ambitious claims are acceptable only when labeled as future-state goals. Current
 
 ### 1. Prefer Correct Layout Control Over Generic Tensor Expressions
 
-For dense hotspots, explicit layout control is preferred over generic tensor-expression abstractions when it improves correctness, predictability, or BLAS utilization. `xtensor` should still be the default compiled tensor representation layer, even when the final contraction is handed off to BLAS.
+For dense hotspots, explicit layout control is preferred over generic tensor-expression abstractions when it improves correctness, predictability, or BLAS utilization. A `xt::linalg::tensordot` prototype of `ttt` was up to 18x slower than R's `aperm` + BLAS (`doc/lesson.md`); a C++ tensor library is worth adding only for a specific kernel where benchmarks show it beats BLAS on R's own storage.
 
 ### 2. Keep the Public API Familiar
 
@@ -190,11 +188,11 @@ Compiled code is not automatically better. Additional kernels should move into C
 - they benefit from layout-aware implementation
 - benchmarks show that the compiled path wins meaningfully
 
-When they do move, the default expectation should be **xtensor-backed C++ kernels**, not raw standalone loops unless a benchmark justifies dropping down further.
+Use `bench/kernels.R` to time a change and `bench/compare.R` to compare builds; `compare.R` also fails if two builds' results differ.
 
 ## Near-Term TODOs
 
 - Move additional dense hotspots beyond `ttm` to compiled kernels, starting with `mttkrp`
 - Consolidate shared dense index and stride helpers in C++
-- Benchmark compiled and R-level dense kernels on representative tensor sizes
+- Benchmark compiled and R-level dense kernels on representative tensor sizes (`bench/kernels.R`; extend its cases as kernels change)
 - Revisit whether `squeeze` should remain in R or move to compiled code based on profiling rather than architectural purity alone

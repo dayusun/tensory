@@ -1,9 +1,7 @@
-#include "xtensor-r/rarray.hpp"
-#include "xtensor/containers/xarray.hpp"
+#include "tensor_array.h"
 #include <Rcpp.h>
 #include <algorithm>
 #include <climits>
-#include <numeric>
 #include <vector>
 
 
@@ -27,40 +25,24 @@ void F77_NAME(dgemm)(const char *transa, const char *transb, const int *m,
 }
 
 using namespace Rcpp;
-
-namespace {
-
-std::vector<std::size_t> column_major_strides(const std::vector<std::size_t> &dims) {
-  std::vector<std::size_t> strides(dims.size(), 1);
-  for (std::size_t i = 1; i < dims.size(); ++i) {
-    strides[i] = strides[i - 1] * dims[i - 1];
-  }
-  return strides;
-}
-
-std::size_t product_of_dims(const std::vector<std::size_t> &dims) {
-  return std::accumulate(dims.begin(), dims.end(), static_cast<std::size_t>(1),
-                         std::multiplies<std::size_t>());
-}
-
-} // namespace
+using tensory::column_major_strides;
+using tensory::product_of_dims;
 
 /**
  * @brief Tensor-times-matrix operation with optional transpose
- * @param tensor_data Input tensor as xtensor rarray
- * @param matrix_data Input matrix as xtensor rarray
+ * @param tensor_data Input tensor as an R array (aliased, not copied)
+ * @param matrix Input matrix
  * @param mode Mode of the tensor to contract with the matrix
  * @param transpose Whether to transpose the matrix before multiplication
  * @return Resulting tensor after multiplication
  */
 // [[Rcpp::export]]
-xt::rarray<double> ttm_cpp(const xt::rarray<double> &tensor_data,
-                           const NumericMatrix &matrix, int mode,
-                           bool transpose = false) {
+NumericVector ttm_cpp(const NumericVector &tensor_data,
+                      const NumericMatrix &matrix, int mode,
+                      bool transpose = false) {
   try {
     const std::size_t axis = static_cast<std::size_t>(mode - 1);
-    std::vector<std::size_t> tensor_shape(tensor_data.shape().begin(),
-                                          tensor_data.shape().end());
+    std::vector<std::size_t> tensor_shape = tensory::array_dims(tensor_data);
     const std::size_t n_dim = tensor_shape.size();
 
     if (axis >= n_dim) {
@@ -93,7 +75,7 @@ xt::rarray<double> ttm_cpp(const xt::rarray<double> &tensor_data,
     }
 
     std::vector<double> x_mat(total_size);
-    const double *tensor_ptr = tensor_data.data();
+    const double *tensor_ptr = REAL(tensor_data);
     const std::size_t axis_input_stride = input_strides[axis];
 
     for (std::size_t rest_index = 0; rest_index < rest; ++rest_index) {
@@ -134,8 +116,8 @@ xt::rarray<double> ttm_cpp(const xt::rarray<double> &tensor_data,
     F77_NAME(dgemm)(transa, transb, &m, &n, &k, &alpha, mat_ptr, &lda,
                     x_mat.data(), &ldb, &beta, y_mat.data(), &ldc FCONE FCONE);
 
-    xt::xarray<double, xt::layout_type::column_major> result_tensor(final_shape);
-    double *result_ptr = result_tensor.data();
+    NumericVector result_tensor = tensory::alloc_array(final_shape);
+    double *result_ptr = REAL(result_tensor);
     const std::size_t axis_output_stride = output_strides[axis];
 
     for (std::size_t rest_index = 0; rest_index < rest; ++rest_index) {
@@ -154,24 +136,24 @@ xt::rarray<double> ttm_cpp(const xt::rarray<double> &tensor_data,
       }
     }
 
-    return xt::rarray<double>(result_tensor);
+    return result_tensor;
   } catch (const std::exception &e) {
     Rcpp::stop("Error in optimized ttm_cpp: " + std::string(e.what()));
   }
 }
 
 // [[Rcpp::export]]
-xt::rarray<double> ttm_multiple_cpp(const xt::rarray<double> &tensor_data,
-                                    const List &matrices,
-                                    const IntegerVector &modes,
-                                    bool transpose = false) {
+NumericVector ttm_multiple_cpp(const NumericVector &tensor_data,
+                               const List &matrices,
+                               const IntegerVector &modes,
+                               bool transpose = false) {
   try {
     if (matrices.size() == 0) {
       Rcpp::stop("Empty list of matrices provided");
     }
 
     NumericMatrix first_matrix = as<NumericMatrix>(matrices[0]);
-    xt::rarray<double> result = ttm_cpp(tensor_data, first_matrix, modes[0], transpose);
+    NumericVector result = ttm_cpp(tensor_data, first_matrix, modes[0], transpose);
 
     for (R_xlen_t i = 1; i < matrices.size(); ++i) {
       NumericMatrix matrix = as<NumericMatrix>(matrices[i]);

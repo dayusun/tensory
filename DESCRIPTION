@@ -8,13 +8,12 @@ Maintainer: Dayu Sun <dayu.sun@outlook.com>
 Description: Provides dense and decomposed tensor classes for R together with
     operations that use an API similar to the MATLAB Tensor Toolbox, including
     matricized products, contractions, reshaping helpers, and symmetry
-    utilities. Selected kernels can delegate to `xtensor`/`Rcpp` backends for
+    utilities. Selected kernels can delegate to compiled 'Rcpp' + 'BLAS' code for
     performance.
 URL: https://www.sundayu.me/tensory/, https://github.com/dayusun/tensory
 BugReports: https://github.com/dayusun/tensory/issues
 License: MIT + file LICENSE
 Encoding: UTF-8
-SystemRequirements: C++20
 Imports:
     graphics,
     R6,

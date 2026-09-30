@@ -13,9 +13,9 @@ R package built with roxygen2 + Rcpp + testthat 3.
 - Run a single test file: `R -e 'devtools::test(filter = "ttm")'` (matches `tests/testthat/test-ttm.R`)
 - Full check (run before tagging a release): `R -e 'devtools::check()'`
 - Build vignettes: `R -e 'devtools::build_vignettes()'`
-- Re-vendor xtensor / xtl / xsimd / xtensor-blas headers into `inst/include/` from upstream tags: `bash inst/tools/vendor` (only needed when bumping pinned versions inside that script; xtensor-r is intentionally not re-fetched there)
+- Benchmark the compiled kernels against an installed build: `R_LIBS=<lib> Rscript bench/kernels.R out.csv label`, then `Rscript bench/compare.R old.csv new.csv` (prints speedups and exits non-zero if the two builds' results differ). Install each build with `R CMD INSTALL --library=<lib> .` so it gets R's normal `-O2` flags.
 
-The C++ kernels require a C++20 compiler. `src/Makevars` sets `CXX_STD = CXX20` and nothing else beyond the include path — optimization flags come from R's own `CXX20FLAGS` (typically `-O2`), because `R CMD check` warns about any `-O`/`-f`/`-m` tuning set in `PKG_CXXFLAGS`. Put local tuning (e.g. `-funroll-loops`) in `~/.R/Makevars`. Note `pkgbuild::compile_dll()` defaults to a `-O0` debug build — pass `debug = FALSE` before benchmarking.
+The C++ kernels need only Rcpp and a C++11-or-later compiler; no headers are vendored or fetched. `src/Makevars` sets only `PKG_LIBS` — the language standard is R's default and optimization flags come from R's own `CXXFLAGS`/`CXX17FLAGS` (typically `-O2`), because `R CMD check` warns about any `-O`/`-f`/`-m` tuning set in `PKG_CXXFLAGS`. Put local tuning (e.g. `-funroll-loops`) in `~/.R/Makevars`. Note `pkgbuild::compile_dll()` defaults to a `-O0` debug build — pass `debug = FALSE` before benchmarking.
 
 ## Architecture
 
@@ -40,7 +40,7 @@ Structured (non-densifying) implementations exist for `fnorm`/`innerprod`/`nvecs
 
 `doc/architecture.md` is the authoritative design doc. The split:
 
-- Compiled kernels live in three `.cpp` files: `src/tensor_ttm.cpp` (`ttm_cpp`, `ttm_multiple_cpp`), `src/tensor_dense.cpp` (`mttkrp_cpp`, `mttkrps_cpp`, `fibers_cpp`, `contract_cpp`, `mask_cpp`, `issymmetric_cpp`), and `src/tensor_decomposition.cpp` (`khatri_rao_pair_cpp`, `mttkrp_blas_cpp`). Every kernel takes tensor storage as `xt::rarray<double>` wrapping R's SEXP.
+- Compiled kernels live in four `.cpp` files: `src/tensor_ttm.cpp` (`ttm_cpp`, `ttm_multiple_cpp`), `src/tensor_dense.cpp` (`mttkrp_cpp`, `mttkrps_cpp`, `fibers_cpp`, `contract_cpp`, `mask_cpp`, `issymmetric_cpp`), and `src/tensor_decomposition.cpp` (`khatri_rao_pair_cpp`, `mttkrp_blas_cpp`). `src/tensor_spgtr.cpp` holds the `spgtr` kernels. Every kernel takes tensor storage as `Rcpp::NumericVector`, which aliases R's buffer without copying; shared shape helpers are in `src/tensor_array.h`.
 - **Every C++ kernel is optional.** The R method keeps a full pure-R implementation and delegates only when the compiled symbol is present, guarded by `if (exists("<fn>_cpp", mode = "function")) return(<fn>_cpp(...))` before the R fallback (see `R/tensor_dense_methods.R`, `R/tensor_ttm.R`, `R/tensor_operations.R`). When editing either side, keep the two paths behaviorally identical — tests run against whichever is compiled. `mttkrp` tries `mttkrp_blas_cpp` first, then `mttkrp_cpp`, then R.
 - `ttt` (tensor-times-tensor) is deliberately R-only: it uses `reshape` + `permute` + `%*%`. A prior C++ `xt::linalg::tensordot` prototype was up to 18× slower than R's native `aperm` + BLAS path, so the R implementation is the correct one. Do not rewrite `ttt` in C++ without benchmarks proving a win on representative shapes — see `doc/lesson.md`.
 - `nvecs`, `symmetrize`, and the arithmetic/operator methods remain R-only in `R/tensor_dense_methods.R` / `R/tensor_operations.R` — future C++ candidates only *if* benchmarks justify it; do not move them speculatively.
@@ -71,15 +71,15 @@ Further algorithms (all R-level, all riding on the accelerated primitives):
 2. One `dgemm` call producing the `J × rest` result buffer (`y_mat`).
 3. Scatter back into the result tensor with the contracted dim in its original position.
 
-This is **not** zero-copy — there are two intermediate copies plus the `xt::xarray` → `xt::rarray` allocation. Before adding optimizations, benchmark first; the current single-shot dgemm is straightforward and correct.
+This is **not** zero-copy — there are two intermediate buffers (`x_mat`, `y_mat`); the scatter writes straight into the returned R array (`tensory::alloc_array`). Before adding optimizations, benchmark first; the current single-shot dgemm is straightforward and correct.
 
 `doc/lesson.md` describes the *target* design (per-`M2` slice loop, mode-1 single-shot fast path, `M2 == 1 && M1 > 2000` cache-tiled branch with 512-row blocks). That target is not yet in the code — treat lesson.md as design intent, not implementation reference. If you implement the slice loop, preserve the lesson's three-branch structure (mode-1 fast path, middle-mode loop, mode-N cache-tiled).
 
 `dgemm` is invoked with `transa = "T"|"N"` driven by `transpose`, `transb = "N"`, leading dims `lda = transpose ? Ik : J`, `ldb = Ik`, `ldc = J`. There is an explicit `INT_MAX` guard before casting `size_t` extents to the BLAS `int` parameters — keep it when refactoring.
 
-### xtensor integration
+### C++ backend: Rcpp + BLAS, no tensor library
 
-`inst/include/` vendors `xtensor`, `xtl`, `xsimd`, `xtensor-r`, `xtensor-blas`, `xflens`. `inst/include/tensory.h` exposes only `xtensor-r/rarray.hpp` and `roptional.hpp` — the C++ side uses `xt::rarray` to wrap R-owned SEXP storage without copying, then drops to raw `dgemm` for the contraction core. This is **handcrafted xtensor + BLAS**, not the high-level `xt::linalg::tensordot` path.
+Kernels read R arrays through `Rcpp::NumericVector` (zero-copy; the shape is the `dim` attribute, via `tensory::array_dims`), allocate results with `tensory::alloc_array` and write into them in place, and call Fortran BLAS/LAPACK (`dgemm`, `dsyrk`, `dsyev`) directly. xtensor was used previously and removed: the kernels only used its data pointer and shape, while it forced C++20 and build-time header fetching. `inst/include/tensory.h` is included by `RcppExports.cpp` and pulls in only Rcpp. Do not reintroduce a C++ tensor library without a benchmark (`bench/`) showing it beats BLAS on R's storage for a specific kernel. Performance comes from the BLAS R links against and from how little memory a kernel moves around each BLAS call.
 
 `src/Makevars` links `$(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)` so the kernel uses whatever BLAS R was built against.
 

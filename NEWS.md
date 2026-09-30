@@ -2,6 +2,18 @@
 
 First development version. Everything below is new.
 
+## Build
+
+* The compiled kernels no longer use xtensor: they read R's array storage
+  directly through Rcpp and call BLAS/LAPACK themselves. The package now builds
+  from a plain checkout with a C++11-or-later compiler (it previously needed
+  C++20 and headers fetched by `inst/tools/vendor`), and `ttm` no longer copies
+  its result a second time on the way back to R. Results are unchanged.
+  Integer and logical arrays passed to a kernel are still converted to double,
+  now without the "Coerced object" warning xtensor-r emitted.
+* `bench/kernels.R` and `bench/compare.R` time every compiled kernel (and the
+  R reference paths) and check that two builds compute the same results.
+
 ## Tensor classes
 
 * `Tensor`, an R6 class for dense multidimensional arrays, usable either
@@ -25,7 +37,7 @@ First development version. Everything below is new.
 * Naming and argument semantics follow the MATLAB Tensor Toolbox where that
   reads naturally in R; divergences are documented per function (most notably,
   a full contraction returns a scalar `Tensor` with `dims = integer(0)`).
-* Compiled `xtensor` + BLAS kernels back `ttm`, `mttkrp`, `mttkrps`, `fibers`,
+* Compiled Rcpp + BLAS kernels back `ttm`, `mttkrp`, `mttkrps`, `fibers`,
   `contract`, `mask`, and `issymmetric`. Every kernel is optional: each method
   keeps a complete R implementation and delegates only when the compiled symbol
   is present.

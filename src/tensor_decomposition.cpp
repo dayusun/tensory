@@ -1,5 +1,4 @@
-#include "xtensor-r/rarray.hpp"
-#include "xtensor/containers/xarray.hpp"
+#include "tensor_array.h"
 #include <Rcpp.h>
 #include <algorithm>
 #include <climits>
@@ -27,25 +26,11 @@ using namespace Rcpp;
 
 namespace {
 
-std::vector<std::size_t> shape_vec_dec(const xt::rarray<double> &tensor_data) {
-  return std::vector<std::size_t>(tensor_data.shape().begin(),
-                                  tensor_data.shape().end());
+std::vector<std::size_t> shape_vec_dec(const NumericVector &tensor_data) {
+  return tensory::array_dims(tensor_data);
 }
 
-std::vector<std::size_t>
-column_major_strides_dec(const std::vector<std::size_t> &dims) {
-  std::vector<std::size_t> strides(dims.size(), 1);
-  for (std::size_t i = 1; i < dims.size(); ++i) {
-    strides[i] = strides[i - 1] * dims[i - 1];
-  }
-  return strides;
-}
-
-std::size_t product_dims(const std::vector<std::size_t> &dims) {
-  return std::accumulate(dims.begin(), dims.end(),
-                         static_cast<std::size_t>(1),
-                         std::multiplies<std::size_t>());
-}
+using tensory::product_of_dims;
 
 void check_blas_int(std::size_t value) {
   if (value > static_cast<std::size_t>(INT_MAX)) {
@@ -123,7 +108,7 @@ NumericMatrix build_mttkrp_kr(const List &factors, std::size_t skip,
     other_modes.push_back(k);
     other_dims.push_back(dims[k]);
   }
-  const std::size_t P = product_dims(other_dims);
+  const std::size_t P = product_of_dims(other_dims);
   NumericMatrix Z(static_cast<R_xlen_t>(P), R);
 
   // Keep the (possibly coerced) factor matrices alive for the whole build:
@@ -168,7 +153,7 @@ NumericMatrix build_mttkrp_kr(const List &factors, std::size_t skip,
 // Gathers mode-n unfolding into contiguous (I_n x P) buffer, builds KR,
 // then calls dgemm once. Returns an I_n x R matrix.
 // [[Rcpp::export]]
-NumericMatrix mttkrp_blas_cpp(const xt::rarray<double> &tensor_data,
+NumericMatrix mttkrp_blas_cpp(const NumericVector &tensor_data,
                               const List &factors, int mode) {
   const std::vector<std::size_t> dims = shape_vec_dec(tensor_data);
   const std::size_t N = dims.size();
@@ -201,7 +186,7 @@ NumericMatrix mttkrp_blas_cpp(const xt::rarray<double> &tensor_data,
   }
 
   const std::size_t In = dims[skip];
-  const std::size_t total = product_dims(dims);
+  const std::size_t total = product_of_dims(dims);
   if (total == 0) {
     // Zero-extent tensor: the unfolding is empty, so V is all zeros
     // (and In may itself be 0 — guard the division below).
@@ -214,8 +199,8 @@ NumericMatrix mttkrp_blas_cpp(const xt::rarray<double> &tensor_data,
   check_blas_int(P);
   check_blas_int(static_cast<std::size_t>(R));
 
-  const auto strides = column_major_strides_dec(dims);
-  const double *data_ptr = tensor_data.data();
+  const auto strides = tensory::column_major_strides(dims);
+  const double *data_ptr = REAL(tensor_data);
 
   // Gather mode-n unfolding into Xn (I_n x P), column-major: Xn[p*I_n + i_n].
   // For mode 1 this is a straight copy (data already contiguous); keep branch.
