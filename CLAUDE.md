@@ -40,8 +40,8 @@ Structured (non-densifying) implementations exist for `fnorm`/`innerprod`/`nvecs
 
 `doc/architecture.md` is the authoritative design doc. The split:
 
-- Compiled kernels live in four `.cpp` files: `src/tensor_ttm.cpp` (`ttm_cpp`, `ttm_multiple_cpp`), `src/tensor_dense.cpp` (`mttkrp_cpp`, `mttkrps_cpp`, `fibers_cpp`, `contract_cpp`, `mask_cpp`, `issymmetric_cpp`), and `src/tensor_decomposition.cpp` (`khatri_rao_pair_cpp`, `mttkrp_blas_cpp`). `src/tensor_spgtr.cpp` holds the `spgtr` kernels. Every kernel takes tensor storage as `Rcpp::NumericVector`, which aliases R's buffer without copying; shared shape helpers are in `src/tensor_array.h`.
-- **Every C++ kernel is optional.** The R method keeps a full pure-R implementation and delegates only when the compiled symbol is present, guarded by `if (exists("<fn>_cpp", mode = "function")) return(<fn>_cpp(...))` before the R fallback (see `R/tensor_dense_methods.R`, `R/tensor_ttm.R`, `R/tensor_operations.R`). When editing either side, keep the two paths behaviorally identical — tests run against whichever is compiled. `mttkrp` tries `mttkrp_blas_cpp` first, then `mttkrp_cpp`, then R.
+- Compiled kernels live in four `.cpp` files: `src/tensor_ttm.cpp` (`ttm_cpp`, `ttm_multiple_cpp`), `src/tensor_dense.cpp` (`mttkrp_cpp`, `fibers_cpp`, `contract_cpp`, `mask_cpp`, `issymmetric_cpp`), and `src/tensor_decomposition.cpp` (`khatri_rao_pair_cpp`, `mttkrp_blas_cpp`, `mttkrps_cpp`). `src/tensor_spgtr.cpp` holds the `spgtr` kernels. Every kernel takes tensor storage as `Rcpp::NumericVector`, which aliases R's buffer without copying; shared shape helpers are in `src/tensor_array.h`.
+- **Every C++ kernel is optional.** The R method keeps a full pure-R implementation and delegates only when the compiled symbol is present, guarded by `if (exists("<fn>_cpp", mode = "function")) return(<fn>_cpp(...))` before the R fallback (see `R/tensor_dense_methods.R`, `R/tensor_ttm.R`, `R/tensor_operations.R`). When editing either side, keep the two paths behaviorally identical — tests run against whichever is compiled. `mttkrp` tries `mttkrp_blas_cpp` first, then `mttkrp_cpp`, then R; `mttkrps` tries `mttkrps_cpp`, then per-mode `mttkrp_blas_cpp`, then R.
 - `ttt` (tensor-times-tensor) is deliberately R-only: it uses `reshape` + `permute` + `%*%`. A prior C++ `xt::linalg::tensordot` prototype was up to 18× slower than R's native `aperm` + BLAS path, so the R implementation is the correct one. Do not rewrite `ttt` in C++ without benchmarks proving a win on representative shapes — see `doc/lesson.md`.
 - `nvecs`, `symmetrize`, and the arithmetic/operator methods remain R-only in `R/tensor_dense_methods.R` / `R/tensor_operations.R` — future C++ candidates only *if* benchmarks justify it; do not move them speculatively.
 
@@ -74,6 +74,15 @@ Further algorithms (all R-level, all riding on the accelerated primitives):
 `doc/lesson.md`'s 512-row cache tiling for `M2 == 1 && M1 > 2000` was benchmarked and **deliberately left out**: 0–13% faster on reference BLAS but 1.2–2.3× slower on OpenBLAS, which already blocks for cache inside `dgemm`. Re-benchmark on both BLAS libraries before revisiting it or `kGatherBelowM1`. Every extent goes through `blas_int()` (the `INT_MAX` guard) before being passed to BLAS — keep it when refactoring. `test-ttm.R` pins every branch against `.ttm_matrix_base`.
 
 To compare BLAS libraries on Debian/Ubuntu, `LD_PRELOAD=/usr/lib/x86_64-linux-gnu/<blas|openblas-pthread>/libblas.so.3` selects one per process (`LD_LIBRARY_PATH` is reset by R's `ldpaths`).
+
+### `mttkrp` C++ kernels
+
+Both are two-step MTTKRPs (Phan, Tichavský & Cichocki 2013) in `src/tensor_decomposition.cpp`; neither forms the mode-`n` unfolding nor the full `prod(I_k, k != n) × R` Khatri–Rao product. `kr_range(first, last)` builds the Khatri–Rao product of a consecutive block of modes, rows in column-major order with mode `first` fastest.
+
+- `mttkrp_blas_cpp` views the tensor as `M1 × In × M2`. `M1 == 1` or `M2 == 1`: one `dgemm` on R's storage straight into `V`, then each column is scaled by the (1 × R) Khatri–Rao row of the singleton modes on the other side — those rows are **not** all ones, and dropping them was a real bug caught by `test-cp.R`'s singleton shapes. Middle modes: one `dgemm` against the larger side's Khatri–Rao product (`M1 <= M2` contracts the right side), then `R` `dgemv` calls for the smaller side.
+- `mttkrps_cpp` (all modes, fixed factors) splits the modes into `[0, s)` / `[s, N)` with `max(M_L, M_R)` minimized, does one `dgemm` per side (two passes over the tensor instead of `N`), and `finish_group()` completes each mode from its side's `M_side × R` partial tensor.
+
+`test-cp.R` pins both against the elementwise `mttkrp_cpp` across orders 2–5, ranks 1 and 3, and singleton modes. `cp_als` still calls `mttkrp()` once per mode because its factors change between modes; a dimension-tree ALS (reuse one side's partial across that side's updates) is the next step if `cp_als` needs more speed.
 
 ### C++ backend: Rcpp + BLAS, no tensor library
 

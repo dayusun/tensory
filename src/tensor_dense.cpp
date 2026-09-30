@@ -133,17 +133,6 @@ NumericMatrix mttkrp_cpp(const NumericVector& tensor_data, const List& factors, 
 }
 
 // [[Rcpp::export]]
-List mttkrps_cpp(const NumericVector& tensor_data, const List& factors) {
-  std::vector<std::size_t> dims = shape_vec(tensor_data);
-  const std::size_t n_dim = dims.size();
-  List out(n_dim);
-  for (std::size_t mode = 0; mode < n_dim; ++mode) {
-    out[mode] = mttkrp_cpp(tensor_data, factors, static_cast<int>(mode + 1));
-  }
-  return out;
-}
-
-// [[Rcpp::export]]
 NumericMatrix fibers_cpp(const NumericVector& tensor_data, int mode, const IntegerMatrix& midx) {
   const std::vector<std::size_t> dims = shape_vec(tensor_data);
   const std::size_t n_dim = dims.size();

@@ -9,12 +9,12 @@ mttkrp_blas_cpp <- function(tensor_data, factors, mode) {
     .Call(`_tensory_mttkrp_blas_cpp`, tensor_data, factors, mode)
 }
 
-mttkrp_cpp <- function(tensor_data, factors, mode) {
-    .Call(`_tensory_mttkrp_cpp`, tensor_data, factors, mode)
-}
-
 mttkrps_cpp <- function(tensor_data, factors) {
     .Call(`_tensory_mttkrps_cpp`, tensor_data, factors)
+}
+
+mttkrp_cpp <- function(tensor_data, factors, mode) {
+    .Call(`_tensory_mttkrp_cpp`, tensor_data, factors, mode)
 }
 
 fibers_cpp <- function(tensor_data, mode, midx) {

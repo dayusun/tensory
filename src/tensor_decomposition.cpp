@@ -20,6 +20,10 @@ void F77_NAME(dgemm)(const char *transa, const char *transb, const int *m,
                      const double *a, const int *lda, const double *b,
                      const int *ldb, const double *beta, double *c,
                      const int *ldc FCONE FCONE);
+void F77_NAME(dgemv)(const char *trans, const int *m, const int *n,
+                     const double *alpha, const double *a, const int *lda,
+                     const double *x, const int *incx, const double *beta,
+                     double *y, const int *incy FCONE);
 }
 
 using namespace Rcpp;
@@ -91,168 +95,305 @@ NumericMatrix khatri_rao_pair_cpp(const NumericMatrix &A,
   return out;
 }
 
-// Build the mode-n "reduced" Khatri-Rao product used in MTTKRP:
-//   Z = U[N] \odot U[N-1] \odot ... \odot U[n+1] \odot U[n-1] \odot ... \odot U[1]
-// in column-major row order with mode-1 fastest (skipping mode n). Rows index
-// over prod(I_k, k != n) matching the column index of the mode-n unfolding.
+// ---------------------------------------------------------------------------
+// MTTKRP: V = X_(n) (U_N (.) ... (.) U_{n+1} (.) U_{n-1} (.) ... (.) U_1).
+//
+// Both kernels below are "two-step" MTTKRPs (Phan, Tichavsky & Cichocki
+// 2013): the tensor is contracted with a Khatri-Rao product of the factors on
+// ONE side of a split in a single dgemm that reads R's storage in place, and
+// the (much smaller) result is then contracted with the other side. Neither
+// the mode-n unfolding nor the full prod(I_k, k != n) x R Khatri-Rao product
+// is ever formed.
+// ---------------------------------------------------------------------------
 namespace {
-NumericMatrix build_mttkrp_kr(const List &factors, std::size_t skip,
-                              std::size_t N, int R,
-                              const std::vector<std::size_t> &dims) {
-  std::vector<std::size_t> other_modes;
-  std::vector<std::size_t> other_dims;
-  other_modes.reserve(N - 1);
-  other_dims.reserve(N - 1);
-  for (std::size_t k = 0; k < N; ++k) {
-    if (k == skip) continue;
-    other_modes.push_back(k);
-    other_dims.push_back(dims[k]);
-  }
-  const std::size_t P = product_of_dims(other_dims);
-  NumericMatrix Z(static_cast<R_xlen_t>(P), R);
 
-  // Keep the (possibly coerced) factor matrices alive for the whole build:
-  // as<NumericMatrix> allocates a fresh SEXP when a factor is not REALSXP,
-  // and a loop-local NumericMatrix would leave mat_ptrs dangling.
-  std::vector<NumericMatrix> mats;
-  mats.reserve(N - 1);
-  std::vector<const double *> mat_ptrs(N, nullptr);
-  for (std::size_t k = 0; k < N; ++k) {
-    if (k == skip) continue;
-    mats.push_back(as<NumericMatrix>(factors[k]));
-    mat_ptrs[k] = REAL(mats.back());
-  }
-
-  double *z_ptr = REAL(Z);
-  const std::size_t M = other_modes.size();
-  std::vector<std::size_t> coord(M, 0);
-
-  for (std::size_t p = 0; p < P; ++p) {
-    std::size_t tmp = p;
-    for (std::size_t q = 0; q < M; ++q) {
-      coord[q] = tmp % other_dims[q];
-      tmp /= other_dims[q];
-    }
-    for (int r = 0; r < R; ++r) {
-      double prod = 1.0;
-      for (std::size_t q = 0; q < M; ++q) {
-        const std::size_t mode = other_modes[q];
-        const std::size_t dim_mode = dims[mode];
-        prod *= mat_ptrs[mode][static_cast<std::size_t>(r) * dim_mode +
-                               coord[q]];
-      }
-      z_ptr[static_cast<std::size_t>(r) * P + p] = prod;
-    }
-  }
-
-  return Z;
+void gemm(char transa, char transb, int m, int n, int k, const double *a,
+          int lda, const double *b, int ldb, double *c, int ldc) {
+  const double one = 1.0;
+  const double zero = 0.0;
+  F77_NAME(dgemm)(&transa, &transb, &m, &n, &k, &one, a, &lda, b, &ldb, &zero,
+                  c, &ldc FCONE FCONE);
 }
-} // namespace
 
-// BLAS-backed MTTKRP: V = X_(n) * KR, where KR is the skip-n Khatri-Rao.
-// Gathers mode-n unfolding into contiguous (I_n x P) buffer, builds KR,
-// then calls dgemm once. Returns an I_n x R matrix.
-// [[Rcpp::export]]
-NumericMatrix mttkrp_blas_cpp(const NumericVector &tensor_data,
-                              const List &factors, int mode) {
-  const std::vector<std::size_t> dims = shape_vec_dec(tensor_data);
+void gemv(char trans, int m, int n, const double *a, int lda, const double *x,
+          double *y) {
+  const double one = 1.0;
+  const double zero = 0.0;
+  const int inc = 1;
+  F77_NAME(dgemv)(&trans, &m, &n, &one, a, &lda, x, &inc, &zero, y,
+                  &inc FCONE);
+}
+
+int blas_int(std::size_t value) {
+  check_blas_int(value);
+  return static_cast<int>(value);
+}
+
+// Factor matrices after validation. `mats` keeps coerced copies alive
+// (as<NumericMatrix> allocates when a factor is not REALSXP), so the raw
+// pointers stay valid for the whole kernel.
+struct Factors {
+  std::vector<NumericMatrix> mats;
+  std::vector<const double *> ptr;
+  std::size_t rank = 0;
+};
+
+// Validates every factor except `skip` (pass dims.size() to validate all).
+Factors read_factors(const List &factors, const std::vector<std::size_t> &dims,
+                     std::size_t skip) {
   const std::size_t N = dims.size();
   if (N < 2) {
     stop("mttkrp is invalid for tensors with fewer than 2 dimensions.");
   }
-  const std::size_t skip = static_cast<std::size_t>(mode - 1);
-  if (skip >= N) {
-    stop("mode is out of bounds for the tensor order");
-  }
   if (static_cast<std::size_t>(factors.size()) != N) {
     stop("factors must have the same length as the tensor order.");
   }
-
+  Factors f;
+  f.mats.resize(N);
+  f.ptr.assign(N, nullptr);
   int R = -1;
   for (std::size_t k = 0; k < N; ++k) {
     if (k == skip) continue;
-    NumericMatrix Uk = as<NumericMatrix>(factors[k]);
-    if (static_cast<std::size_t>(Uk.nrow()) != dims[k]) {
+    f.mats[k] = as<NumericMatrix>(factors[k]);
+    if (static_cast<std::size_t>(f.mats[k].nrow()) != dims[k]) {
       stop("factor matrix row dimension does not match tensor dimension");
     }
     if (R < 0) {
-      R = Uk.ncol();
-    } else if (Uk.ncol() != R) {
+      R = f.mats[k].ncol();
+    } else if (f.mats[k].ncol() != R) {
       stop("all factor matrices must have the same number of columns");
     }
+    f.ptr[k] = REAL(f.mats[k]);
   }
   if (R < 0) {
     stop("no non-skipped factors present");
   }
+  f.rank = static_cast<std::size_t>(R);
+  return f;
+}
 
-  const std::size_t In = dims[skip];
-  const std::size_t total = product_of_dims(dims);
-  if (total == 0) {
-    // Zero-extent tensor: the unfolding is empty, so V is all zeros
-    // (and In may itself be 0 — guard the division below).
-    return NumericMatrix(static_cast<int>(In), R);
+// Khatri-Rao product of the factors of modes [first, last), rows ordered with
+// mode `first` fastest -- i.e. row index = the column-major linear index over
+// those modes. Returns a rows x R column-major buffer (rows = 1 when empty).
+std::vector<double> kr_range(const Factors &f,
+                             const std::vector<std::size_t> &dims,
+                             std::size_t first, std::size_t last) {
+  const std::size_t R = f.rank;
+  std::vector<double> K(R, 1.0);
+  std::size_t rows = 1;
+  for (std::size_t k = first; k < last; ++k) {
+    const std::size_t Ik = dims[k];
+    std::vector<double> next(rows * Ik * R);
+    for (std::size_t r = 0; r < R; ++r) {
+      const double *u = f.ptr[k] + r * Ik;
+      const double *prev = K.data() + r * rows;
+      double *out = next.data() + r * rows * Ik;
+      for (std::size_t i = 0; i < Ik; ++i) {
+        const double ui = u[i];
+        double *dst = out + i * rows;
+        for (std::size_t p = 0; p < rows; ++p) dst[p] = prev[p] * ui;
+      }
+    }
+    K.swap(next);
+    rows *= Ik;
   }
-  const std::size_t P = total / In;
+  return K;
+}
 
-  // Validate BLAS int extents before any allocation narrows them.
-  check_blas_int(In);
-  check_blas_int(P);
-  check_blas_int(static_cast<std::size_t>(R));
+std::size_t prod_range(const std::vector<std::size_t> &dims, std::size_t first,
+                       std::size_t last) {
+  std::size_t p = 1;
+  for (std::size_t k = first; k < last; ++k) p *= dims[k];
+  return p;
+}
 
-  const auto strides = tensory::column_major_strides(dims);
-  const double *data_ptr = REAL(tensor_data);
+// Single-mode MTTKRP on raw storage. X is viewed as M1 x In x M2 (M1 = modes
+// before n, M2 = modes after). Writes the In x R result into V.
+void mttkrp_two_step(const double *X, const Factors &f,
+                     const std::vector<std::size_t> &dims, std::size_t n,
+                     double *V) {
+  const std::size_t N = dims.size();
+  const std::size_t R = f.rank;
+  const std::size_t In = dims[n];
+  const std::size_t M1 = prod_range(dims, 0, n);
+  const std::size_t M2 = prod_range(dims, n + 1, N);
+  const int r_ = blas_int(R);
+  const int in_ = blas_int(In);
 
-  // Gather mode-n unfolding into Xn (I_n x P), column-major: Xn[p*I_n + i_n].
-  // For mode 1 this is a straight copy (data already contiguous); keep branch.
-  std::vector<double> Xn(In * P);
-  const std::size_t axis_stride = strides[skip];
+  if (M1 == 1 || M2 == 1) {
+    // Mode 1 (M1 == 1): V = X(In x M2) * KR(right); last mode (M2 == 1):
+    // V = X(M1 x In)' * KR(left) -- one dgemm straight into V. Any modes on
+    // the other side all have size 1 but their factor rows still scale
+    // column r, so fold that 1 x R Khatri-Rao row in afterwards.
+    const bool first = M1 == 1;
+    std::vector<double> K =
+        first ? kr_range(f, dims, n + 1, N) : kr_range(f, dims, 0, n);
+    const int k = blas_int(first ? M2 : M1);
+    gemm(first ? 'N' : 'T', 'N', in_, r_, k, X, first ? in_ : k, K.data(), k,
+         V, in_);
+    const std::vector<double> scale =
+        first ? kr_range(f, dims, 0, n) : kr_range(f, dims, n + 1, N);
+    for (std::size_t r = 0; r < R; ++r) {
+      if (scale[r] == 1.0) continue;
+      for (std::size_t i = 0; i < In; ++i) V[r * In + i] *= scale[r];
+    }
+    return;
+  }
 
-  if (skip == 0) {
-    std::copy(data_ptr, data_ptr + total, Xn.begin());
+  std::vector<double> KL = kr_range(f, dims, 0, n);
+  std::vector<double> KR = kr_range(f, dims, n + 1, N);
+  const int m1 = blas_int(M1);
+  const int m2 = blas_int(M2);
+  if (M1 <= M2) {
+    // T = X(M1 In x M2) * KR  ->  (M1 In) x R; then per r,
+    // V[, r] = T_r(M1 x In)' * KL[, r].
+    std::vector<double> T(M1 * In * R);
+    const int m1in = blas_int(M1 * In);
+    gemm('N', 'N', m1in, r_, m2, X, m1in, KR.data(), m2, T.data(), m1in);
+    for (std::size_t r = 0; r < R; ++r) {
+      gemv('T', m1, in_, T.data() + r * M1 * In, m1, KL.data() + r * M1,
+           V + r * In);
+    }
   } else {
-    std::vector<std::size_t> other_modes;
-    std::vector<std::size_t> other_dims;
-    other_modes.reserve(N - 1);
-    other_dims.reserve(N - 1);
-    for (std::size_t k = 0; k < N; ++k) {
-      if (k == skip) continue;
-      other_modes.push_back(k);
-      other_dims.push_back(dims[k]);
-    }
-    const std::size_t M = other_modes.size();
-    std::vector<std::size_t> coord(M, 0);
-    for (std::size_t p = 0; p < P; ++p) {
-      std::size_t tmp = p;
-      std::size_t base = 0;
-      for (std::size_t q = 0; q < M; ++q) {
-        coord[q] = tmp % other_dims[q];
-        tmp /= other_dims[q];
-        base += coord[q] * strides[other_modes[q]];
-      }
-      const std::size_t col_off = p * In;
-      for (std::size_t i = 0; i < In; ++i) {
-        Xn[col_off + i] = data_ptr[base + i * axis_stride];
-      }
+    // T = X(M1 x In M2)' * KL  ->  (In M2) x R; then per r,
+    // V[, r] = T_r(In x M2) * KR[, r].
+    std::vector<double> T(In * M2 * R);
+    const int inm2 = blas_int(In * M2);
+    gemm('T', 'N', inm2, r_, m1, X, m1, KL.data(), m1, T.data(), inm2);
+    for (std::size_t r = 0; r < R; ++r) {
+      gemv('N', in_, m2, T.data() + r * In * M2, in_, KR.data() + r * M2,
+           V + r * In);
     }
   }
+}
 
-  NumericMatrix Z = build_mttkrp_kr(factors, skip, N, R, dims);
+// For a group of consecutive modes [first, last) and a partial tensor P
+// (M_group x R, column-major, group modes in column-major order with `first`
+// fastest) that already carries every other mode's contribution, finish the
+// MTTKRP of each mode in the group: V_n(i, r) = sum over the group's other
+// indices of P(idx, r) * prod_{k != n} U_k(idx_k, r).
+void finish_group(const std::vector<double> &P, const Factors &f,
+                  const std::vector<std::size_t> &dims, std::size_t first,
+                  std::size_t last, std::vector<NumericMatrix> &out) {
+  const std::size_t R = f.rank;
+  const std::size_t G = last - first;
+  const std::size_t Mg = prod_range(dims, first, last);
+  if (G == 1) {
+    NumericMatrix V(static_cast<int>(dims[first]), static_cast<int>(R));
+    std::copy(P.begin(), P.end(), V.begin());
+    out[first] = V;
+    return;
+  }
+  for (std::size_t n = first; n < last; ++n) {
+    // For each column r, P(., r) is a tensor over the group's modes; walk it
+    // once, weighting each entry by the other group factors' row products.
+    const std::size_t In = dims[n];
+    NumericMatrix V(static_cast<int>(In), static_cast<int>(R));
+    double *v = REAL(V);
+    std::vector<std::size_t> coord(G, 0);
+    for (std::size_t r = 0; r < R; ++r) {
+      std::fill(coord.begin(), coord.end(), 0);
+      const double *p = P.data() + r * Mg;
+      double *vr = v + r * In;
+      for (std::size_t idx = 0; idx < Mg; ++idx) {
+        double w = p[idx];
+        for (std::size_t g = 0; g < G; ++g) {
+          const std::size_t k = first + g;
+          if (k != n) w *= f.ptr[k][r * dims[k] + coord[g]];
+        }
+        vr[coord[n - first]] += w;
+        for (std::size_t g = 0; g < G; ++g) {
+          if (++coord[g] < dims[first + g]) break;
+          coord[g] = 0;
+        }
+      }
+    }
+    out[n] = V;
+  }
+}
 
-  NumericMatrix V(static_cast<R_xlen_t>(In), R);
+} // namespace
 
-  const char *transa = "N";
-  const char *transb = "N";
-  const int m = static_cast<int>(In);
-  const int n = R;
-  const int k = static_cast<int>(P);
-  const double alpha = 1.0;
-  const double beta = 0.0;
-  const int lda = static_cast<int>(In);
-  const int ldb = static_cast<int>(P);
-  const int ldc = static_cast<int>(In);
+// Single-mode MTTKRP: returns the I_n x R matrix. Mode 1 and mode N are one
+// dgemm straight into the result; a middle mode is one dgemm against the
+// larger side's Khatri-Rao product plus R dgemv calls for the smaller side.
+// [[Rcpp::export]]
+NumericMatrix mttkrp_blas_cpp(const NumericVector &tensor_data,
+                              const List &factors, int mode) {
+  const std::vector<std::size_t> dims = shape_vec_dec(tensor_data);
+  if (dims.size() < 2) {
+    stop("mttkrp is invalid for tensors with fewer than 2 dimensions.");
+  }
+  const std::size_t skip = static_cast<std::size_t>(mode - 1);
+  if (skip >= dims.size()) {
+    stop("mode is out of bounds for the tensor order");
+  }
+  const Factors f = read_factors(factors, dims, skip);
+  const std::size_t In = dims[skip];
+  check_blas_int(In);
+  check_blas_int(f.rank);
 
-  F77_NAME(dgemm)(transa, transb, &m, &n, &k, &alpha, Xn.data(), &lda,
-                  REAL(Z), &ldb, &beta, REAL(V), &ldc FCONE FCONE);
-
+  NumericMatrix V(static_cast<int>(In), static_cast<int>(f.rank));
+  if (product_of_dims(dims) == 0 || f.rank == 0) {
+    // Empty unfolding (In may itself be 0): V is all zeros.
+    return V;
+  }
+  mttkrp_two_step(REAL(tensor_data), f, dims, skip, REAL(V));
   return V;
+}
+
+// MTTKRP for every mode with fixed factors, reading the tensor twice instead
+// of N times. The modes are split into two consecutive groups L = [0, s) and
+// Rg = [s, N) with prod(dims in L) as close as possible to prod(dims in Rg):
+//   P_L = X(M_L x M_R) * KR(Rg)   (M_L x R, one dgemm)
+//   P_R = X(M_L x M_R)' * KR(L)   (M_R x R, one dgemm)
+// and each mode's result is finished from its group's small partial tensor.
+// [[Rcpp::export]]
+List mttkrps_cpp(const NumericVector &tensor_data, const List &factors) {
+  const std::vector<std::size_t> dims = shape_vec_dec(tensor_data);
+  const std::size_t N = dims.size();
+  const Factors f = read_factors(factors, dims, N);
+  const std::size_t R = f.rank;
+  check_blas_int(R);
+
+  std::vector<NumericMatrix> out(N);
+  if (product_of_dims(dims) == 0 || R == 0) {
+    for (std::size_t k = 0; k < N; ++k) {
+      check_blas_int(dims[k]);
+      out[k] = NumericMatrix(static_cast<int>(dims[k]), static_cast<int>(R));
+    }
+    return wrap(out);
+  }
+
+  // Balance the split: minimize max(M_L, M_R).
+  std::size_t s = 1;
+  std::size_t best = static_cast<std::size_t>(-1);
+  for (std::size_t c = 1; c < N; ++c) {
+    const std::size_t worst =
+        std::max(prod_range(dims, 0, c), prod_range(dims, c, N));
+    if (worst < best) {
+      best = worst;
+      s = c;
+    }
+  }
+  const std::size_t ML = prod_range(dims, 0, s);
+  const std::size_t MR = prod_range(dims, s, N);
+  const int ml = blas_int(ML);
+  const int mr = blas_int(MR);
+  const int r_ = blas_int(R);
+  const double *X = REAL(tensor_data);
+
+  {
+    std::vector<double> KRg = kr_range(f, dims, s, N);
+    std::vector<double> PL(ML * R);
+    gemm('N', 'N', ml, r_, mr, X, ml, KRg.data(), mr, PL.data(), ml);
+    finish_group(PL, f, dims, 0, s, out);
+  }
+  {
+    std::vector<double> KL = kr_range(f, dims, 0, s);
+    std::vector<double> PR(MR * R);
+    gemm('T', 'N', mr, r_, ml, X, ml, KL.data(), ml, PR.data(), mr);
+    finish_group(PR, f, dims, s, N, out);
+  }
+  return wrap(out);
 }

@@ -32,7 +32,7 @@ Compiled kernels take tensor storage as `Rcpp::NumericVector`, which aliases R's
 
 Earlier versions wrapped the storage in `xt::rarray` from `xtensor-r`. The kernels only ever used its data pointer and shape, while xtensor itself required C++20, headers fetched at build time, and an extra result copy in `ttm`, so it was dropped with no change in results or speed.
 
-Reading input is zero-copy. `ttm` is zero-copy end to end except for tensors whose leading extent before the mode is 2 or 3, where it gathers into a buffer because per-slice `dgemm` calls that small are slower. `mttkrp` still gathers the mode-n unfolding into a temporary buffer.
+Reading input is zero-copy. `ttm` is zero-copy end to end except for tensors whose leading extent before the mode is 2 or 3, where it gathers into a buffer because per-slice `dgemm` calls that small are slower. `mttkrp` reads the tensor in place too: a two-step contraction only allocates Khatri-Rao products of one side's factors and an `R`-column partial result, never the unfolding.
 
 ### 3. Current R vs C++ Split
 
@@ -96,7 +96,8 @@ This keeps tensor shape behavior explicit and consistent with the package's obje
 - `R/tepls.R`, `R/spgtr.R`: supervised tensor-predictor regression (continuous and GLM)
 - `src/tensor_array.h`: shared shape/stride helpers for the compiled kernels
 - `src/tensor_ttm.cpp`: compiled `ttm` kernel using explicit layout handling and BLAS
-- `src/tensor_dense.cpp`, `src/tensor_decomposition.cpp`: `mttkrp`, `fibers`, `contract`, `mask`, `issymmetric`, Khatri-Rao kernels
+- `src/tensor_decomposition.cpp`: two-step `mttkrp` / `mttkrps` kernels and the Khatri-Rao kernel
+- `src/tensor_dense.cpp`: elementwise `mttkrp`, `fibers`, `contract`, `mask`, `issymmetric`
 - `bench/kernels.R`, `bench/compare.R`: kernel benchmark harness and build-to-build comparison
 - `src/tensor_spgtr.cpp`: compiled mode-covariance and manifold-solver kernels for `spgtr`
 

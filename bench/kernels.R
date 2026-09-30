@@ -109,6 +109,35 @@ local({
   X <- Tensor$new(rarr(dims))
   U <- lapply(dims, function(d) rmat(d, 16))
   add("mttkrps", "30x30x30x30 R=16", "compiled", function() mttkrps(X, U))
+  add("mttkrp", "30x30x30x30 R=16 mode 3", "compiled",
+      function() mttkrp(X, U, mode = 3))
+})
+
+local({
+  # middle mode with the leading side larger than the trailing one
+  dims <- c(400, 400, 30)
+  X <- Tensor$new(rarr(dims))
+  U <- lapply(dims, function(d) rmat(d, 10))
+  add("mttkrp", "400x400x30 R=10 mode 2", "compiled",
+      function() mttkrp(X, U, mode = 2))
+  add("mttkrps", "400x400x30 R=10", "compiled", function() mttkrps(X, U))
+})
+
+local({
+  dims <- c(12, 12, 12, 12, 12)
+  X <- Tensor$new(rarr(dims))
+  U <- lapply(dims, function(d) rmat(d, 8))
+  add("mttkrps", "12^5 R=8", "compiled", function() mttkrps(X, U))
+})
+
+local({
+  # end to end: every ALS sweep is N mttkrp calls
+  dims <- c(100, 100, 100)
+  X <- Tensor$new(rarr(dims))
+  init <- lapply(dims, function(d) rmat(d, 10))
+  add("cp_als", "100^3 R=10 10 iters", "compiled",
+      function() cp_als(X, R = 10L, init = init, maxiters = 10L, tol = 0,
+                        printitn = 0L, fixsigns = FALSE)$lambda)
 })
 
 # ---- misc dense kernels ----------------------------------------------------

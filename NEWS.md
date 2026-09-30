@@ -17,6 +17,15 @@ First development version. Everything below is new.
   6-9x faster with OpenBLAS and 1.4-1.6x faster with reference BLAS; results
   are unchanged. It also now returns zeros, instead of dividing by zero, when
   the contracted mode has size 0.
+* `mttkrp()` and `mttkrps()` are faster and use less memory. The compiled
+  kernels are now two-step MTTKRPs: one BLAS call contracts the tensor, in
+  place, with the Khatri-Rao product of the factors on one side of the mode,
+  so neither the mode-n unfolding nor the full Khatri-Rao product is built.
+  `mttkrps()` reads the tensor twice in total instead of once per mode. With
+  OpenBLAS, `mttkrp` on a 150^3 tensor (R = 10) is 3.4-6.1x faster,
+  `mttkrps` 4.5-24x faster depending on the tensor order, and a `cp_als()`
+  sweep on 100^3 2.8x faster; with reference BLAS the gains are 1.0-1.3x,
+  2-7x and 1.1x.
 * `bench/kernels.R` and `bench/compare.R` time every compiled kernel (and the
   R reference paths) and check that two builds compute the same results.
 

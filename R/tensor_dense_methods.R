@@ -431,13 +431,13 @@ mttkrps.Tensor <- function(x, U, ...) {
   x <- normalized$x
   U <- normalized$U
 
+  if (exists("mttkrps_cpp", mode = "function")) {
+    return(mttkrps_cpp(x$data, U))
+  }
+
   if (exists("mttkrp_blas_cpp", mode = "function")) {
     return(lapply(seq_len(x$ndims()),
                   function(mode) mttkrp_blas_cpp(x$data, U, as.integer(mode))))
-  }
-
-  if (exists("mttkrps_cpp", mode = "function")) {
-    return(unname(mttkrps_cpp(x$data, U)))
   }
 
   lapply(seq_len(x$ndims()), function(mode) mttkrp(x, U, mode = mode))

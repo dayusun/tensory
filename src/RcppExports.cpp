@@ -37,6 +37,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// mttkrps_cpp
+List mttkrps_cpp(const NumericVector& tensor_data, const List& factors);
+RcppExport SEXP _tensory_mttkrps_cpp(SEXP tensor_dataSEXP, SEXP factorsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericVector& >::type tensor_data(tensor_dataSEXP);
+    Rcpp::traits::input_parameter< const List& >::type factors(factorsSEXP);
+    rcpp_result_gen = Rcpp::wrap(mttkrps_cpp(tensor_data, factors));
+    return rcpp_result_gen;
+END_RCPP
+}
 // mttkrp_cpp
 NumericMatrix mttkrp_cpp(const NumericVector& tensor_data, const List& factors, int mode);
 RcppExport SEXP _tensory_mttkrp_cpp(SEXP tensor_dataSEXP, SEXP factorsSEXP, SEXP modeSEXP) {
@@ -47,18 +59,6 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const List& >::type factors(factorsSEXP);
     Rcpp::traits::input_parameter< int >::type mode(modeSEXP);
     rcpp_result_gen = Rcpp::wrap(mttkrp_cpp(tensor_data, factors, mode));
-    return rcpp_result_gen;
-END_RCPP
-}
-// mttkrps_cpp
-List mttkrps_cpp(const NumericVector& tensor_data, const List& factors);
-RcppExport SEXP _tensory_mttkrps_cpp(SEXP tensor_dataSEXP, SEXP factorsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const NumericVector& >::type tensor_data(tensor_dataSEXP);
-    Rcpp::traits::input_parameter< const List& >::type factors(factorsSEXP);
-    rcpp_result_gen = Rcpp::wrap(mttkrps_cpp(tensor_data, factors));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -173,8 +173,8 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_tensory_khatri_rao_pair_cpp", (DL_FUNC) &_tensory_khatri_rao_pair_cpp, 3},
     {"_tensory_mttkrp_blas_cpp", (DL_FUNC) &_tensory_mttkrp_blas_cpp, 3},
-    {"_tensory_mttkrp_cpp", (DL_FUNC) &_tensory_mttkrp_cpp, 3},
     {"_tensory_mttkrps_cpp", (DL_FUNC) &_tensory_mttkrps_cpp, 2},
+    {"_tensory_mttkrp_cpp", (DL_FUNC) &_tensory_mttkrp_cpp, 3},
     {"_tensory_fibers_cpp", (DL_FUNC) &_tensory_fibers_cpp, 3},
     {"_tensory_contract_cpp", (DL_FUNC) &_tensory_contract_cpp, 3},
     {"_tensory_mask_cpp", (DL_FUNC) &_tensory_mask_cpp, 2},
