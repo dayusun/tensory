@@ -75,7 +75,14 @@ Tensor <- R6::R6Class("Tensor",
           stop("Product of specified dimensions must match the number of elements in data.")
         }
         if (!is.double(data)) data <- as.double(data)
-        self$data <- array(data, dim = dims)
+        # A plain double array of this shape is already what array() would
+        # return, so keep it instead of copying it (compiled kernels hand back
+        # exactly that, and for a large tensor the copy costs as much as the
+        # kernel itself).
+        if (!identical(attributes(data), list(dim = dims))) {
+          data <- array(data, dim = dims)
+        }
+        self$data <- data
         self$dims <- dims
       }
     },

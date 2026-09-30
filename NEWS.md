@@ -26,6 +26,15 @@ First development version. Everything below is new.
   `mttkrps` 4.5-24x faster depending on the tensor order, and a `cp_als()`
   sweep on 100^3 2.8x faster; with reference BLAS the gains are 1.0-1.3x,
   2-7x and 1.1x.
+* `mttkrp()` in the first and last mode of high-order tensors no longer
+  builds a Khatri-Rao product with `prod(dims) / I_n` rows: the kernel
+  contracts a block of modes whose size is near `sqrt(prod(dims))` first.
+* Creating a `Tensor` from a plain double array of the right shape no longer
+  copies it. Every compiled kernel result went through that copy, which for
+  a large `ttm()` cost as much as the multiplication itself.
+* `gcp_opt(type = "bernoulli-logit")` evaluates `log(1 + exp(m))` without
+  overflowing for large `m`, so L-BFGS-B no longer stops with "needs finite
+  values of 'fn'" when a line search probes a large step.
 * `bench/kernels.R` and `bench/compare.R` time every compiled kernel (and the
   R reference paths) and check that two builds compute the same results.
 

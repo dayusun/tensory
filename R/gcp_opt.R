@@ -28,7 +28,9 @@ NULL
       lower = 0
     ),
     "bernoulli-logit" = list(
-      f = function(x, m) log1p(exp(m)) - x * m,
+      # log(1 + e^m) without overflowing for large m (log1p(exp(m)) is Inf
+      # past m ~ 709, which stops L-BFGS-B mid line search).
+      f = function(x, m) pmax(m, 0) + log1p(exp(-abs(m))) - x * m,
       g = function(x, m) stats::plogis(m) - x,
       lower = -Inf
     ),

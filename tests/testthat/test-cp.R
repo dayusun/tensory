@@ -79,10 +79,11 @@ test_that("two-step mttkrp kernels match the elementwise kernel on every branch"
   skip_if_not(exists("mttkrp_blas_cpp", mode = "function"))
   set.seed(7)
   # Mode 1 / last mode (single dgemm), middle modes with M1 <= M2 and
-  # M1 > M2, orders 2-5, rank 1, and singleton modes.
+  # M1 > M2, orders 2-6, rank 1, and singleton modes.
   shapes <- list(c(6, 5), c(4, 3, 5), c(7, 3, 2), c(2, 3, 9), c(3, 4, 2, 5),
                  c(2, 3, 2, 3, 2), c(5, 1, 4), c(1, 6, 1), c(1, 1, 5, 3),
-                 c(4, 2, 1, 1), c(1, 3, 1, 4, 1))
+                 c(4, 2, 1, 1), c(1, 3, 1, 4, 1), c(2, 1, 3, 2, 1, 2),
+                 c(3, 2, 2, 2, 2, 3))
   for (d in shapes) {
     for (R in c(1L, 3L)) {
       X <- array(stats::rnorm(prod(d)), dim = d)

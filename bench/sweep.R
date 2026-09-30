@@ -9,8 +9,11 @@
 # tensory is first on .libPaths() and records a result checksum per case, so
 # two builds can be compared with bench/compare.R.
 #
-# Each case runs 3-10 iterations (at most ~1 s of repeats after the first);
-# the whole sweep takes several minutes on reference BLAS.
+# Each case runs after a gc() for 5-15 iterations (at most ~1 s of repeats
+# after the first) and records the median and the minimum. For these large,
+# memory-bound calls the median is sensitive to garbage collection and page
+# faults on fresh allocations; the minimum is the more stable number to
+# compare builds on. The whole sweep takes several minutes on reference BLAS.
 
 suppressPackageStartupMessages({
   library(bench)
@@ -42,14 +45,16 @@ checksum <- function(x) {
 }
 
 time_ms <- function(fn) {
-  bm <- bench::mark(fn(), check = FALSE, min_iterations = 3,
-                    max_iterations = 10, min_time = 1, filter_gc = FALSE)
-  as.numeric(bm$median) * 1e3
+  invisible(gc())
+  bm <- bench::mark(fn(), check = FALSE, min_iterations = 5,
+                    max_iterations = 15, min_time = 1, filter_gc = FALSE)
+  c(median = as.numeric(bm$median), min = as.numeric(bm$min)) * 1e3
 }
 
 rows <- list()
 record <- function(op, d, mode, fn) {
   res <- fn()
+  t <- time_ms(fn)
   M1 <- if (is.na(mode)) NA else prod(d[seq_len(mode - 1)])
   M2 <- if (is.na(mode)) NA else prod(d[-seq_len(mode)])
   row <- data.frame(
@@ -57,11 +62,13 @@ record <- function(op, d, mode, fn) {
     shape = paste0(paste(d, collapse = "x"),
                    if (is.na(mode)) "" else paste0(" mode ", mode)),
     order = length(d), mode = mode, M1 = M1, M2 = M2,
-    elements = prod(d), median_ms = time_ms(fn), mem_mb = NA_real_,
+    elements = prod(d), median_ms = t[["median"]], min_ms = t[["min"]],
+    mem_mb = NA_real_,
     checksum = checksum(res),
     stringsAsFactors = FALSE
   )
-  message(sprintf("%-8s %-28s %10.2f ms", op, row$shape, row$median_ms))
+  message(sprintf("%-8s %-28s %10.2f ms (min %.2f)", op, row$shape,
+                  row$median_ms, row$min_ms))
   rows[[length(rows) + 1L]] <<- row
 }
 

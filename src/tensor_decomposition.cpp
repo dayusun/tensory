@@ -207,63 +207,91 @@ std::size_t prod_range(const std::vector<std::size_t> &dims, std::size_t first,
   return p;
 }
 
-// Single-mode MTTKRP on raw storage. X is viewed as M1 x In x M2 (M1 = modes
-// before n, M2 = modes after). Writes the In x R result into V.
+// Single-mode MTTKRP on raw storage; writes the In x R result into V.
+//
+// Pick a block of "outer" modes at one end of the tensor -- a suffix [c, N)
+// with c > n, or a prefix [0, c) with c <= n -- and contract the tensor with
+// the Khatri-Rao product of that block's factors in one dgemm that reads R's
+// storage in place. What is left is a partial tensor T of shape
+// a x In x b (per column r), finished by two dgemv calls per column against
+// the Khatri-Rao products of the remaining modes on each side of n.
+//
+// The block is chosen to minimise Mo + total / Mo (the outer Khatri-Rao
+// product plus the partial tensor, both times R), so Mo lands near
+// sqrt(total). Taking the whole larger side instead -- the obvious choice --
+// builds a Khatri-Rao product of total / In rows for mode 1 and mode N,
+// which dominates the run time for high-order tensors.
 void mttkrp_two_step(const double *X, const Factors &f,
                      const std::vector<std::size_t> &dims, std::size_t n,
                      double *V) {
   const std::size_t N = dims.size();
   const std::size_t R = f.rank;
   const std::size_t In = dims[n];
-  const std::size_t M1 = prod_range(dims, 0, n);
-  const std::size_t M2 = prod_range(dims, n + 1, N);
-  const int r_ = blas_int(R);
-  const int in_ = blas_int(In);
+  const std::size_t total = prod_range(dims, 0, N);
 
-  if (M1 == 1 || M2 == 1) {
-    // Mode 1 (M1 == 1): V = X(In x M2) * KR(right); last mode (M2 == 1):
-    // V = X(M1 x In)' * KR(left) -- one dgemm straight into V. Any modes on
-    // the other side all have size 1 but their factor rows still scale
-    // column r, so fold that 1 x R Khatri-Rao row in afterwards.
-    const bool first = M1 == 1;
-    std::vector<double> K =
-        first ? kr_range(f, dims, n + 1, N) : kr_range(f, dims, 0, n);
-    const int k = blas_int(first ? M2 : M1);
-    gemm(first ? 'N' : 'T', 'N', in_, r_, k, X, first ? in_ : k, K.data(), k,
-         V, in_);
-    const std::vector<double> scale =
-        first ? kr_range(f, dims, 0, n) : kr_range(f, dims, n + 1, N);
-    for (std::size_t r = 0; r < R; ++r) {
-      if (scale[r] == 1.0) continue;
-      for (std::size_t i = 0; i < In; ++i) V[r * In + i] *= scale[r];
+  // Candidate outer blocks. suffix: [c, N) for c in (n, N); prefix: [0, c)
+  // for c in (0, n]. N >= 2 guarantees at least one candidate.
+  bool suffix = true;
+  std::size_t cut = 0;
+  double best = -1.0;
+  for (std::size_t c = n + 1; c < N; ++c) {
+    const double Mo = static_cast<double>(prod_range(dims, c, N));
+    const double cost = Mo + static_cast<double>(total) / Mo;
+    if (best < 0 || cost < best) {
+      best = cost;
+      suffix = true;
+      cut = c;
     }
-    return;
+  }
+  for (std::size_t c = 1; c <= n; ++c) {
+    const double Mo = static_cast<double>(prod_range(dims, 0, c));
+    const double cost = Mo + static_cast<double>(total) / Mo;
+    if (best < 0 || cost < best) {
+      best = cost;
+      suffix = false;
+      cut = c;
+    }
   }
 
-  std::vector<double> KL = kr_range(f, dims, 0, n);
-  std::vector<double> KR = kr_range(f, dims, n + 1, N);
-  const int m1 = blas_int(M1);
-  const int m2 = blas_int(M2);
-  if (M1 <= M2) {
-    // T = X(M1 In x M2) * KR  ->  (M1 In) x R; then per r,
-    // V[, r] = T_r(M1 x In)' * KL[, r].
-    std::vector<double> T(M1 * In * R);
-    const int m1in = blas_int(M1 * In);
-    gemm('N', 'N', m1in, r_, m2, X, m1in, KR.data(), m2, T.data(), m1in);
-    for (std::size_t r = 0; r < R; ++r) {
-      gemv('T', m1, in_, T.data() + r * M1 * In, m1, KL.data() + r * M1,
-           V + r * In);
+  // T_r is a x In x b: `a` = modes between the outer block and n on the
+  // left, `b` = the same on the right.
+  const std::size_t a_first = suffix ? 0 : cut;
+  const std::size_t b_last = suffix ? cut : N;
+  const std::size_t a = prod_range(dims, a_first, n);
+  const std::size_t b = prod_range(dims, n + 1, b_last);
+  const std::size_t rows = a * In * b;
+  const std::size_t Mo = total / rows;
+
+  const int r_ = blas_int(R);
+  const int rows_ = blas_int(rows);
+  const int mo = blas_int(Mo);
+  std::vector<double> T(rows * R);
+  {
+    std::vector<double> Ko =
+        suffix ? kr_range(f, dims, cut, N) : kr_range(f, dims, 0, cut);
+    if (suffix) {
+      // X viewed as rows x Mo (outer modes slowest).
+      gemm('N', 'N', rows_, r_, mo, X, rows_, Ko.data(), mo, T.data(), rows_);
+    } else {
+      // X viewed as Mo x rows (outer modes fastest).
+      gemm('T', 'N', rows_, r_, mo, X, mo, Ko.data(), mo, T.data(), rows_);
     }
-  } else {
-    // T = X(M1 x In M2)' * KL  ->  (In M2) x R; then per r,
-    // V[, r] = T_r(In x M2) * KR[, r].
-    std::vector<double> T(In * M2 * R);
-    const int inm2 = blas_int(In * M2);
-    gemm('T', 'N', inm2, r_, m1, X, m1, KL.data(), m1, T.data(), inm2);
-    for (std::size_t r = 0; r < R; ++r) {
-      gemv('N', in_, m2, T.data() + r * In * M2, in_, KR.data() + r * M2,
-           V + r * In);
-    }
+  }
+
+  // Remaining factors on each side of n. When a side has no modes (or only
+  // singleton modes) its Khatri-Rao product is a 1 x R row -- all ones, or
+  // the singleton factor rows, which still scale the result.
+  const std::vector<double> KA = kr_range(f, dims, a_first, n);
+  const std::vector<double> KB = kr_range(f, dims, n + 1, b_last);
+  const int a_ = blas_int(a);
+  const int b_ = blas_int(b);
+  const int in_ = blas_int(In);
+  const int inb = blas_int(In * b);
+  std::vector<double> u(In * b);
+  for (std::size_t r = 0; r < R; ++r) {
+    // u = T_r(a x In b)' KA_r, then V_r = u(In x b) KB_r.
+    gemv('T', a_, inb, T.data() + r * rows, a_, KA.data() + r * a, u.data());
+    gemv('N', in_, b_, u.data(), in_, KB.data() + r * b, V + r * In);
   }
 }
 
@@ -314,9 +342,7 @@ void finish_group(const std::vector<double> &P, const Factors &f,
 
 } // namespace
 
-// Single-mode MTTKRP: returns the I_n x R matrix. Mode 1 and mode N are one
-// dgemm straight into the result; a middle mode is one dgemm against the
-// larger side's Khatri-Rao product plus R dgemv calls for the smaller side.
+// Single-mode MTTKRP: returns the I_n x R matrix (see mttkrp_two_step).
 // [[Rcpp::export]]
 NumericMatrix mttkrp_blas_cpp(const NumericVector &tensor_data,
                               const List &factors, int mode) {
