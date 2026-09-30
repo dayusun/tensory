@@ -90,6 +90,8 @@ When writing generic mathematical abstractions (like `tensordot`), modern C++ li
 
 ## Overcoming Hardware Bottlenecks: L3 CPU Cache Tiling
 
+> **Status (implemented `ttm` kernel):** the slice strategy above is what `src/tensor_ttm.cpp` does, but the cache tiling described in this section was benchmarked and left out. Timed on the same machine with `bench/`, tiling the `M2 == 1` call into 512-row blocks was 0-13% faster on reference BLAS and 1.2-2.3x *slower* on OpenBLAS, which already blocks for cache inside `dgemm`; untiled slicing was 7-24x faster than the old gather-based kernel on OpenBLAS. The section is kept as the record of the idea. The kernel also gathers into one buffer when `M1 < 4`, where a per-slice `dgemm` is too small to pay for its call overhead.
+
 While the zero-copy slice strategy effectively eliminates the massive overhead of tensor memory transpositions, we discovered a new hardware-level bottleneck when benchmarking massive tensors (e.g., $N = 120 \times 120 \times 120$) on Mode 3.
 
 ### The Problem

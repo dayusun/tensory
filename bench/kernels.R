@@ -51,7 +51,12 @@ add <- function(kernel, shape, backend, fn) {
 for (spec in list(
   list(dims = c(10, 10, 10), J = 5, modes = 1:3),
   list(dims = c(200, 200, 200), J = 20, modes = 1:3),
-  list(dims = c(40, 40, 40, 40), J = 10, modes = c(1, 2, 4))
+  list(dims = c(40, 40, 40, 40), J = 10, modes = c(1, 2, 4)),
+  # last mode with a huge leading extent (single dgemm, M2 == 1)
+  list(dims = c(500, 500, 40), J = 10, modes = 3),
+  # tiny leading extent M1: gather path (M1 = 2) vs per-slice dgemm (M1 = 8)
+  list(dims = c(2, 50, 10000), J = 50, modes = 2),
+  list(dims = c(8, 100, 1250), J = 10, modes = 2)
 )) {
   X <- Tensor$new(rarr(spec$dims))
   for (m in spec$modes) {

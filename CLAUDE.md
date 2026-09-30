@@ -63,19 +63,17 @@ Further algorithms (all R-level, all riding on the accelerated primitives):
 - `R/pqtr.R` — `pqtr()`/`pqtr_cv()`, the **quantile** counterpart of `tepls()` (port of https://github.com/dayusun/PQTR, the MATLAB code for Sun, Qiu, Peng, Guo & Manatunga 2024, JASA). The response enters through the working residual `tau - 1{y < Q_tau(y | Z)}` — the subgradient of the check loss at the nuisance-only quantile fit — after which the per-mode signal matrices and the reduced fit are structurally the same as `spgtr`'s. Three shared helpers make that possible: `.pls_signal()` (in `spgtr.R`, also used by `.spgtr_prepare`), `.spgtr_auto_u`, and `.tepls_simpls_mode`. **`.tepls_simpls_mode` gained an `orth` argument**: `"scores"` (default, de Jong SIMPLS, `w_s' Sigma w_t = 0`) for `tepls`/`spgtr`, `"weights"` (oblique projector `I - Sigma W (W' Sigma W)^-1 W'`, leaving `W'W = I`) for `pqtr`, because that is what `pls_tensor_core.m` does. The two span the same subspace only when the signal matrix is rank one — `test-pqtr.R` pins both the difference and that coincidence. Quantile regressions are solved by `.rq_fit()`, an MM iteration (Hunter & Lange 2000) annealing `eps` from 1e-1 to 1e-8; deliberately no `quantreg` dependency. Documented divergences from MATLAB: MM instead of `fminunc`, predictor centered before scoring (changes `alpha`, not `B`), `pqtr_cv()` takes an explicit `u_grid` instead of enumerating `d^m` combinations, and the eigenvalue-ratio search is capped at 5 candidates per mode instead of `sqrt(n - q)` (the wide search reliably returns the rank-cliff ratio; `.spgtr_auto_u` also now drops numerically-zero eigenvalues before applying the rule). Vignette: `vignettes/pqtr.Rmd`.
 - `src/tensor_spgtr.cpp` — `spgtr_mode_covs_cpp` (per-observation `dsyrk` accumulation of `Sigma_k`, no array permutation; three branches for `L == 1` / `R == 1` / gather) and `spgtr_slpg_cpp` (the whole manifold prox-gradient loop, raw `dgemm`/`dsyev`). Both follow the package's fallback-dispatch rule with `.tepls_mode_covs` and `.env_slpg_r` as the reference R paths — `test-spgtr.R` pins the two against each other, so any edit must touch both. Latent scores deliberately go through `ttm()` rather than a Kronecker product. Measured: the Kronecker path is ~2-3x *faster* for order-2 predictors with tiny `u` (milliseconds either way), but `ttm` wins 1.3x at `u = (3,3,3)` and 5.4x at `u = (5,5,5)` and never allocates the `prod(p) x prod(u)` factor — so `ttm` is the single path, at a few ms cost in the cheap case.
 
-### `ttm` C++ kernel — current vs. target
+### `ttm` C++ kernel
 
-`src/tensor_ttm.cpp` currently does extract → single `dgemm` → scatter:
+`src/tensor_ttm.cpp` views the column-major tensor as `M1 × Ik × M2` (`M1` = product of dims before the mode, `M2` = after) and never permutes it:
 
-1. Gather every contracted-mode fiber into a contiguous `Ik × rest` buffer (`x_mat`).
-2. One `dgemm` call producing the `J × rest` result buffer (`y_mat`).
-3. Scatter back into the result tensor with the contracted dim in its original position.
+1. `M1 == 1` (mode 1): the tensor is already an `Ik × M2` matrix — one `dgemm` on R's storage, `transa = transpose ? "T" : "N"`.
+2. `M1 >= kGatherBelowM1` (4): one `dgemm` per `M2` slice, `Y_s = X_s A'` (`transb = transpose ? "N" : "T"`, `lda = ldc = M1`), written straight into the result. For the last mode `M2 == 1`, so this is a single call.
+3. `1 < M1 < 4`: gather into an `Ik × (M1 M2)` buffer, one `dgemm`, scatter — per-slice calls that small lose to call overhead (2× at `M1 = 2` on reference BLAS; tie at 3; slicing wins from 4 on both reference BLAS and OpenBLAS).
 
-This is **not** zero-copy — there are two intermediate buffers (`x_mat`, `y_mat`); the scatter writes straight into the returned R array (`tensory::alloc_array`). Before adding optimizations, benchmark first; the current single-shot dgemm is straightforward and correct.
+`doc/lesson.md`'s 512-row cache tiling for `M2 == 1 && M1 > 2000` was benchmarked and **deliberately left out**: 0–13% faster on reference BLAS but 1.2–2.3× slower on OpenBLAS, which already blocks for cache inside `dgemm`. Re-benchmark on both BLAS libraries before revisiting it or `kGatherBelowM1`. Every extent goes through `blas_int()` (the `INT_MAX` guard) before being passed to BLAS — keep it when refactoring. `test-ttm.R` pins every branch against `.ttm_matrix_base`.
 
-`doc/lesson.md` describes the *target* design (per-`M2` slice loop, mode-1 single-shot fast path, `M2 == 1 && M1 > 2000` cache-tiled branch with 512-row blocks). That target is not yet in the code — treat lesson.md as design intent, not implementation reference. If you implement the slice loop, preserve the lesson's three-branch structure (mode-1 fast path, middle-mode loop, mode-N cache-tiled).
-
-`dgemm` is invoked with `transa = "T"|"N"` driven by `transpose`, `transb = "N"`, leading dims `lda = transpose ? Ik : J`, `ldb = Ik`, `ldc = J`. There is an explicit `INT_MAX` guard before casting `size_t` extents to the BLAS `int` parameters — keep it when refactoring.
+To compare BLAS libraries on Debian/Ubuntu, `LD_PRELOAD=/usr/lib/x86_64-linux-gnu/<blas|openblas-pthread>/libblas.so.3` selects one per process (`LD_LIBRARY_PATH` is reset by R's `ldpaths`).
 
 ### C++ backend: Rcpp + BLAS, no tensor library
 

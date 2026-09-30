@@ -32,7 +32,7 @@ Compiled kernels take tensor storage as `Rcpp::NumericVector`, which aliases R's
 
 Earlier versions wrapped the storage in `xt::rarray` from `xtensor-r`. The kernels only ever used its data pointer and shape, while xtensor itself required C++20, headers fetched at build time, and an extra result copy in `ttm`, so it was dropped with no change in results or speed.
 
-Reading input is zero-copy. Kernels are not zero-copy overall: some still gather into temporary buffers to reach a BLAS-compatible layout (see `ttm` and `mttkrp` below).
+Reading input is zero-copy. `ttm` is zero-copy end to end except for tensors whose leading extent before the mode is 2 or 3, where it gathers into a buffer because per-slice `dgemm` calls that small are slower. `mttkrp` still gathers the mode-n unfolding into a temporary buffer.
 
 ### 3. Current R vs C++ Split
 
@@ -56,7 +56,7 @@ This split is intentional. The package does not assume that a generic C++ tensor
 
 ### 4. Linear Algebra Backend
 
-The core dense contraction path in `ttm` uses direct BLAS `dgemm` calls from C++ on R-owned storage, with explicit column-major indexing and data reordering. The implementation is optimized around:
+The core dense contraction path in `ttm` uses direct BLAS `dgemm` calls from C++ on R-owned storage: the tensor is viewed as `M1 x Ik x M2`, and each contiguous `M1 x Ik` slice is multiplied in place (one call for mode 1 and for the last mode), so the tensor is never permuted. The implementation is optimized around:
 
 - predictable memory layout
 - explicit stride computation

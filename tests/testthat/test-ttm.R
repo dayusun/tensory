@@ -220,3 +220,37 @@ test_that("ttm full vector contraction returns scalar tensor", {
   expected <- sum(t3d$data * outer(v1, outer(v2, v3)))
   expect_equal(as.numeric(result$data), expected)
 })
+
+test_that("compiled ttm matches the R path on every kernel branch", {
+  skip_if_not(exists("ttm_cpp", mode = "function"))
+  set.seed(42)
+  # mode 1 (single dgemm), tiny leading extent M1 in {2, 3} (gather path),
+  # M1 >= 4 (per-slice dgemm), last mode (M2 == 1), and higher orders.
+  shapes <- list(c(5, 4, 3), c(2, 6, 3), c(3, 6, 3), c(4, 6, 3),
+                 c(2, 3, 4, 5), c(7, 1, 6), c(6, 5), c(8))
+  for (d in shapes) {
+    X <- tensor(array(rnorm(prod(d)), dim = d))
+    for (m in seq_along(d)) {
+      for (tr in c(FALSE, TRUE)) {
+        A <- if (tr) matrix(rnorm(d[m] * 3), d[m], 3) else matrix(rnorm(3 * d[m]), 3, d[m])
+        compiled <- ttm_cpp(X$data, A, m, tr)
+        reference <- .ttm_matrix_base(X, A, m, tr)$data
+        expect_equal(dim(compiled), dim(reference))
+        expect_equal(as.vector(compiled), as.vector(reference), tolerance = 1e-12)
+      }
+    }
+  }
+})
+
+test_that("compiled ttm handles empty extents", {
+  skip_if_not(exists("ttm_cpp", mode = "function"))
+  # Contracted mode of size 0: every entry is an empty sum.
+  out <- ttm_cpp(array(numeric(0), dim = c(3, 0, 2)), matrix(0, 4, 0), 2L, FALSE)
+  expect_equal(dim(out), c(3L, 4L, 2L))
+  expect_true(all(out == 0))
+  # Zero-size output.
+  out <- ttm_cpp(array(numeric(0), dim = c(0, 3)), matrix(1, 2, 3), 2L, FALSE)
+  expect_equal(dim(out), c(0L, 2L))
+  expect_error(ttm_cpp(array(1, c(2, 2)), matrix(1, 2, 3), 1L, FALSE),
+               "does not match")
+})

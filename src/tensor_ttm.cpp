@@ -25,13 +25,52 @@ void F77_NAME(dgemm)(const char *transa, const char *transb, const int *m,
 }
 
 using namespace Rcpp;
-using tensory::column_major_strides;
-using tensory::product_of_dims;
+
+namespace {
+
+void gemm(char transa, char transb, int m, int n, int k, const double *a,
+          int lda, const double *b, int ldb, double *c, int ldc) {
+  const double alpha = 1.0;
+  const double beta = 0.0;
+  F77_NAME(dgemm)(&transa, &transb, &m, &n, &k, &alpha, a, &lda, b, &ldb,
+                  &beta, c, &ldc FCONE FCONE);
+}
+
+int blas_int(std::size_t value) {
+  if (value > static_cast<std::size_t>(INT_MAX)) {
+    Rcpp::stop("Tensor extents exceed BLAS 32-bit integer limit");
+  }
+  return static_cast<int>(value);
+}
+
+// Below this many leading elements (M1) a per-slice dgemm is too small to
+// amortize its call overhead, and gathering into one contiguous buffer wins:
+// at M1 = 2 the slice loop is up to 2x slower on reference BLAS, M1 = 3 is a
+// tie, and from M1 = 4 slicing wins on both reference BLAS and OpenBLAS.
+constexpr std::size_t kGatherBelowM1 = 4;
+
+} // namespace
 
 /**
  * @brief Tensor-times-matrix operation with optional transpose
+ *
+ * Views the column-major tensor as M1 x Ik x M2 (M1 = product of the dims
+ * before `mode`, M2 = product of those after) and computes the result
+ * M1 x J x M2 without permuting the tensor:
+ *
+ *  - M1 == 1 (mode 1): the tensor is already an Ik x M2 matrix, so one dgemm
+ *    Y = A X reads R's storage in place.
+ *  - M1 >= kGatherBelowM1: every M2 slice is a contiguous M1 x Ik matrix, so
+ *    one dgemm per slice, Y_s = X_s A', writes straight into the result. For
+ *    the last mode M2 == 1 and this is a single dgemm. (doc/lesson.md's
+ *    512-row cache tiling of that call is deliberately absent: it was 0-13%
+ *    faster on reference BLAS but 1.2-2.3x slower on OpenBLAS, which already
+ *    blocks for cache internally.)
+ *  - 1 < M1 < kGatherBelowM1: gather into an Ik x (M1 M2) buffer, one dgemm,
+ *    scatter back.
+ *
  * @param tensor_data Input tensor as an R array (aliased, not copied)
- * @param matrix Input matrix
+ * @param matrix Input matrix, J x Ik (or Ik x J when `transpose`)
  * @param mode Mode of the tensor to contract with the matrix
  * @param transpose Whether to transpose the matrix before multiplication
  * @return Resulting tensor after multiplication
@@ -42,101 +81,96 @@ NumericVector ttm_cpp(const NumericVector &tensor_data,
                       bool transpose = false) {
   try {
     const std::size_t axis = static_cast<std::size_t>(mode - 1);
-    std::vector<std::size_t> tensor_shape = tensory::array_dims(tensor_data);
-    const std::size_t n_dim = tensor_shape.size();
+    const std::vector<std::size_t> dims = tensory::array_dims(tensor_data);
 
-    if (axis >= n_dim) {
+    if (axis >= dims.size()) {
       Rcpp::stop("mode is out of bounds for the tensor order");
     }
 
-    const std::size_t Ik = tensor_shape[axis];
+    const std::size_t Ik = dims[axis];
     const std::size_t J = transpose ? static_cast<std::size_t>(matrix.ncol())
                                     : static_cast<std::size_t>(matrix.nrow());
-
-    std::vector<std::size_t> final_shape = tensor_shape;
-    final_shape[axis] = J;
-
-    const std::size_t total_size = product_of_dims(tensor_shape);
-    const std::size_t rest = total_size / Ik;
-
-    auto input_strides = column_major_strides(tensor_shape);
-    auto output_strides = column_major_strides(final_shape);
-
-    std::vector<std::size_t> other_modes;
-    std::vector<std::size_t> other_dims;
-    other_modes.reserve(n_dim > 0 ? n_dim - 1 : 0);
-    other_dims.reserve(n_dim > 0 ? n_dim - 1 : 0);
-    for (std::size_t i = 0; i < n_dim; ++i) {
-      if (i == axis) {
-        continue;
-      }
-      other_modes.push_back(i);
-      other_dims.push_back(tensor_shape[i]);
+    const std::size_t contracted = transpose
+                                       ? static_cast<std::size_t>(matrix.nrow())
+                                       : static_cast<std::size_t>(matrix.ncol());
+    if (contracted != Ik) {
+      Rcpp::stop("matrix does not match the tensor dimension of the mode");
     }
 
-    std::vector<double> x_mat(total_size);
-    const double *tensor_ptr = REAL(tensor_data);
-    const std::size_t axis_input_stride = input_strides[axis];
+    std::size_t M1 = 1;
+    for (std::size_t i = 0; i < axis; ++i) M1 *= dims[i];
+    std::size_t M2 = 1;
+    for (std::size_t i = axis + 1; i < dims.size(); ++i) M2 *= dims[i];
 
-    for (std::size_t rest_index = 0; rest_index < rest; ++rest_index) {
-      std::size_t tmp = rest_index;
-      std::size_t base_input = 0;
+    std::vector<std::size_t> out_dims = dims;
+    out_dims[axis] = J;
+    NumericVector result = tensory::alloc_array(out_dims);
+    double *Y = REAL(result);
+    const std::size_t out_size = M1 * J * M2;
 
-      for (std::size_t p = 0; p < other_modes.size(); ++p) {
-        const std::size_t coord = tmp % other_dims[p];
-        tmp /= other_dims[p];
-        base_input += coord * input_strides[other_modes[p]];
+    if (out_size == 0) {
+      return result;
+    }
+    if (Ik == 0) {
+      // Empty contraction: every entry is an empty sum.
+      std::fill(Y, Y + out_size, 0.0);
+      return result;
+    }
+
+    const double *X = REAL(tensor_data);
+    const double *A = REAL(matrix);
+    const int j = blas_int(J);
+    const int ik = blas_int(Ik);
+    // Leading dimension of A as stored (J x Ik, or Ik x J when transposed).
+    const int lda = transpose ? ik : j;
+
+    if (M1 == 1) {
+      gemm(transpose ? 'T' : 'N', 'N', j, blas_int(M2), ik, A, lda, X, ik, Y,
+           j);
+      return result;
+    }
+
+    if (M1 >= kGatherBelowM1) {
+      const int m1 = blas_int(M1);
+      blas_int(M2);
+      const char transb = transpose ? 'N' : 'T';
+      const std::size_t x_slice = M1 * Ik;
+      const std::size_t y_slice = M1 * J;
+      for (std::size_t s = 0; s < M2; ++s) {
+        gemm('N', transb, m1, j, ik, X + s * x_slice, m1, A, lda,
+             Y + s * y_slice, m1);
       }
+      return result;
+    }
 
-      const std::size_t column_offset = Ik * rest_index;
-      for (std::size_t k_idx = 0; k_idx < Ik; ++k_idx) {
-        x_mat[column_offset + k_idx] = tensor_ptr[base_input + k_idx * axis_input_stride];
+    // Tiny M1: gather columns (m1, s) of the mode unfolding into a contiguous
+    // Ik x (M1 M2) buffer, multiply once, scatter the J x (M1 M2) result.
+    const std::size_t rest = M1 * M2;
+    const int n = blas_int(rest);
+    std::vector<double> x_mat(Ik * rest);
+    for (std::size_t s = 0; s < M2; ++s) {
+      for (std::size_t k = 0; k < Ik; ++k) {
+        const double *src = X + (s * Ik + k) * M1;
+        for (std::size_t i = 0; i < M1; ++i) {
+          x_mat[(s * M1 + i) * Ik + k] = src[i];
+        }
       }
     }
 
     std::vector<double> y_mat(J * rest);
+    gemm(transpose ? 'T' : 'N', 'N', j, n, ik, A, lda, x_mat.data(), ik,
+         y_mat.data(), j);
 
-    const std::size_t int_max = static_cast<std::size_t>(INT_MAX);
-    if (J > int_max || rest > int_max || Ik > int_max) {
-      Rcpp::stop("Tensor extents exceed BLAS 32-bit integer limit");
-    }
-
-    const char *transa = transpose ? "T" : "N";
-    const char *transb = "N";
-    const int m = static_cast<int>(J);
-    const int n = static_cast<int>(rest);
-    const int k = static_cast<int>(Ik);
-    const double alpha = 1.0;
-    const double beta = 0.0;
-    const int lda = static_cast<int>(transpose ? Ik : J);
-    const int ldb = static_cast<int>(Ik);
-    const int ldc = static_cast<int>(J);
-    const double *mat_ptr = REAL(matrix);
-
-    F77_NAME(dgemm)(transa, transb, &m, &n, &k, &alpha, mat_ptr, &lda,
-                    x_mat.data(), &ldb, &beta, y_mat.data(), &ldc FCONE FCONE);
-
-    NumericVector result_tensor = tensory::alloc_array(final_shape);
-    double *result_ptr = REAL(result_tensor);
-    const std::size_t axis_output_stride = output_strides[axis];
-
-    for (std::size_t rest_index = 0; rest_index < rest; ++rest_index) {
-      std::size_t tmp = rest_index;
-      std::size_t base_output = 0;
-
-      for (std::size_t p = 0; p < other_modes.size(); ++p) {
-        const std::size_t coord = tmp % other_dims[p];
-        tmp /= other_dims[p];
-        base_output += coord * output_strides[other_modes[p]];
-      }
-
-      const std::size_t column_offset = J * rest_index;
-      for (std::size_t j_idx = 0; j_idx < J; ++j_idx) {
-        result_ptr[base_output + j_idx * axis_output_stride] = y_mat[column_offset + j_idx];
+    for (std::size_t s = 0; s < M2; ++s) {
+      for (std::size_t jj = 0; jj < J; ++jj) {
+        double *dst = Y + (s * J + jj) * M1;
+        for (std::size_t i = 0; i < M1; ++i) {
+          dst[i] = y_mat[(s * M1 + i) * J + jj];
+        }
       }
     }
 
-    return result_tensor;
+    return result;
   } catch (const std::exception &e) {
     Rcpp::stop("Error in optimized ttm_cpp: " + std::string(e.what()));
   }

@@ -11,6 +11,12 @@ First development version. Everything below is new.
   its result a second time on the way back to R. Results are unchanged.
   Integer and logical arrays passed to a kernel are still converted to double,
   now without the "Coerced object" warning xtensor-r emitted.
+* `ttm` is faster: the compiled kernel multiplies each contiguous slice of the
+  tensor in place instead of first copying it into a gathered buffer (and
+  scattering the result back). On a 200 x 200 x 200 tensor with J = 20 it is
+  6-9x faster with OpenBLAS and 1.4-1.6x faster with reference BLAS; results
+  are unchanged. It also now returns zeros, instead of dividing by zero, when
+  the contracted mode has size 0.
 * `bench/kernels.R` and `bench/compare.R` time every compiled kernel (and the
   R reference paths) and check that two builds compute the same results.
 
