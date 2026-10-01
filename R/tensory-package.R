@@ -16,7 +16,7 @@
 #'         \code{permute()}, and \code{contract()}
 #'   \item Dense helpers for unfolding, vectorization, symmetry checks, and
 #'         matricized tensor products
-#'   \item Optional C++ acceleration hooks via \code{xtensor} and \code{Rcpp}
+#'   \item Optional compiled acceleration via \code{Rcpp} and BLAS
 #' }
 #'
 #' @section Main Classes:

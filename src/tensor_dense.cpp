@@ -1,29 +1,16 @@
-#include "xtensor-r/rarray.hpp"
-#include "xtensor/containers/xarray.hpp"
+#include "tensor_array.h"
 #include <Rcpp.h>
 #include <algorithm>
-#include <numeric>
 #include <vector>
 
 using namespace Rcpp;
+using tensory::column_major_strides;
+using tensory::product_of_dims;
 
 namespace {
 
-std::vector<std::size_t> shape_vec(const xt::rarray<double>& tensor_data) {
-  return std::vector<std::size_t>(tensor_data.shape().begin(), tensor_data.shape().end());
-}
-
-std::vector<std::size_t> column_major_strides(const std::vector<std::size_t>& dims) {
-  std::vector<std::size_t> strides(dims.size(), 1);
-  for (std::size_t i = 1; i < dims.size(); ++i) {
-    strides[i] = strides[i - 1] * dims[i - 1];
-  }
-  return strides;
-}
-
-std::size_t product_of_dims(const std::vector<std::size_t>& dims) {
-  return std::accumulate(dims.begin(), dims.end(), static_cast<std::size_t>(1),
-                         std::multiplies<std::size_t>());
+std::vector<std::size_t> shape_vec(const NumericVector& tensor_data) {
+  return tensory::array_dims(tensor_data);
 }
 
 std::vector<std::size_t> decode_linear_index(std::size_t idx,
@@ -45,7 +32,7 @@ std::size_t encode_linear_index(const std::vector<std::size_t>& coord,
   return idx;
 }
 
-List contract_impl(const xt::rarray<double>& tensor_data, int mode1, int mode2) {
+List contract_impl(const NumericVector& tensor_data, int mode1, int mode2) {
   std::vector<std::size_t> dims = shape_vec(tensor_data);
   const std::size_t i = static_cast<std::size_t>(mode1 - 1);
   const std::size_t j = static_cast<std::size_t>(mode2 - 1);
@@ -62,7 +49,7 @@ List contract_impl(const xt::rarray<double>& tensor_data, int mode1, int mode2) 
   const std::size_t n = dims[i];
   const std::size_t out_size = new_dims.empty() ? 1 : product_of_dims(new_dims);
   NumericVector out(out_size, 0.0);
-  const double* data_ptr = tensor_data.data();
+  const double* data_ptr = REAL(tensor_data);
 
   for (std::size_t out_idx = 0; out_idx < out_size; ++out_idx) {
     std::size_t tmp = out_idx;
@@ -90,11 +77,11 @@ List contract_impl(const xt::rarray<double>& tensor_data, int mode1, int mode2) 
 } // namespace
 
 // [[Rcpp::export]]
-NumericMatrix mttkrp_cpp(const xt::rarray<double>& tensor_data, const List& factors, int mode) {
+NumericMatrix mttkrp_cpp(const NumericVector& tensor_data, const List& factors, int mode) {
   const std::vector<std::size_t> dims = shape_vec(tensor_data);
   const std::size_t n_dim = dims.size();
   const std::size_t skip = static_cast<std::size_t>(mode - 1);
-  const double* data_ptr = tensor_data.data();
+  const double* data_ptr = REAL(tensor_data);
   const auto strides = column_major_strides(dims);
   const std::size_t total = product_of_dims(dims);
 
@@ -146,23 +133,12 @@ NumericMatrix mttkrp_cpp(const xt::rarray<double>& tensor_data, const List& fact
 }
 
 // [[Rcpp::export]]
-List mttkrps_cpp(const xt::rarray<double>& tensor_data, const List& factors) {
-  std::vector<std::size_t> dims = shape_vec(tensor_data);
-  const std::size_t n_dim = dims.size();
-  List out(n_dim);
-  for (std::size_t mode = 0; mode < n_dim; ++mode) {
-    out[mode] = mttkrp_cpp(tensor_data, factors, static_cast<int>(mode + 1));
-  }
-  return out;
-}
-
-// [[Rcpp::export]]
-NumericMatrix fibers_cpp(const xt::rarray<double>& tensor_data, int mode, const IntegerMatrix& midx) {
+NumericMatrix fibers_cpp(const NumericVector& tensor_data, int mode, const IntegerMatrix& midx) {
   const std::vector<std::size_t> dims = shape_vec(tensor_data);
   const std::size_t n_dim = dims.size();
   const std::size_t axis = static_cast<std::size_t>(mode - 1);
   const auto strides = column_major_strides(dims);
-  const double* data_ptr = tensor_data.data();
+  const double* data_ptr = REAL(tensor_data);
 
   if (axis >= n_dim) {
     stop("mode must be a valid tensor mode");
@@ -199,17 +175,17 @@ NumericMatrix fibers_cpp(const xt::rarray<double>& tensor_data, int mode, const 
 }
 
 // [[Rcpp::export]]
-List contract_cpp(const xt::rarray<double>& tensor_data, int mode1, int mode2) {
+List contract_cpp(const NumericVector& tensor_data, int mode1, int mode2) {
   return contract_impl(tensor_data, mode1, mode2);
 }
 
 // [[Rcpp::export]]
-NumericVector mask_cpp(const xt::rarray<double>& tensor_data, const xt::rarray<double>& mask_data) {
+NumericVector mask_cpp(const NumericVector& tensor_data, const NumericVector& mask_data) {
   const std::vector<std::size_t> dims = shape_vec(tensor_data);
   const std::vector<std::size_t> mask_dims = shape_vec(mask_data);
   const std::size_t total = product_of_dims(mask_dims);
-  const double* data_ptr = tensor_data.data();
-  const double* mask_ptr = mask_data.data();
+  const double* data_ptr = REAL(tensor_data);
+  const double* mask_ptr = REAL(mask_data);
   std::vector<double> out;
   out.reserve(total);
 
@@ -247,11 +223,11 @@ NumericVector mask_cpp(const xt::rarray<double>& tensor_data, const xt::rarray<d
 }
 
 // [[Rcpp::export]]
-bool issymmetric_cpp(const xt::rarray<double>& tensor_data, const List& grps) {
+bool issymmetric_cpp(const NumericVector& tensor_data, const List& grps) {
   const std::vector<std::size_t> dims = shape_vec(tensor_data);
   const auto strides = column_major_strides(dims);
   const std::size_t total = product_of_dims(dims);
-  const double* data_ptr = tensor_data.data();
+  const double* data_ptr = REAL(tensor_data);
 
   for (R_xlen_t g = 0; g < grps.size(); ++g) {
     IntegerVector grp = grps[g];

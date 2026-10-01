@@ -9,12 +9,12 @@ mttkrp_blas_cpp <- function(tensor_data, factors, mode) {
     .Call(`_tensory_mttkrp_blas_cpp`, tensor_data, factors, mode)
 }
 
-mttkrp_cpp <- function(tensor_data, factors, mode) {
-    .Call(`_tensory_mttkrp_cpp`, tensor_data, factors, mode)
-}
-
 mttkrps_cpp <- function(tensor_data, factors) {
     .Call(`_tensory_mttkrps_cpp`, tensor_data, factors)
+}
+
+mttkrp_cpp <- function(tensor_data, factors, mode) {
+    .Call(`_tensory_mttkrp_cpp`, tensor_data, factors, mode)
 }
 
 fibers_cpp <- function(tensor_data, mode, midx) {
@@ -31,6 +31,22 @@ mask_cpp <- function(tensor_data, mask_data) {
 
 issymmetric_cpp <- function(tensor_data, grps) {
     .Call(`_tensory_issymmetric_cpp`, tensor_data, grps)
+}
+
+dense_dot_cpp <- function(x, y) {
+    .Call(`_tensory_dense_dot_cpp`, x, y)
+}
+
+gram_cpp <- function(tensor_data, mode) {
+    .Call(`_tensory_gram_cpp`, tensor_data, mode)
+}
+
+t_scale_cpp <- function(tensor_data, s, modes) {
+    .Call(`_tensory_t_scale_cpp`, tensor_data, s, modes)
+}
+
+symmetrize_cpp <- function(tensor_data, grp) {
+    .Call(`_tensory_symmetrize_cpp`, tensor_data, grp)
 }
 
 #' @keywords internal

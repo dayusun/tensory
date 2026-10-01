@@ -6,7 +6,7 @@
 \alias{tensory}
 \title{tensory: Tensory - Modern Tensor Operations for R}
 \description{
-Provides dense and decomposed tensor classes for R together with operations that use an API similar to the MATLAB Tensor Toolbox, including matricized products, contractions, reshaping helpers, and symmetry utilities. Selected kernels can delegate to `xtensor`/`Rcpp` backends for performance.
+Provides dense and decomposed tensor classes for R together with operations that use an API similar to the MATLAB Tensor Toolbox, including matricized products, contractions, reshaping helpers, and symmetry utilities. Selected kernels can delegate to compiled 'Rcpp' + 'BLAS' code for performance.
 
 \code{tensory} provides dense and decomposed tensor classes together with an API
 similar to the MATLAB Tensor Toolbox for R users.
@@ -26,7 +26,7 @@ Toolbox such as \code{ttm()}, \code{ttt()}, \code{ttv()},
 \code{permute()}, and \code{contract()}
 \item Dense helpers for unfolding, vectorization, symmetry checks, and
 matricized tensor products
-\item Optional C++ acceleration hooks via \code{xtensor} and \code{Rcpp}
+\item Optional compiled acceleration via \code{Rcpp} and BLAS
 }
 }
 

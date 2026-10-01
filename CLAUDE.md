@@ -13,9 +13,11 @@ R package built with roxygen2 + Rcpp + testthat 3.
 - Run a single test file: `R -e 'devtools::test(filter = "ttm")'` (matches `tests/testthat/test-ttm.R`)
 - Full check (run before tagging a release): `R -e 'devtools::check()'`
 - Build vignettes: `R -e 'devtools::build_vignettes()'`
-- Re-vendor xtensor / xtl / xsimd / xtensor-blas headers into `inst/include/` from upstream tags: `bash inst/tools/vendor` (only needed when bumping pinned versions inside that script; xtensor-r is intentionally not re-fetched there)
+- Benchmark the compiled kernels against an installed build: `R_LIBS=<lib> Rscript bench/kernels.R out.csv label`, then `Rscript bench/compare.R old.csv new.csv` (prints speedups and exits non-zero if the two builds' results differ). Install each build with `R CMD INSTALL --library=<lib> .` so it gets R's normal `-O2` flags.
+- Large-tensor sweep of `ttm`/`mttkrp`/`mttkrps` over every mode of order-3 to order-6 tensors (~64M elements; needs ~5 GB RAM for the old kernels): `R_LIBS=<lib> Rscript bench/sweep.R out.csv label`, compared the same way with `bench/compare.R`.
+- R-side allocation audit (bytes R allocates per dense op beyond its result, in units of the input tensor): `R_LIBS=<lib> Rscript bench/alloc.R [out.csv]`.
 
-The C++ kernels require a C++20 compiler. `src/Makevars` sets `CXX_STD = CXX20` and nothing else beyond the include path — optimization flags come from R's own `CXX20FLAGS` (typically `-O2`), because `R CMD check` warns about any `-O`/`-f`/`-m` tuning set in `PKG_CXXFLAGS`. Put local tuning (e.g. `-funroll-loops`) in `~/.R/Makevars`. Note `pkgbuild::compile_dll()` defaults to a `-O0` debug build — pass `debug = FALSE` before benchmarking.
+The C++ kernels need only Rcpp and a C++11-or-later compiler; no headers are vendored or fetched. `src/Makevars` sets only `PKG_LIBS` — the language standard is R's default and optimization flags come from R's own `CXXFLAGS`/`CXX17FLAGS` (typically `-O2`), because `R CMD check` warns about any `-O`/`-f`/`-m` tuning set in `PKG_CXXFLAGS`. Put local tuning (e.g. `-funroll-loops`) in `~/.R/Makevars`. Note `pkgbuild::compile_dll()` defaults to a `-O0` debug build — pass `debug = FALSE` before benchmarking.
 
 ## Architecture
 
@@ -40,10 +42,10 @@ Structured (non-densifying) implementations exist for `fnorm`/`innerprod`/`nvecs
 
 `doc/architecture.md` is the authoritative design doc. The split:
 
-- Compiled kernels live in three `.cpp` files: `src/tensor_ttm.cpp` (`ttm_cpp`, `ttm_multiple_cpp`), `src/tensor_dense.cpp` (`mttkrp_cpp`, `mttkrps_cpp`, `fibers_cpp`, `contract_cpp`, `mask_cpp`, `issymmetric_cpp`), and `src/tensor_decomposition.cpp` (`khatri_rao_pair_cpp`, `mttkrp_blas_cpp`). Every kernel takes tensor storage as `xt::rarray<double>` wrapping R's SEXP.
-- **Every C++ kernel is optional.** The R method keeps a full pure-R implementation and delegates only when the compiled symbol is present, guarded by `if (exists("<fn>_cpp", mode = "function")) return(<fn>_cpp(...))` before the R fallback (see `R/tensor_dense_methods.R`, `R/tensor_ttm.R`, `R/tensor_operations.R`). When editing either side, keep the two paths behaviorally identical — tests run against whichever is compiled. `mttkrp` tries `mttkrp_blas_cpp` first, then `mttkrp_cpp`, then R.
+- Compiled kernels live in five `.cpp` files: `src/tensor_ttm.cpp` (`ttm_cpp`, `ttm_multiple_cpp`), `src/tensor_dense.cpp` (`mttkrp_cpp`, `fibers_cpp`, `contract_cpp`, `mask_cpp`, `issymmetric_cpp`), `src/tensor_decomposition.cpp` (`khatri_rao_pair_cpp`, `mttkrp_blas_cpp`, `mttkrps_cpp`), and `src/tensor_reduce.cpp` (`dense_dot_cpp` for `fnorm`/`innerprod`/`ttt`, `gram_cpp` for `nvecs`, `t_scale_cpp`, `symmetrize_cpp`). `src/tensor_spgtr.cpp` holds the `spgtr` kernels. Every kernel takes tensor storage as `Rcpp::NumericVector`, which aliases R's buffer without copying; shared shape helpers are in `src/tensor_array.h`.
+- **Every C++ kernel is optional.** The R method keeps a full pure-R implementation and delegates only when the compiled symbol is present, guarded by `if (exists("<fn>_cpp", mode = "function")) return(<fn>_cpp(...))` before the R fallback (see `R/tensor_dense_methods.R`, `R/tensor_ttm.R`, `R/tensor_operations.R`). When editing either side, keep the two paths behaviorally identical — tests run against whichever is compiled. `mttkrp` tries `mttkrp_blas_cpp` first, then `mttkrp_cpp`, then R; `mttkrps` tries `mttkrps_cpp`, then per-mode `mttkrp_blas_cpp`, then R.
 - `ttt` (tensor-times-tensor) is deliberately R-only: it uses `reshape` + `permute` + `%*%`. A prior C++ `xt::linalg::tensordot` prototype was up to 18× slower than R's native `aperm` + BLAS path, so the R implementation is the correct one. Do not rewrite `ttt` in C++ without benchmarks proving a win on representative shapes — see `doc/lesson.md`.
-- `nvecs`, `symmetrize`, and the arithmetic/operator methods remain R-only in `R/tensor_dense_methods.R` / `R/tensor_operations.R` — future C++ candidates only *if* benchmarks justify it; do not move them speculatively.
+- The arithmetic/operator methods remain R-only in `R/tensor_class.R` / `R/tensor_operations.R` — they already allocate only their result. `nvecs` (Gram matrix + `eigen`, as MATLAB does) and `symmetrize` got compiled kernels because `bench/alloc.R` showed 5x and 25x tensor-sized excess allocation; do not move other functions to C++ without such a measurement.
 
 ### Decomposition layer
 
@@ -63,25 +65,43 @@ Further algorithms (all R-level, all riding on the accelerated primitives):
 - `R/pqtr.R` — `pqtr()`/`pqtr_cv()`, the **quantile** counterpart of `tepls()` (port of https://github.com/dayusun/PQTR, the MATLAB code for Sun, Qiu, Peng, Guo & Manatunga 2024, JASA). The response enters through the working residual `tau - 1{y < Q_tau(y | Z)}` — the subgradient of the check loss at the nuisance-only quantile fit — after which the per-mode signal matrices and the reduced fit are structurally the same as `spgtr`'s. Three shared helpers make that possible: `.pls_signal()` (in `spgtr.R`, also used by `.spgtr_prepare`), `.spgtr_auto_u`, and `.tepls_simpls_mode`. **`.tepls_simpls_mode` gained an `orth` argument**: `"scores"` (default, de Jong SIMPLS, `w_s' Sigma w_t = 0`) for `tepls`/`spgtr`, `"weights"` (oblique projector `I - Sigma W (W' Sigma W)^-1 W'`, leaving `W'W = I`) for `pqtr`, because that is what `pls_tensor_core.m` does. The two span the same subspace only when the signal matrix is rank one — `test-pqtr.R` pins both the difference and that coincidence. Quantile regressions are solved by `.rq_fit()`, an MM iteration (Hunter & Lange 2000) annealing `eps` from 1e-1 to 1e-8; deliberately no `quantreg` dependency. Documented divergences from MATLAB: MM instead of `fminunc`, predictor centered before scoring (changes `alpha`, not `B`), `pqtr_cv()` takes an explicit `u_grid` instead of enumerating `d^m` combinations, and the eigenvalue-ratio search is capped at 5 candidates per mode instead of `sqrt(n - q)` (the wide search reliably returns the rank-cliff ratio; `.spgtr_auto_u` also now drops numerically-zero eigenvalues before applying the rule). Vignette: `vignettes/pqtr.Rmd`.
 - `src/tensor_spgtr.cpp` — `spgtr_mode_covs_cpp` (per-observation `dsyrk` accumulation of `Sigma_k`, no array permutation; three branches for `L == 1` / `R == 1` / gather) and `spgtr_slpg_cpp` (the whole manifold prox-gradient loop, raw `dgemm`/`dsyev`). Both follow the package's fallback-dispatch rule with `.tepls_mode_covs` and `.env_slpg_r` as the reference R paths — `test-spgtr.R` pins the two against each other, so any edit must touch both. Latent scores deliberately go through `ttm()` rather than a Kronecker product. Measured: the Kronecker path is ~2-3x *faster* for order-2 predictors with tiny `u` (milliseconds either way), but `ttm` wins 1.3x at `u = (3,3,3)` and 5.4x at `u = (5,5,5)` and never allocates the `prod(p) x prod(u)` factor — so `ttm` is the single path, at a few ms cost in the cheap case.
 
-### `ttm` C++ kernel — current vs. target
+### `ttm` C++ kernel
 
-`src/tensor_ttm.cpp` currently does extract → single `dgemm` → scatter:
+`src/tensor_ttm.cpp` views the column-major tensor as `M1 × Ik × M2` (`M1` = product of dims before the mode, `M2` = after) and never permutes it:
 
-1. Gather every contracted-mode fiber into a contiguous `Ik × rest` buffer (`x_mat`).
-2. One `dgemm` call producing the `J × rest` result buffer (`y_mat`).
-3. Scatter back into the result tensor with the contracted dim in its original position.
+1. `M1 == 1` (mode 1): the tensor is already an `Ik × M2` matrix — one `dgemm` on R's storage, `transa = transpose ? "T" : "N"`.
+2. `M1 >= kGatherBelowM1` (4): one `dgemm` per `M2` slice, `Y_s = X_s A'` (`transb = transpose ? "N" : "T"`, `lda = ldc = M1`), written straight into the result. For the last mode `M2 == 1`, so this is a single call.
+3. `1 < M1 < 4`: gather into an `Ik × (M1 M2)` buffer, one `dgemm`, scatter — per-slice calls that small lose to call overhead (2× at `M1 = 2` on reference BLAS; tie at 3; slicing wins from 4 on both reference BLAS and OpenBLAS).
 
-This is **not** zero-copy — there are two intermediate copies plus the `xt::xarray` → `xt::rarray` allocation. Before adding optimizations, benchmark first; the current single-shot dgemm is straightforward and correct.
+`doc/lesson.md`'s 512-row cache tiling for `M2 == 1 && M1 > 2000` was benchmarked and **deliberately left out**: 0–13% faster on reference BLAS but 1.2–2.3× slower on OpenBLAS, which already blocks for cache inside `dgemm`. Re-benchmark on both BLAS libraries before revisiting it or `kGatherBelowM1`. Every extent goes through `blas_int()` (the `INT_MAX` guard) before being passed to BLAS — keep it when refactoring. `test-ttm.R` pins every branch against `.ttm_matrix_base`.
 
-`doc/lesson.md` describes the *target* design (per-`M2` slice loop, mode-1 single-shot fast path, `M2 == 1 && M1 > 2000` cache-tiled branch with 512-row blocks). That target is not yet in the code — treat lesson.md as design intent, not implementation reference. If you implement the slice loop, preserve the lesson's three-branch structure (mode-1 fast path, middle-mode loop, mode-N cache-tiled).
+To compare BLAS libraries on Debian/Ubuntu, `LD_PRELOAD=/usr/lib/x86_64-linux-gnu/<blas|openblas-pthread>/libblas.so.3` selects one per process (`LD_LIBRARY_PATH` is reset by R's `ldpaths`).
 
-`dgemm` is invoked with `transa = "T"|"N"` driven by `transpose`, `transb = "N"`, leading dims `lda = transpose ? Ik : J`, `ldb = Ik`, `ldc = J`. There is an explicit `INT_MAX` guard before casting `size_t` extents to the BLAS `int` parameters — keep it when refactoring.
+### `mttkrp` C++ kernels
 
-### xtensor integration
+Both are two-step MTTKRPs (Phan, Tichavský & Cichocki 2013) in `src/tensor_decomposition.cpp`; neither forms the mode-`n` unfolding nor the full `prod(I_k, k != n) × R` Khatri–Rao product. `kr_range(first, last)` builds the Khatri–Rao product of a consecutive block of modes, rows in column-major order with mode `first` fastest.
 
-`inst/include/` vendors `xtensor`, `xtl`, `xsimd`, `xtensor-r`, `xtensor-blas`, `xflens`. `inst/include/tensory.h` exposes only `xtensor-r/rarray.hpp` and `roptional.hpp` — the C++ side uses `xt::rarray` to wrap R-owned SEXP storage without copying, then drops to raw `dgemm` for the contraction core. This is **handcrafted xtensor + BLAS**, not the high-level `xt::linalg::tensordot` path.
+- `mttkrp_blas_cpp` (`mttkrp_two_step`) picks an "outer" block of modes at one end of the tensor — a suffix `[c, N)` with `c > n` or a prefix `[0, c)` with `c <= n` — minimizing `Mo + total / Mo`, so `Mo` lands near `sqrt(total)`. One `dgemm` contracts R's storage with that block's Khatri–Rao product, leaving an `a × In × b` partial per column; two `dgemv` calls per column finish it against the Khatri–Rao products of the modes left on each side of `n`. Those side products are always applied, even when a side has only singleton modes: their 1 × R rows are **not** all ones (dropping them was a real bug caught by `test-cp.R`'s singleton shapes). Taking the whole larger side as the outer block instead builds a `total / In`-row Khatri–Rao product for mode 1 and mode N, which dominated high-order runs.
+- `mttkrps_cpp` (all modes, fixed factors) splits the modes into `[0, s)` / `[s, N)` with `max(M_L, M_R)` minimized, does one `dgemm` per side (two passes over the tensor instead of `N`), and `finish_group()` completes each mode from its side's `M_side × R` partial tensor.
+
+`test-cp.R` pins both against the elementwise `mttkrp_cpp` across orders 2–5, ranks 1 and 3, and singleton modes. `cp_als` still calls `mttkrp()` once per mode because its factors change between modes; a dimension-tree ALS (reuse one side's partial across that side's updates) is the next step if `cp_als` needs more speed.
+
+### C++ backend: Rcpp + BLAS, no tensor library
+
+Kernels read R arrays through `Rcpp::NumericVector` (zero-copy; the shape is the `dim` attribute, via `tensory::array_dims`), allocate results with `tensory::alloc_array` and write into them in place, and call Fortran BLAS/LAPACK (`dgemm`, `dsyrk`, `dsyev`) directly. xtensor was used previously and removed: the kernels only used its data pointer and shape, while it forced C++20 and build-time header fetching. `inst/include/tensory.h` is included by `RcppExports.cpp` and pulls in only Rcpp. Do not reintroduce a C++ tensor library without a benchmark (`bench/`) showing it beats BLAS on R's storage for a specific kernel. Performance comes from the BLAS R links against and from how little memory a kernel moves around each BLAS call.
 
 `src/Makevars` links `$(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)` so the kernel uses whatever BLAS R was built against.
+
+### R-side copies
+
+`bench/alloc.R` reports, per dense operation, R's allocation beyond the result in units of the input tensor (`excess_in`). Most ops are ~0; `reshape`/`vec`/`unfold`/`permute` copy once by R's copy-on-modify semantics (the data is shared with the input), which is unavoidable. Rules that keep it that way:
+
+- `Tensor$new(data)` keeps a plain double array whose `dim` already matches and otherwise sets attributes (copying only if `data` is shared) — never route it back through `array()`, which always copies.
+- Never `as.double()`/`as.numeric()` a double array just to drop or reset `dim`: it copies the whole tensor. Set `dim(x) <- ...` on a fresh local, or `storage.mode(x) <- "double"` to convert logical/integer while keeping attributes (`.as_double_array()`). The comparison operators used to `as.numeric()` their logical result, which also dropped `$data`'s `dim` while `$dims` kept it — compiled kernels read the shape from the attribute.
+- Reductions to a scalar go through `.dense_dot(a, b)` (BLAS `ddot` in place; falls back to `sum(a * b)` when the result is NA/NaN so missing-value semantics match base R), not `sum(x^2)` / `sum(x * y)`.
+- Compiled kernels read the shape from `dim(x$data)`; pass `.dense_data(x)` when a tensor might carry a stale or missing `dim` attribute.
+- Leading singular vectors of an unfolding (`nvecs`, `hosvd`) come from `eigen()` of the Gram matrix built by `gram_cpp`, not `svd()` of the unfolding: that copies the tensor and `svd()` also returns the tensor-sized right factor by default.
+- `KTensor$full()` is a single `tcrossprod` against `.kr_others()` along mode 1 or mode N (whichever is larger), which lands in column-major order without a permute.
 
 ### Scalar tensor convention
 

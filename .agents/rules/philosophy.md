@@ -8,7 +8,7 @@ Look at the architecture and lession files in /doc folder
 
 ## Overview
 
-`tensory` is a lightweight, modern R package that brings high-performance tensor operations to R. The package uniquely pairs a user-friendly R6 class system on the frontend with a high-performance C++ `xtensor` and BLAS backend.
+`tensory` is a lightweight, modern R package that brings high-performance tensor operations to R. The package uniquely pairs a user-friendly R6 class system on the frontend with a high-performance C++ (Rcpp) and BLAS backend.
 
 ## Design Philosophy
 
@@ -18,11 +18,11 @@ By using the R6 class `Tensor`, the package provides clean encapsulation of tens
 
 ### 2. Zero-Copy Memory Integration
 
-The package utilizes `xt::rarray` from the `xtensor-r` library. This allows the C++ backend to directly map R arrays and matrices (`SEXP`) into the C++ `xtensor` ecosystem without any expensive memory copying.
+Compiled kernels take tensor storage as `Rcpp::NumericVector`, which aliases R's own array buffer (`SEXP`) without copying; shapes come from the `dim` attribute via the helpers in `src/tensor_array.h`. Results are allocated as R arrays and written in place.
 
 ### 3. Optimized Linear Algebra
 
-Instead of relying on naive loops or standard C++ algorithms for complex tensor contractions like Tensor Times Matrix (`ttm`), the package directly interfaces with Fortran-based BLAS (`dgemm`) via `xtensor-blas`. The design optimizes memory layouts and utilizes transpose permutations carefully to maintain cache efficiency and maximum computational throughput.
+Instead of relying on naive loops or standard C++ algorithms for complex tensor contractions like Tensor Times Matrix (`ttm`), the package directly calls Fortran-based BLAS (`dgemm`) from C++. The design optimizes memory layouts and utilizes transpose permutations carefully to maintain cache efficiency and maximum computational throughput.
 
 ### 4. MATLAB Tensor Toolbox Compatibility
 
@@ -46,8 +46,8 @@ Put the CPP implementation for each operation in a dedicated file.
 
 - **`R/tensor_class.R`**: Contains the frontend definition of the `Tensor` R6 class, handling basic element-wise arithmetic locally via R's fast internalized C routines.
 - **`R/tensor_operations.R`**: Contains complex operations like `ttm` that act as thin wrappers around the compiled C++ code.
-- **`src/tensor_ttm.cpp` & `src/tensor_test.cpp`**: Hand-optimized C++ implementations of tensor times matrix/vector contractions, manipulating strides and `xtensor` views to pipe optimal memory chunks to `dgemm`.
+- **`src/tensor_ttm.cpp`**: Hand-optimized C++ tensor-times-matrix contraction, computing strides by hand to pipe memory chunks to `dgemm`.
 
 ## Recommended Refactoring / TODOs
 
-- **Migrate Squeeze**: The `squeeze` behavior is currently enacted in R within the R6 class. As highlighted in the repository `README.md`, migrating this to the `xtensor` backend is a planned improvement for better architectural consistency.
+- **Migrate Squeeze**: The `squeeze` behavior is currently enacted in R within the R6 class. As highlighted in the repository `README.md`, migrating this to the compiled backend is a possible improvement for better architectural consistency.
