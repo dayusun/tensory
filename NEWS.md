@@ -35,6 +35,22 @@ First development version. Everything below is new.
 * `gcp_opt(type = "bernoulli-logit")` evaluates `log(1 + exp(m))` without
   overflowing for large `m`, so L-BFGS-B no longer stops with "needs finite
   values of 'fn'" when a line search probes a large step.
+* Less copying on the R side, found with the new `bench/alloc.R` audit:
+  `fnorm()`, `innerprod()` and the full contraction in `ttt()` no longer
+  build a tensor-sized temporary (BLAS `ddot` in place); `collapse()` with
+  `sum` (the default) contracts with all-ones vectors instead of calling
+  `sum` per cell through `apply()`; `t_scale()` scales in one pass instead
+  of expanding `s` to the tensor's size; `isequal()` no longer copies both
+  tensors; `ttt()` no longer copies its result; `Tensor$new(vector, dims)`
+  copies at most once.
+* `nvecs()` computes the leading eigenvectors of the Gram matrix
+  `X_(n) X_(n)'` (as MATLAB's `nvecs` does), formed slice by slice without
+  unfolding the tensor, instead of an SVD of the unfolding.
+* `symmetrize()` uses a compiled single-pass kernel; the R fallback no longer
+  sorts index rows one at a time with `apply()`. A 40^3 tensor took 1.7 s.
+* Comparison and logical operators (`==`, `<`, `&`, `!`, ...) kept `$dims`
+  but dropped the `dim` attribute of `$data`, so compiled kernels treated the
+  result as a vector. They now keep it.
 * `bench/kernels.R` and `bench/compare.R` time every compiled kernel (and the
   R reference paths) and check that two builds compute the same results.
 

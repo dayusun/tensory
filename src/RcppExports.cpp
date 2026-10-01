@@ -112,6 +112,55 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// dense_dot_cpp
+double dense_dot_cpp(const NumericVector& x, const NumericVector& y);
+RcppExport SEXP _tensory_dense_dot_cpp(SEXP xSEXP, SEXP ySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericVector& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type y(ySEXP);
+    rcpp_result_gen = Rcpp::wrap(dense_dot_cpp(x, y));
+    return rcpp_result_gen;
+END_RCPP
+}
+// gram_cpp
+NumericMatrix gram_cpp(const NumericVector& tensor_data, int mode);
+RcppExport SEXP _tensory_gram_cpp(SEXP tensor_dataSEXP, SEXP modeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericVector& >::type tensor_data(tensor_dataSEXP);
+    Rcpp::traits::input_parameter< int >::type mode(modeSEXP);
+    rcpp_result_gen = Rcpp::wrap(gram_cpp(tensor_data, mode));
+    return rcpp_result_gen;
+END_RCPP
+}
+// t_scale_cpp
+NumericVector t_scale_cpp(const NumericVector& tensor_data, const NumericVector& s, const IntegerVector& modes);
+RcppExport SEXP _tensory_t_scale_cpp(SEXP tensor_dataSEXP, SEXP sSEXP, SEXP modesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericVector& >::type tensor_data(tensor_dataSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type s(sSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type modes(modesSEXP);
+    rcpp_result_gen = Rcpp::wrap(t_scale_cpp(tensor_data, s, modes));
+    return rcpp_result_gen;
+END_RCPP
+}
+// symmetrize_cpp
+NumericVector symmetrize_cpp(const NumericVector& tensor_data, const IntegerVector& grp);
+RcppExport SEXP _tensory_symmetrize_cpp(SEXP tensor_dataSEXP, SEXP grpSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericVector& >::type tensor_data(tensor_dataSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type grp(grpSEXP);
+    rcpp_result_gen = Rcpp::wrap(symmetrize_cpp(tensor_data, grp));
+    return rcpp_result_gen;
+END_RCPP
+}
 // spgtr_mode_covs_cpp
 List spgtr_mode_covs_cpp(const NumericMatrix& Xt, const IntegerVector& dims);
 RcppExport SEXP _tensory_spgtr_mode_covs_cpp(SEXP XtSEXP, SEXP dimsSEXP) {
@@ -179,6 +228,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_tensory_contract_cpp", (DL_FUNC) &_tensory_contract_cpp, 3},
     {"_tensory_mask_cpp", (DL_FUNC) &_tensory_mask_cpp, 2},
     {"_tensory_issymmetric_cpp", (DL_FUNC) &_tensory_issymmetric_cpp, 2},
+    {"_tensory_dense_dot_cpp", (DL_FUNC) &_tensory_dense_dot_cpp, 2},
+    {"_tensory_gram_cpp", (DL_FUNC) &_tensory_gram_cpp, 2},
+    {"_tensory_t_scale_cpp", (DL_FUNC) &_tensory_t_scale_cpp, 3},
+    {"_tensory_symmetrize_cpp", (DL_FUNC) &_tensory_symmetrize_cpp, 2},
     {"_tensory_spgtr_mode_covs_cpp", (DL_FUNC) &_tensory_spgtr_mode_covs_cpp, 2},
     {"_tensory_spgtr_slpg_cpp", (DL_FUNC) &_tensory_spgtr_slpg_cpp, 7},
     {"_tensory_ttm_cpp", (DL_FUNC) &_tensory_ttm_cpp, 4},

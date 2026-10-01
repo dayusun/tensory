@@ -82,7 +82,7 @@ hosvd <- function(X,
   ranks <- .resolve_hosvd_ranks(X, ranks, tol, dims, N)
   energy_budget <- NULL
   if (is.null(ranks)) {
-    normX2 <- sum(X$data^2)
+    normX2 <- .dense_dot(X$data, X$data)
     energy_budget <- (tol^2) * normX2 / N
   }
 

@@ -215,7 +215,7 @@ fnorm <- function(x, ...) {
 
 #' @export
 fnorm.Tensor <- function(x, ...) {
-  return(sqrt(sum((x$data)^2)))
+  return(sqrt(.dense_dot(x$data, x$data)))
 }
 
 #' @export
@@ -275,6 +275,22 @@ collapse.Tensor <- function(x, dims, fun = sum, ...) {
     # Collapse all dimensions
     res <- fun(x$data, ...)
     return(tensor(res, 1))
+  }
+
+  # Sum (the default) is a contraction with all-ones vectors: ttv() reads the
+  # tensor in place through the compiled ttm kernel instead of calling `fun`
+  # once per kept cell. The result comes back with the kept modes in
+  # ascending order; permute to keep_dims' order as apply() would. NA/NaN in
+  # the result falls back to apply() so missing-value semantics match sum().
+  if (identical(fun, base::sum) && ...length() == 0L &&
+      exists("ttm_cpp", mode = "function")) {
+    coll <- setdiff(seq_len(num_dims), keep_dims)
+    res <- ttv(x, lapply(tensor_dims[coll], function(n) rep(1, n)), mode = coll)
+    if (!anyNA(res$data)) {
+      ord <- match(keep_dims, sort(keep_dims))
+      if (!identical(ord, seq_along(keep_dims))) res <- permute(res, ord)
+      return(res)
+    }
   }
 
   # apply collapses the dimensions and leaves the keep_dims
@@ -348,6 +364,12 @@ t_scale.Tensor <- function(x, s, dims, ...) {
   # Use R's sweep and margin capabilities.
   # Note: sweep applies a function along margins. Array broadcasting is done essentially
   # by sweeping over the required dimensions.
+
+  # Compiled path: one pass, no tensor-sized copy of `s` (sweep() builds one).
+  if (exists("t_scale_cpp", mode = "function") && !anyDuplicated(dims)) {
+    return(Tensor$new(t_scale_cpp(.dense_data(x), as.double(s_data),
+                                  as.integer(dims))))
+  }
 
   s_arr <- array(s_data, dim = tensor_dims[dims])
 

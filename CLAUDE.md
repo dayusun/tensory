@@ -15,6 +15,7 @@ R package built with roxygen2 + Rcpp + testthat 3.
 - Build vignettes: `R -e 'devtools::build_vignettes()'`
 - Benchmark the compiled kernels against an installed build: `R_LIBS=<lib> Rscript bench/kernels.R out.csv label`, then `Rscript bench/compare.R old.csv new.csv` (prints speedups and exits non-zero if the two builds' results differ). Install each build with `R CMD INSTALL --library=<lib> .` so it gets R's normal `-O2` flags.
 - Large-tensor sweep of `ttm`/`mttkrp`/`mttkrps` over every mode of order-3 to order-6 tensors (~64M elements; needs ~5 GB RAM for the old kernels): `R_LIBS=<lib> Rscript bench/sweep.R out.csv label`, compared the same way with `bench/compare.R`.
+- R-side allocation audit (bytes R allocates per dense op beyond its result, in units of the input tensor): `R_LIBS=<lib> Rscript bench/alloc.R [out.csv]`.
 
 The C++ kernels need only Rcpp and a C++11-or-later compiler; no headers are vendored or fetched. `src/Makevars` sets only `PKG_LIBS` — the language standard is R's default and optimization flags come from R's own `CXXFLAGS`/`CXX17FLAGS` (typically `-O2`), because `R CMD check` warns about any `-O`/`-f`/`-m` tuning set in `PKG_CXXFLAGS`. Put local tuning (e.g. `-funroll-loops`) in `~/.R/Makevars`. Note `pkgbuild::compile_dll()` defaults to a `-O0` debug build — pass `debug = FALSE` before benchmarking.
 
@@ -41,10 +42,10 @@ Structured (non-densifying) implementations exist for `fnorm`/`innerprod`/`nvecs
 
 `doc/architecture.md` is the authoritative design doc. The split:
 
-- Compiled kernels live in four `.cpp` files: `src/tensor_ttm.cpp` (`ttm_cpp`, `ttm_multiple_cpp`), `src/tensor_dense.cpp` (`mttkrp_cpp`, `fibers_cpp`, `contract_cpp`, `mask_cpp`, `issymmetric_cpp`), and `src/tensor_decomposition.cpp` (`khatri_rao_pair_cpp`, `mttkrp_blas_cpp`, `mttkrps_cpp`). `src/tensor_spgtr.cpp` holds the `spgtr` kernels. Every kernel takes tensor storage as `Rcpp::NumericVector`, which aliases R's buffer without copying; shared shape helpers are in `src/tensor_array.h`.
+- Compiled kernels live in five `.cpp` files: `src/tensor_ttm.cpp` (`ttm_cpp`, `ttm_multiple_cpp`), `src/tensor_dense.cpp` (`mttkrp_cpp`, `fibers_cpp`, `contract_cpp`, `mask_cpp`, `issymmetric_cpp`), `src/tensor_decomposition.cpp` (`khatri_rao_pair_cpp`, `mttkrp_blas_cpp`, `mttkrps_cpp`), and `src/tensor_reduce.cpp` (`dense_dot_cpp` for `fnorm`/`innerprod`/`ttt`, `gram_cpp` for `nvecs`, `t_scale_cpp`, `symmetrize_cpp`). `src/tensor_spgtr.cpp` holds the `spgtr` kernels. Every kernel takes tensor storage as `Rcpp::NumericVector`, which aliases R's buffer without copying; shared shape helpers are in `src/tensor_array.h`.
 - **Every C++ kernel is optional.** The R method keeps a full pure-R implementation and delegates only when the compiled symbol is present, guarded by `if (exists("<fn>_cpp", mode = "function")) return(<fn>_cpp(...))` before the R fallback (see `R/tensor_dense_methods.R`, `R/tensor_ttm.R`, `R/tensor_operations.R`). When editing either side, keep the two paths behaviorally identical — tests run against whichever is compiled. `mttkrp` tries `mttkrp_blas_cpp` first, then `mttkrp_cpp`, then R; `mttkrps` tries `mttkrps_cpp`, then per-mode `mttkrp_blas_cpp`, then R.
 - `ttt` (tensor-times-tensor) is deliberately R-only: it uses `reshape` + `permute` + `%*%`. A prior C++ `xt::linalg::tensordot` prototype was up to 18× slower than R's native `aperm` + BLAS path, so the R implementation is the correct one. Do not rewrite `ttt` in C++ without benchmarks proving a win on representative shapes — see `doc/lesson.md`.
-- `nvecs`, `symmetrize`, and the arithmetic/operator methods remain R-only in `R/tensor_dense_methods.R` / `R/tensor_operations.R` — future C++ candidates only *if* benchmarks justify it; do not move them speculatively.
+- The arithmetic/operator methods remain R-only in `R/tensor_class.R` / `R/tensor_operations.R` — they already allocate only their result. `nvecs` (Gram matrix + `eigen`, as MATLAB does) and `symmetrize` got compiled kernels because `bench/alloc.R` showed 5x and 25x tensor-sized excess allocation; do not move other functions to C++ without such a measurement.
 
 ### Decomposition layer
 
@@ -90,6 +91,15 @@ Both are two-step MTTKRPs (Phan, Tichavský & Cichocki 2013) in `src/tensor_deco
 Kernels read R arrays through `Rcpp::NumericVector` (zero-copy; the shape is the `dim` attribute, via `tensory::array_dims`), allocate results with `tensory::alloc_array` and write into them in place, and call Fortran BLAS/LAPACK (`dgemm`, `dsyrk`, `dsyev`) directly. xtensor was used previously and removed: the kernels only used its data pointer and shape, while it forced C++20 and build-time header fetching. `inst/include/tensory.h` is included by `RcppExports.cpp` and pulls in only Rcpp. Do not reintroduce a C++ tensor library without a benchmark (`bench/`) showing it beats BLAS on R's storage for a specific kernel. Performance comes from the BLAS R links against and from how little memory a kernel moves around each BLAS call.
 
 `src/Makevars` links `$(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)` so the kernel uses whatever BLAS R was built against.
+
+### R-side copies
+
+`bench/alloc.R` reports, per dense operation, R's allocation beyond the result in units of the input tensor (`excess_in`). Most ops are ~0; `reshape`/`vec`/`unfold`/`permute` copy once by R's copy-on-modify semantics (the data is shared with the input), which is unavoidable. Rules that keep it that way:
+
+- `Tensor$new(data)` keeps a plain double array whose `dim` already matches and otherwise sets attributes (copying only if `data` is shared) — never route it back through `array()`, which always copies.
+- Never `as.double()`/`as.numeric()` a double array just to drop or reset `dim`: it copies the whole tensor. Set `dim(x) <- ...` on a fresh local, or `storage.mode(x) <- "double"` to convert logical/integer while keeping attributes (`.as_double_array()`). The comparison operators used to `as.numeric()` their logical result, which also dropped `$data`'s `dim` while `$dims` kept it — compiled kernels read the shape from the attribute.
+- Reductions to a scalar go through `.dense_dot(a, b)` (BLAS `ddot` in place; falls back to `sum(a * b)` when the result is NA/NaN so missing-value semantics match base R), not `sum(x^2)` / `sum(x * y)`.
+- Compiled kernels read the shape from `dim(x$data)`; pass `.dense_data(x)` when a tensor might carry a stale or missing `dim` attribute.
 
 ### Scalar tensor convention
 

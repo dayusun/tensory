@@ -75,12 +75,12 @@ Tensor <- R6::R6Class("Tensor",
           stop("Product of specified dimensions must match the number of elements in data.")
         }
         if (!is.double(data)) data <- as.double(data)
-        # A plain double array of this shape is already what array() would
-        # return, so keep it instead of copying it (compiled kernels hand back
-        # exactly that, and for a large tensor the copy costs as much as the
-        # kernel itself).
+        # Equivalent to array(data, dim = dims) for double data, without
+        # array()'s unconditional copy: a plain double array of this shape is
+        # kept as is (compiled kernels hand back exactly that), and otherwise
+        # the attributes are replaced, which copies only if `data` is shared.
         if (!identical(attributes(data), list(dim = dims))) {
-          data <- array(data, dim = dims)
+          attributes(data) <- list(dim = dims)
         }
         self$data <- data
         self$dims <- dims
@@ -142,7 +142,10 @@ Tensor <- R6::R6Class("Tensor",
       if (prod(new_dims) != length(self$data)) {
         stop("Product of new dimensions must match the number of elements in tensor.")
       }
-      self$data <- array(self$data, dim = new_dims)
+      d <- self$data
+      if (!is.double(d)) storage.mode(d) <- "double"
+      attributes(d) <- list(dim = new_dims)  # = array(); copies only if shared
+      self$data <- d
       self$dims <- new_dims
       return(self)
     },
@@ -189,7 +192,7 @@ Tensor <- R6::R6Class("Tensor",
     #' @param values Logical; include values if TRUE
     #' @return Matrix of subscripts or list with subs and vals
     find = function(values = FALSE) {
-      idx <- which(as.vector(self$data) != 0)
+      idx <- which(self$data != 0)
 
       if (length(idx) == 0) {
         subs <- matrix(integer(0), nrow = 0, ncol = length(self$dims))
@@ -207,7 +210,7 @@ Tensor <- R6::R6Class("Tensor",
         return(subs)
       }
 
-      list(subs = subs, vals = as.vector(self$data)[idx])
+      list(subs = subs, vals = as.vector(self$data[idx]))
     },
 
     #' Vectorize tensor
@@ -329,9 +332,9 @@ Tensor <- R6::R6Class("Tensor",
         if (!identical(self$dims, other$dims)) {
           stop("Tensors must have the same dimensions for element-wise comparison")
         }
-        self$data <- as.numeric(self$data == other$data)
+        self$data <- .as_double_array(self$data == other$data)
       } else {
-        self$data <- as.numeric(self$data == as.double(other))
+        self$data <- .as_double_array(self$data == as.double(other))
       }
       return(self)
     },
@@ -344,9 +347,9 @@ Tensor <- R6::R6Class("Tensor",
         if (!identical(self$dims, other$dims)) {
           stop("Tensors must have the same dimensions for element-wise comparison")
         }
-        self$data <- as.numeric(self$data != other$data)
+        self$data <- .as_double_array(self$data != other$data)
       } else {
-        self$data <- as.numeric(self$data != as.double(other))
+        self$data <- .as_double_array(self$data != as.double(other))
       }
       return(self)
     },
@@ -359,9 +362,9 @@ Tensor <- R6::R6Class("Tensor",
         if (!identical(self$dims, other$dims)) {
           stop("Tensors must have the same dimensions for element-wise comparison")
         }
-        self$data <- as.numeric(self$data < other$data)
+        self$data <- .as_double_array(self$data < other$data)
       } else {
-        self$data <- as.numeric(self$data < as.double(other))
+        self$data <- .as_double_array(self$data < as.double(other))
       }
       return(self)
     },
@@ -374,9 +377,9 @@ Tensor <- R6::R6Class("Tensor",
         if (!identical(self$dims, other$dims)) {
           stop("Tensors must have the same dimensions for element-wise comparison")
         }
-        self$data <- as.numeric(self$data <= other$data)
+        self$data <- .as_double_array(self$data <= other$data)
       } else {
-        self$data <- as.numeric(self$data <= as.double(other))
+        self$data <- .as_double_array(self$data <= as.double(other))
       }
       return(self)
     },
@@ -389,9 +392,9 @@ Tensor <- R6::R6Class("Tensor",
         if (!identical(self$dims, other$dims)) {
           stop("Tensors must have the same dimensions for element-wise comparison")
         }
-        self$data <- as.numeric(self$data > other$data)
+        self$data <- .as_double_array(self$data > other$data)
       } else {
-        self$data <- as.numeric(self$data > as.double(other))
+        self$data <- .as_double_array(self$data > as.double(other))
       }
       return(self)
     },
@@ -404,9 +407,9 @@ Tensor <- R6::R6Class("Tensor",
         if (!identical(self$dims, other$dims)) {
           stop("Tensors must have the same dimensions for element-wise comparison")
         }
-        self$data <- as.numeric(self$data >= other$data)
+        self$data <- .as_double_array(self$data >= other$data)
       } else {
-        self$data <- as.numeric(self$data >= as.double(other))
+        self$data <- .as_double_array(self$data >= as.double(other))
       }
       return(self)
     },
@@ -414,7 +417,7 @@ Tensor <- R6::R6Class("Tensor",
     #' Element-wise logical NOT
     #' @return Self (in-place operation)
     logical_not = function() {
-      self$data <- as.numeric(self$data == 0)
+      self$data <- .as_double_array(self$data == 0)
       return(self)
     },
 
@@ -426,9 +429,9 @@ Tensor <- R6::R6Class("Tensor",
         if (!identical(self$dims, other$dims)) {
           stop("Tensors must have the same dimensions for element-wise logical AND")
         }
-        self$data <- as.numeric((self$data != 0) & (other$data != 0))
+        self$data <- .as_double_array((self$data != 0) & (other$data != 0))
       } else {
-        self$data <- as.numeric((self$data != 0) & (as.double(other) != 0))
+        self$data <- .as_double_array((self$data != 0) & (as.double(other) != 0))
       }
       return(self)
     },
@@ -441,9 +444,9 @@ Tensor <- R6::R6Class("Tensor",
         if (!identical(self$dims, other$dims)) {
           stop("Tensors must have the same dimensions for element-wise logical OR")
         }
-        self$data <- as.numeric((self$data != 0) | (other$data != 0))
+        self$data <- .as_double_array((self$data != 0) | (other$data != 0))
       } else {
-        self$data <- as.numeric((self$data != 0) | (as.double(other) != 0))
+        self$data <- .as_double_array((self$data != 0) | (as.double(other) != 0))
       }
       return(self)
     },
@@ -472,11 +475,9 @@ Tensor <- R6::R6Class("Tensor",
         return(Tensor$new(result, integer(0), fast = TRUE))
       }
 
-      result_array <- base::apply(self$data, keep_dims, base::sum)
-      if (is.null(dim(result_array))) {
-        result_array <- array(result_array, dim = self$dims[keep_dims])
-      }
-      return(Tensor$new(result_array))
+      # Same result as apply(self$data, keep_dims, sum); collapse() contracts
+      # with all-ones vectors in place instead of calling sum() per cell.
+      return(collapse(self, dims))
     },
 
     #' Khatri-Rao product with another Tensor or matrix
@@ -507,10 +508,17 @@ Tensor <- R6::R6Class("Tensor",
     #' Frobenius norm
     #' @return Numeric scalar
     fnorm = function() {
-      return(sqrt(sum(self$data^2)))
+      return(sqrt(.dense_dot(self$data, self$data)))
     }
   )
 )
+
+# Logical/comparison results as double, keeping the dim attribute (as.numeric()
+# would drop it and leave $data a plain vector that disagrees with $dims).
+.as_double_array <- function(x) {
+  storage.mode(x) <- "double"
+  x
+}
 
 #' Create a tensor object
 #'

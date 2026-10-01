@@ -103,7 +103,29 @@ innerprod.Tensor <- function(x, y, ...) {
   if (!identical(x$dim(), y$dim())) {
     stop("x and y must have the same dimensions.")
   }
-  sum(as.double(x$data) * as.double(y$data))
+  .dense_dot(x$data, y$data)
+}
+
+# sum(a * b) without the tensor-sized product. The compiled ddot path returns
+# NaN for NA/NaN input; recompute with sum() then so the result matches base R
+# exactly (NA stays NA).
+.dense_dot <- function(a, b) {
+  if (exists("dense_dot_cpp", mode = "function")) {
+    v <- dense_dot_cpp(a, b)
+    if (!is.na(v)) return(v)
+  }
+  sum(as.double(a) * as.double(b))
+}
+
+# x$data with a dim attribute matching x$dims (compiled kernels read the
+# shape from it). Copies only when the attribute is missing or stale.
+.dense_data <- function(x) {
+  d <- x$data
+  dims <- x$dim()
+  if (length(dim(d)) != length(dims) || any(dim(d) != dims)) {
+    dim(d) <- dims
+  }
+  d
 }
 
 #' Number of Nonzeros
@@ -143,7 +165,7 @@ find <- function(x, ...) {
 #' @rdname find
 #' @export
 find.Tensor <- function(x, values = FALSE, ...) {
-  idx <- which(as.vector(x$data) != 0)
+  idx <- which(x$data != 0)
   dims <- x$dim()
 
   if (length(idx) == 0) {
@@ -162,7 +184,7 @@ find.Tensor <- function(x, values = FALSE, ...) {
     return(subs)
   }
 
-  vals <- as.vector(x$data)[idx]
+  vals <- as.vector(x$data[idx])
   list(subs = subs, vals = vals)
 }
 
@@ -332,14 +354,23 @@ nvecs.Tensor <- function(x, mode, r = 1, flipsign = TRUE, ...) {
     stop("r must be a positive integer.")
   }
 
-  Xn <- unfold(x, rdims = mode)
-  max_rank <- min(nrow(Xn), ncol(Xn))
+  dims <- x$dim()
+  In <- dims[mode]
+  max_rank <- min(In, prod(dims) / In)
   if (r > max_rank) {
     stop("r cannot exceed the rank bound of the mode unfolding.")
   }
 
-  sv <- svd(Xn, nu = r, nv = 0)
-  u <- sv$u[, seq_len(r), drop = FALSE]
+  # Leading left singular vectors of the mode-n unfolding = leading
+  # eigenvectors of its Gram matrix X_(n) X_(n)' (I_n x I_n), as MATLAB's
+  # nvecs computes them. The compiled kernel forms the Gram matrix slice by
+  # slice without unfolding the tensor.
+  G <- if (exists("gram_cpp", mode = "function")) {
+    gram_cpp(.dense_data(x), mode)
+  } else {
+    tcrossprod(unfold(x, rdims = mode))
+  }
+  u <- eigen(G, symmetric = TRUE)$vectors[, seq_len(r), drop = FALSE]
 
   if (flipsign) {
     loc <- apply(abs(u), 2, which.max)
@@ -541,7 +572,12 @@ mask.Tensor <- function(x, w, ...) {
     stop("Mask cannot be bigger than the data tensor.")
   }
 
-  w_data <- array(as.double(w$data), dim = w_dims)
+  # Same as array(as.double(w$data), dim = w_dims) without its two copies.
+  w_data <- w$data
+  if (!is.double(w_data)) storage.mode(w_data) <- "double"
+  if (!identical(attributes(w_data), list(dim = as.integer(w_dims)))) {
+    attributes(w_data) <- list(dim = as.integer(w_dims))
+  }
   if (exists("mask_cpp", mode = "function")) {
     return(mask_cpp(x$data, w_data))
   }
@@ -552,7 +588,7 @@ mask.Tensor <- function(x, w, ...) {
   }
 
   idx <- .tensor_sub2ind(w_subs, x_dims)
-  as.vector(x$data)[idx]
+  as.vector(x$data[idx])
 }
 
 #' @export
@@ -832,15 +868,25 @@ symmetrize.Tensor <- function(x, grps = NULL, ...) {
       stop("Dimension mismatch for symmetrization.")
     }
 
+    if (exists("symmetrize_cpp", mode = "function")) {
+      current <- Tensor$new(symmetrize_cpp(.dense_data(current), as.integer(grp)),
+                            dims = dims, fast = TRUE)
+      next
+    }
+
     subs <- arrayInd(seq_len(length(current$data)), .dim = dims)
     class_subs <- subs
-    class_subs[, grp] <- t(apply(subs[, grp, drop = FALSE], 1, sort))
+    # Sort each row's group indices, vectorized: order by (row, value).
+    gsub <- subs[, grp, drop = FALSE]
+    gvals <- as.vector(gsub)
+    o <- order(rep.int(seq_len(nrow(gsub)), ncol(gsub)), gvals)
+    class_subs[, grp] <- matrix(gvals[o], nrow = nrow(gsub), byrow = TRUE)
     class_idx <- .tensor_sub2ind(class_subs, dims)
 
     class_sum <- tapply(as.vector(current$data), class_idx, sum)
     class_n <- tapply(rep.int(1, length(class_idx)), class_idx, sum)
     class_avg <- class_sum / class_n
-    values <- as.numeric(class_avg[as.character(class_idx)])
+    values <- as.numeric(class_avg[match(class_idx, as.numeric(names(class_avg)))])
 
     current <- Tensor$new(array(values, dim = dims), dims = dims, fast = TRUE)
   }
@@ -907,9 +953,17 @@ isequal.Tensor <- function(x, y, ...) {
   if (inherits(y, c("KTensor", "TTensor"))) {
     y <- as.tensor(y)
   }
-  inherits(y, "Tensor") &&
-    identical(x$dim(), y$dim()) &&
-    identical(as.vector(x$data), as.vector(y$data))
+  if (!inherits(y, "Tensor") || !identical(x$dim(), y$dim())) {
+    return(FALSE)
+  }
+  a <- x$data
+  b <- y$data
+  # Same attributes: comparing the objects compares the values, without the
+  # two copies as.vector() makes.
+  if (identical(attributes(a), attributes(b))) {
+    return(identical(a, b))
+  }
+  identical(as.vector(a), as.vector(b))
 }
 
 #' @export

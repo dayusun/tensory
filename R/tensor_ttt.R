@@ -55,7 +55,10 @@ ttt <- function(tensorA, tensorB, dimsA = NULL, dimsB = dimsA) {
                               dims = as.integer(dimA_full), fast = TRUE))
         }
         res_dims <- as.integer(c(dimA_full, dimB_full))
-        out_data <- as.double(outer(tensorA_data, tensorB_data))
+        # outer() already allocates the result; only convert integer input,
+        # since as.double() on a double array would copy it again.
+        out_data <- outer(tensorA_data, tensorB_data)
+        if (!is.double(out_data)) storage.mode(out_data) <- "double"
         dim(out_data) <- res_dims
         return(Tensor$new(data = out_data, dims = res_dims, fast = TRUE))
     }
@@ -70,7 +73,7 @@ ttt <- function(tensorA, tensorB, dimsA = NULL, dimsB = dimsA) {
         if (length(dimA_full) != length(dimB_full) || any(dimA_full[dimsA] != dimB_full[dimsB])) {
             stop("Contracted dimension sizes do not match.")
         }
-        return(Tensor$new(data = as.double(sum(tensorA_data * tensorB_data)), dims = integer(0), fast = TRUE))
+        return(Tensor$new(data = .dense_dot(tensorA_data, tensorB_data), dims = integer(0), fast = TRUE))
     }
 
     # Partial Contraction Validation
@@ -110,8 +113,10 @@ ttt <- function(tensorA, tensorB, dimsA = NULL, dimsB = dimsA) {
         return(Tensor$new(data = as.double(matC), dims = integer(0), fast = TRUE))
     }
 
-    out_data <- as.double(matC)
-    dim(out_data) <- out_dim
+    # matC is a fresh double matrix: reshape it in place. as.double() would
+    # copy the whole result just to drop the dim attribute, and so would
+    # binding it to a second name first (dim<- on a shared object copies).
+    dim(matC) <- out_dim
 
-    return(Tensor$new(data = out_data, dims = out_dim, fast = TRUE))
+    return(Tensor$new(data = matC, dims = out_dim, fast = TRUE))
 }
