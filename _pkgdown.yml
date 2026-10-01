@@ -10,7 +10,7 @@ home:
   title: Tensor algebra and tensor regression for R
   description: >
     Dense, sparse, symmetric and factorized tensor classes with a MATLAB Tensor
-    Toolbox-style API, compiled xtensor/BLAS kernels, the CP and Tucker
+    Toolbox-style API, compiled Rcpp/BLAS kernels, the CP and Tucker
     decomposition families, and three regression models that relate an
     array-valued predictor to a scalar outcome.
 
