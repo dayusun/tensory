@@ -13,6 +13,14 @@ mttkrps_cpp <- function(tensor_data, factors) {
     .Call(`_tensory_mttkrps_cpp`, tensor_data, factors)
 }
 
+mttkrp_partial_cpp <- function(tensor_data, factors, s, left) {
+    .Call(`_tensory_mttkrp_partial_cpp`, tensor_data, factors, s, left)
+}
+
+mttkrp_finish_cpp <- function(partial, factors, dims, s, mode) {
+    .Call(`_tensory_mttkrp_finish_cpp`, partial, factors, dims, s, mode)
+}
+
 mttkrp_cpp <- function(tensor_data, factors, mode) {
     .Call(`_tensory_mttkrp_cpp`, tensor_data, factors, mode)
 }
