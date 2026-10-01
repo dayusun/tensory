@@ -100,6 +100,8 @@ Kernels read R arrays through `Rcpp::NumericVector` (zero-copy; the shape is the
 - Never `as.double()`/`as.numeric()` a double array just to drop or reset `dim`: it copies the whole tensor. Set `dim(x) <- ...` on a fresh local, or `storage.mode(x) <- "double"` to convert logical/integer while keeping attributes (`.as_double_array()`). The comparison operators used to `as.numeric()` their logical result, which also dropped `$data`'s `dim` while `$dims` kept it — compiled kernels read the shape from the attribute.
 - Reductions to a scalar go through `.dense_dot(a, b)` (BLAS `ddot` in place; falls back to `sum(a * b)` when the result is NA/NaN so missing-value semantics match base R), not `sum(x^2)` / `sum(x * y)`.
 - Compiled kernels read the shape from `dim(x$data)`; pass `.dense_data(x)` when a tensor might carry a stale or missing `dim` attribute.
+- Leading singular vectors of an unfolding (`nvecs`, `hosvd`) come from `eigen()` of the Gram matrix built by `gram_cpp`, not `svd()` of the unfolding: that copies the tensor and `svd()` also returns the tensor-sized right factor by default.
+- `KTensor$full()` is a single `tcrossprod` against `.kr_others()` along mode 1 or mode N (whichever is larger), which lands in column-major order without a permute.
 
 ### Scalar tensor convention
 

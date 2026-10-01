@@ -154,3 +154,48 @@ test_that("nvecs returns the leading left singular vectors", {
   }
   expect_error(nvecs(X, 3, 5), "rank bound")
 })
+
+test_that("KTensor full() matches the sum of rank-one outer products", {
+  set.seed(7)
+  brute <- function(lambda, U) {
+    acc <- 0
+    for (r in seq_along(lambda)) {
+      op <- U[[1]][, r]
+      for (k in seq_along(U)[-1]) op <- outer(op, U[[k]][, r])
+      acc <- acc + lambda[r] * op
+    }
+    array(acc, dim = vapply(U, nrow, integer(1)))
+  }
+  # mode 1 larger, mode N larger, rank above every extent, order 2-4
+  for (d in list(c(6, 3), c(3, 7), c(5, 4, 3), c(2, 3, 6), c(2, 2, 2, 3))) {
+    for (R in c(1L, 3L, 9L)) {
+      U <- lapply(d, function(n) matrix(rnorm(n * R), n, R))
+      lambda <- rnorm(R)
+      got <- as.tensor(ktensor(lambda, U))
+      expect_equal(got$data, brute(lambda, U), tolerance = 1e-12,
+                   ignore_attr = FALSE)
+      expect_identical(got$dim(), as.integer(d))
+    }
+  }
+  # order 1
+  U1 <- list(matrix(rnorm(8), 4, 2))
+  expect_equal(as.vector(as.tensor(ktensor(c(2, -1), U1))$data),
+               as.vector(U1[[1]] %*% c(2, -1)))
+})
+
+test_that("hosvd factors span the leading singular subspaces", {
+  set.seed(8)
+  X <- tensor(array(rnorm(6 * 5 * 4), c(6, 5, 4)))
+  T1 <- hosvd(X, ranks = c(3, 2, 2), sequential = FALSE)
+  for (n in 1:3) {
+    u_svd <- svd(unfold(X, rdims = n))$u[, seq_len(ncol(T1$U[[n]])), drop = FALSE]
+    # same subspace: projectors agree
+    expect_equal(tcrossprod(T1$U[[n]]), tcrossprod(u_svd), tolerance = 1e-8)
+  }
+  # full rank reconstructs exactly; tol-based ranks still respect the bound
+  Tfull <- hosvd(X, ranks = c(6, 5, 4))
+  expect_equal(as.tensor(Tfull)$data, X$data, tolerance = 1e-10)
+  Ttol <- hosvd(X, tol = 0.5)
+  rel <- fnorm(as.tensor(Ttol) - X) / fnorm(X)
+  expect_lte(rel, 0.5 + 1e-8)
+})

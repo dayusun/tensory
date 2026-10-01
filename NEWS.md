@@ -46,6 +46,12 @@ First development version. Everything below is new.
 * `nvecs()` computes the leading eigenvectors of the Gram matrix
   `X_(n) X_(n)'` (as MATLAB's `nvecs` does), formed slice by slice without
   unfolding the tensor, instead of an SVD of the unfolding.
+* `as.tensor()` of a `KTensor` is one matrix product with a Khatri-Rao
+  product instead of a per-component `outer()` loop (about 4 tensor-sized
+  allocations per rank before; now just the result).
+* `hosvd()` takes each mode's leading singular vectors from the Gram matrix
+  (as MATLAB's `hosvd` does) instead of `svd()` of the unfolding, which
+  copied the tensor and also computed the tensor-sized right factor.
 * `symmetrize()` uses a compiled single-pass kernel; the R fallback no longer
   sorts index rows one at a time with `apply()`. A 40^3 tensor took 1.7 s.
 * Comparison and logical operators (`==`, `<`, `&`, `!`, ...) kept `$dims`

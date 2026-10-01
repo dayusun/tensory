@@ -93,28 +93,30 @@ KTensor <- R6::R6Class("KTensor",
                 return(Tensor$new(as.double(value), integer(0), fast = TRUE))
             }
 
-            # Start with an array of zeros
-            data <- array(0, dim = dims)
-
-            for (r in 1:R) {
-                # Outer product of the r-th column of each factor matrix
-                components <- lapply(self$U, function(mat) mat[, r])
-
-                # Calculate outer product of all components efficiently
-                outer_prod <- components[[1]]
-                if (length(components) > 1) {
-                    for (i in 2:length(components)) {
-                        outer_prod <- base::outer(outer_prod, components[[i]])
-                    }
-                }
-
-                # Add to total scaled by lambda
-                data <- data + self$lambda[r] * as.numeric(outer_prod)
+            N <- length(dims)
+            if (R == 0L) {
+                return(Tensor$new(array(0, dim = dims), dims = dims))
+            }
+            if (N == 1L) {
+                data <- as.vector(as.matrix(self$U[[1]]) %*% self$lambda)
+                return(Tensor$new(data, dims = dims))
             }
 
-            # Enforce strictly numeric arrays before constructing standard Tensor class object
+            # sum_r lambda_r u_1r o ... o u_Nr as one matrix product with a
+            # Khatri-Rao product of the other factors. Using mode 1 (rows
+            # fastest) or mode N (rows slowest) keeps the product in the
+            # tensor's own column-major order, so no permutation is needed;
+            # take the larger of the two so the Khatri-Rao factor
+            # (prod(dims) / I_n rows) is the smaller one. A per-component
+            # outer() loop instead allocated ~4 tensor-sized arrays per rank.
+            n <- if (dims[N] > dims[1]) N else 1L
+            A <- as.matrix(self$U[[n]])
+            A <- A * rep(self$lambda, each = nrow(A))
+            KR <- .kr_others(self$U, n)
+            data <- if (n == 1L) tcrossprod(A, KR) else tcrossprod(KR, A)
+            if (!is.double(data)) storage.mode(data) <- "double"
             dim(data) <- dims
-            return(tensor(as.numeric(data), dims = dims))
+            return(Tensor$new(data, dims = dims))
         }
     )
 )

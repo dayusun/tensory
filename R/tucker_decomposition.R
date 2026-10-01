@@ -91,14 +91,24 @@ hosvd <- function(X,
 
   for (n in dimorder) {
     src <- if (sequential) G else X
-    Xn <- as.matrix(tenmat(src, rdims = n))
-    sv <- svd(Xn)
-    r_n <- if (!is.null(ranks)) ranks[n] else .hosvd_rank_from_tol(sv$d, energy_budget)
-    if (r_n > length(sv$d)) r_n <- length(sv$d)
-    U[[n]] <- sv$u[, seq_len(r_n), drop = FALSE]
+    # Left singular vectors / values of the mode-n unfolding from the
+    # eigendecomposition of its Gram matrix X_(n) X_(n)' (I_n x I_n), as
+    # MATLAB's hosvd computes them. svd() of the unfolding needs a copy of the
+    # tensor and, by default, also returns the tensor-sized right factor.
+    Gn <- if (exists("gram_cpp", mode = "function")) {
+      gram_cpp(.dense_data(src), n)
+    } else {
+      tcrossprod(as.matrix(tenmat(src, rdims = n)))
+    }
+    eg <- eigen(Gn, symmetric = TRUE)
+    n_sv <- min(nrow(Gn), prod(src$dim()) / nrow(Gn))
+    d <- sqrt(pmax(eg$values[seq_len(n_sv)], 0))
+    r_n <- if (!is.null(ranks)) ranks[n] else .hosvd_rank_from_tol(d, energy_budget)
+    if (r_n > n_sv) r_n <- n_sv
+    U[[n]] <- eg$vectors[, seq_len(r_n), drop = FALSE]
     if (verbosity > 0L) {
       message(sprintf(" hosvd mode %d: keeping %d / %d singular vectors",
-                      n, r_n, length(sv$d)))
+                      n, r_n, n_sv))
     }
     if (sequential) {
       G <- ttm(G, t(U[[n]]), mode = n)
