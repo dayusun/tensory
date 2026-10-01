@@ -2,9 +2,8 @@
 
 Compute a tensor times a matrix (or matrices) or vector (or vectors) in
 one (or more) modes. This function implements the tensor times
-matrix/vector operation similar to MATLAB's ttm/ttv functions. Uses
-efficient Xtensor-blas implementation with optimized algorithms for
-high-performance tensor operations.
+matrix/vector operation similar to MATLAB's ttm/ttv functions. A
+compiled BLAS-backed kernel is used when available.
 
 ## Usage
 

@@ -1,7 +1,8 @@
 # R6 Tensor Class
 
 A modern tensor class for R that provides MATLAB Tensor Toolbox
-compatibility with high-performance operations via xtensor C++ backend.
+compatibility with high-performance operations via a compiled Rcpp +
+BLAS backend.
 
 Convenience function to create a Tensor object
 

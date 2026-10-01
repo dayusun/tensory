@@ -47,45 +47,9 @@
 
 <div id="third-party-notices" class="section level1">
 
-<p>This repository includes vendored third-party C++ headers under <code>inst/include/</code>. Those components are not covered by the repository’s MIT license alone and remain subject to their own licenses.</p>
-<p>Included third-party components identified in this checkout:</p>
-<ul><li>
-<code>inst/include/xtensor/</code>: BSD 3-Clause</li>
-<li>
-<code>inst/include/xtensor-r/</code>: BSD 3-Clause</li>
-<li>
-<code>inst/include/xtensor-blas/</code>: BSD 3-Clause</li>
-<li>
-<code>inst/include/xtl/</code>: BSD 3-Clause</li>
-<li>
-<code>inst/include/xsimd/</code>: BSD 3-Clause</li>
-<li>
-<code>inst/include/xflens/cxxblas/</code>: BSD-style license; see <code>inst/include/xflens/cxxblas/LICENSE</code>
-</li>
-<li>
-<code>inst/include/xflens/cxxlapack/</code>: BSD-style license; see <code>inst/include/xflens/cxxlapack/LICENSE</code>
-</li>
-</ul><p>Alignment notes:</p>
-<ul><li>The <code>xtensor</code> family headers in this repository contain file-level notices stating they are distributed under the BSD 3-Clause License.</li>
-<li>The vendored <code>cxxblas</code> and <code>cxxlapack</code> directories already include local <code>LICENSE</code> files and should be preserved when redistributing this package.</li>
-<li>When redistributing source or binary builds that include these vendored files, keep the original copyright notices, license conditions, and disclaimers.</li>
-</ul><p>Official upstream license locations for the BSD 3-Clause components:</p>
-<ul><li>
-<code>xtensor</code>: <a href="https://github.com/xtensor-stack/xtensor/blob/master/LICENSE" class="external-link uri">https://github.com/xtensor-stack/xtensor/blob/master/LICENSE</a>
-</li>
-<li>
-<code>xtensor-r</code>: <a href="https://github.com/xtensor-stack/xtensor-r/blob/master/LICENSE" class="external-link uri">https://github.com/xtensor-stack/xtensor-r/blob/master/LICENSE</a>
-</li>
-<li>
-<code>xtensor-blas</code>: <a href="https://github.com/xtensor-stack/xtensor-blas/blob/master/LICENSE" class="external-link uri">https://github.com/xtensor-stack/xtensor-blas/blob/master/LICENSE</a>
-</li>
-<li>
-<code>xtl</code>: <a href="https://github.com/xtensor-stack/xtl/blob/master/LICENSE" class="external-link uri">https://github.com/xtensor-stack/xtl/blob/master/LICENSE</a>
-</li>
-<li>
-<code>xsimd</code>: <a href="https://github.com/xtensor-stack/xsimd/blob/master/LICENSE" class="external-link uri">https://github.com/xtensor-stack/xsimd/blob/master/LICENSE</a>
-</li>
-</ul><p>MATLAB Tensor Toolbox note:</p>
+<p><code>tensory</code> does not vendor third-party source code. The compiled kernels use only Rcpp (a <code>LinkingTo</code> dependency) and the BLAS/LAPACK libraries R itself is linked against.</p>
+<p>Earlier development versions vendored the BSD 3-Clause licensed <code>xtensor</code>, <code>xtensor-r</code>, <code>xtensor-blas</code>, <code>xtl</code> and <code>xsimd</code> headers, and the BSD-style <code>xflens</code> <code>cxxblas</code>/<code>cxxlapack</code> headers, under <code>inst/include/</code>. Those headers and the script that fetched them were removed once no kernel used them; they are not part of this package.</p>
+<p>MATLAB Tensor Toolbox note:</p>
 <ul><li>
 <code>tensory</code> aims for an API similar to the MATLAB Tensor Toolbox.</li>
 <li>The Tensor Toolbox for MATLAB is published under the BSD 2-Clause license.</li>

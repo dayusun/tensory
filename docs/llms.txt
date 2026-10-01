@@ -125,11 +125,12 @@ selects the reduced dimensions by cross-validation.
 ## Implementation
 
 Performance-critical kernels — `ttm`, `mttkrp`, the mode covariances and
-the manifold solver — are compiled C++ built on xtensor and on whichever
-BLAS/LAPACK R itself was built against. Compiling them requires a C++20
-compiler. Every compiled kernel is optional: an equivalent pure-R path
-runs when the package is installed without compilation, and the two
-paths are tested against each other.
+the manifold solver — are compiled C++ (plain Rcpp, operating on R’s own
+array storage without copying) calling whichever BLAS/LAPACK R itself
+was built against, so linking R to an optimized BLAS such as OpenBLAS or
+MKL speeds them up directly. Every compiled kernel is optional: an
+equivalent pure-R path runs when the package is installed without
+compilation, and the two paths are tested against each other.
 
 R dependencies: R6, Rcpp, stats, graphics, utils.
 
@@ -149,11 +150,10 @@ R dependencies: R6, Rcpp, stats, graphics, utils.
 
 ## License
 
-MIT. The repository vendors third-party C++ headers under
-`inst/include/` that are distributed under BSD-style licenses; see
-[LICENSE](https://www.sundayu.me/tensory/LICENSE),
-[LICENSE.md](https://www.sundayu.me/tensory/LICENSE.md) and
-[THIRD_PARTY_NOTICES.md](https://www.sundayu.me/tensory/THIRD_PARTY_NOTICES.md).
+MIT; see [LICENSE](https://www.sundayu.me/tensory/LICENSE) and
+[LICENSE.md](https://www.sundayu.me/tensory/LICENSE.md). The package
+vendors no third-party source code (see
+[THIRD_PARTY_NOTICES.md](https://www.sundayu.me/tensory/THIRD_PARTY_NOTICES.md)).
 
 Naming and argument semantics take inspiration from the MATLAB Tensor
 Toolbox, which is distributed under a BSD 2-Clause license. This
