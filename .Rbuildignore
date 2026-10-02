@@ -18,3 +18,4 @@
 ^pkgdown$
 ^TPLSGLM_SPGTR_code_.*\.zip$
 ^bench$
+^figure$
