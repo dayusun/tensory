@@ -31,11 +31,13 @@ NULL
 
 # Relative fit 1 - ||X - K|| / ||X|| computed from CP structure (no dense
 # residual): ||K||^2 via the Gram Hadamard identity, <X, K> via one MTTKRP.
-.cp_fit <- function(X, lambda, U, normX) {
+# Pass `V = mttkrp(X, U, n)` (with the current factors other than U[[n]]) to
+# reuse an MTTKRP the caller already has instead of reading X again.
+.cp_fit <- function(X, lambda, U, normX, V = NULL, n = 1L) {
   H <- .kt_gram_hadamard(U)
   normP_sq <- sum(tcrossprod(lambda) * H)
-  V <- mttkrp(X, U, mode = 1L)
-  inner <- sum(lambda * colSums(U[[1L]] * V))
+  if (is.null(V)) V <- mttkrp(X, U, mode = n)
+  inner <- sum(lambda * colSums(U[[n]] * V))
   normresidual <- sqrt(max(normX^2 + normP_sq - 2 * inner, 0))
   1 - normresidual / normX
 }
@@ -79,16 +81,21 @@ cp_nmu <- function(X, R,
   epsilon <- .Machine$double.eps
   normX <- fnorm(X)
   fit_prev <- 0
+  # Dimension tree for the per-mode updates (see .mttkrp_sweeper); the last
+  # mode's MTTKRP only involves the other, already updated, factors, so it
+  # also gives <X, K> for the fit without another pass over X.
+  sweep_mttkrp <- .mttkrp_sweeper(X, dims, seq_len(N))
 
   for (iter in seq_len(maxiters)) {
+    sweep_mttkrp$start()
     for (n in seq_len(N)) {
-      Vn <- mttkrp(X, U, mode = n)
+      Vn <- sweep_mttkrp$mttkrp(U, n)
       Gamma <- .kt_gram_hadamard(U, modes = setdiff(seq_len(N), n))
       denom <- U[[n]] %*% Gamma + epsilon
       U[[n]] <- U[[n]] * (Vn / denom)
     }
 
-    fit <- .cp_fit(X, rep(1, R), U, normX)
+    fit <- .cp_fit(X, rep(1, R), U, normX, V = Vn, n = N)
     fit_change <- abs(fit - fit_prev)
     if (printitn > 0L && (iter %% printitn == 0L || iter == 1L)) {
       message(sprintf(" Iter %2d: fit = %.6e, fitdelta = %.6e",
@@ -244,23 +251,23 @@ cp_opt <- function(X, R,
   fg <- function(v) {
     U <- .vec_to_factors(v, dims, R)
     H <- .kt_gram_hadamard(U)
-    V1 <- mttkrp(X, U, mode = 1L)
-    inner <- sum(U[[1L]] * V1)
+    V <- .mttkrp_all(X, U)
+    inner <- sum(U[[1L]] * V[[1L]])
     f <- normX2 - 2 * inner + sum(H)
 
     grad <- vector("list", N)
     for (n in seq_len(N)) {
-      Vn <- if (n == 1L) V1 else mttkrp(X, U, mode = n)
       Gamma <- .kt_gram_hadamard(U, modes = setdiff(seq_len(N), n))
-      grad[[n]] <- 2 * (U[[n]] %*% Gamma - Vn)
+      grad[[n]] <- 2 * (U[[n]] %*% Gamma - V[[n]])
     }
     list(value = f, gradient = .factors_to_vec(grad))
   }
+  obj <- .fg_cached(fg)
 
   res <- stats::optim(
     par = .factors_to_vec(U0),
-    fn = function(v) fg(v)$value,
-    gr = function(v) fg(v)$gradient,
+    fn = obj$fn,
+    gr = obj$gr,
     method = "L-BFGS-B",
     lower = lower,
     control = list(maxit = as.integer(maxiters), factr = factr,
@@ -322,17 +329,15 @@ cp_wopt <- function(X, W, R,
     D <- W2 * M - Y # = W^2 * (M - X)
     f <- sum(D * (M - X$data))
     Dt <- Tensor$new(D, dims = dims, fast = TRUE)
-    grad <- vector("list", N)
-    for (n in seq_len(N)) {
-      grad[[n]] <- 2 * mttkrp(Dt, U, mode = n)
-    }
+    grad <- lapply(.mttkrp_all(Dt, U), function(G) 2 * G)
     list(value = f, gradient = .factors_to_vec(grad))
   }
+  obj <- .fg_cached(fg)
 
   res <- stats::optim(
     par = .factors_to_vec(U0),
-    fn = function(v) fg(v)$value,
-    gr = function(v) fg(v)$gradient,
+    fn = obj$fn,
+    gr = obj$gr,
     method = "L-BFGS-B",
     control = list(maxit = as.integer(maxiters), factr = factr,
                    trace = as.integer(printitn > 0))

@@ -167,3 +167,66 @@ test_that("cp_als with the dimension tree matches per-mode mttkrp", {
   b <- run(X, c(2L, 1L, 3L), FALSE)
   expect_identical(a$lambda, b$lambda)
 })
+
+test_that("cp_nmu, cp_opt, cp_wopt and gcp_opt match their per-mode paths", {
+  skip_if_not(exists("mttkrp_partial_cpp", mode = "function"))
+  with_tree <- function(tree, expr) {
+    old <- options(tensory.cp_dimtree = tree)
+    on.exit(options(old))
+    set.seed(5)
+    force(expr)
+  }
+  same_ktensor <- function(a, b, tol = 1e-7) {
+    expect_equal(a$lambda, b$lambda, tolerance = tol)
+    for (k in seq_along(a$U)) expect_equal(a$U[[k]], b$U[[k]], tolerance = tol)
+  }
+  set.seed(21)
+  for (d in list(c(6, 5, 4), c(4, 3, 3, 2))) {
+    X <- tensor(array(stats::runif(prod(d)), dim = d))
+    U0 <- lapply(d, function(n) matrix(stats::runif(n * 2), n, 2))
+    same_ktensor(with_tree(TRUE, cp_nmu(X, 2, maxiters = 20L, tol = 0, init = U0)),
+                 with_tree(FALSE, cp_nmu(X, 2, maxiters = 20L, tol = 0, init = U0)))
+    same_ktensor(with_tree(TRUE, cp_opt(X, 2, init = U0, maxiters = 30L)),
+                 with_tree(FALSE, cp_opt(X, 2, init = U0, maxiters = 30L)))
+    W <- tensor(array(as.numeric(stats::runif(prod(d)) > 0.2), dim = d))
+    same_ktensor(with_tree(TRUE, cp_wopt(X, W, 2, init = U0, maxiters = 30L)),
+                 with_tree(FALSE, cp_wopt(X, W, 2, init = U0, maxiters = 30L)))
+    a <- with_tree(TRUE, gcp_opt(X, 2, type = "gaussian", init = U0, maxiters = 30L))
+    b <- with_tree(FALSE, gcp_opt(X, 2, type = "gaussian", init = U0, maxiters = 30L))
+    expect_equal(a$objective, b$objective, tolerance = 1e-8)
+    same_ktensor(a$K, b$K)
+  }
+  # sparse input keeps the per-mode path and agrees with the dense fit
+  X <- tensor(array(stats::rnorm(60) * (stats::runif(60) > 0.5), dim = c(3, 4, 5)))
+  U0 <- lapply(c(3, 4, 5), function(n) matrix(stats::rnorm(n * 2), n, 2))
+  same_ktensor(cp_opt(X, 2, init = U0, maxiters = 30L),
+               cp_opt(sptensor(X), 2, init = U0, maxiters = 30L))
+})
+
+test_that(".cp_fit gives the same fit from any mode's MTTKRP", {
+  set.seed(22)
+  X <- tensor(array(stats::rnorm(60), dim = c(3, 4, 5)))
+  U <- lapply(c(3, 4, 5), function(n) matrix(stats::rnorm(n * 2), n, 2))
+  lambda <- c(1.5, -0.5)
+  ref <- .cp_fit(X, lambda, U, fnorm(X))
+  for (n in 1:3) {
+    expect_equal(.cp_fit(X, lambda, U, fnorm(X), V = mttkrp(X, U, n), n = n),
+                 ref, tolerance = 1e-12)
+  }
+})
+
+test_that(".fg_cached evaluates each point once for fn and gr", {
+  calls <- 0
+  fg <- function(v) {
+    calls <<- calls + 1
+    list(value = sum((v - 1)^2), gradient = 2 * (v - 1))
+  }
+  obj <- .fg_cached(fg)
+  expect_equal(obj$fn(c(0, 0)), 2)
+  expect_equal(obj$gr(c(0, 0)), c(-2, -2))
+  expect_equal(calls, 1)
+  obj$gr(c(1, 0))
+  expect_equal(calls, 2)
+  res <- stats::optim(c(0, 0), obj$fn, obj$gr, method = "L-BFGS-B")
+  expect_equal(res$par, c(1, 1), tolerance = 1e-6)
+})
