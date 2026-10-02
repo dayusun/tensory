@@ -26,6 +26,15 @@ First development version. Everything below is new.
   `mttkrps` 4.5-24x faster depending on the tensor order, and a `cp_als()`
   sweep on 100^3 2.8x faster; with reference BLAS the gains are 1.0-1.3x,
   2-7x and 1.1x.
+* `cp_nmu()` uses the same dimension tree as `cp_als()` and reuses the last
+  mode's MTTKRP for the fit, so an iteration reads a dense tensor twice
+  instead of `N + 1` times. `cp_opt()`, `cp_wopt()` and `gcp_opt()` compute
+  their gradients with `mttkrps()` (two passes instead of `N`) and no longer
+  evaluate the objective and gradient twice at every point L-BFGS-B visits.
+  With R = 10 on orders 3-5: `cp_nmu` 1.35-2.1x (OpenBLAS) / 1.6-2.8x
+  (reference BLAS), `cp_opt` 2.1-4.1x / 2.8-4.8x, `cp_wopt` 1.7-2.1x /
+  2.1-3.0x, `gcp_opt` 1.8-2.7x / 2.2-3.2x. Results are the same up to
+  rounding; `options(tensory.cp_dimtree = FALSE)` restores the per-mode path.
 * `cp_als()` on a dense tensor of order 3 or more uses a dimension tree:
   the modes are split into two groups and each group's MTTKRPs are finished
   from one partial contraction with the other group's (fixed) factors, so a
