@@ -45,7 +45,7 @@ irrelevant.
 X1 <- ttm(ttm(Y, A, mode=1), B, mode=2) # Y x_1 A x_2 B
 X2 <- ttm(ttm(Y, B, mode=2), A, mode=1) # Y x_2 B x_1 A
 fnorm(X1 - X2) # difference is zero
-#> [1] 1.035547e-15
+#> [1] 4.710277e-16
 ```
 
 ## N-mode product and matricization
@@ -87,19 +87,19 @@ X <- ttm(Y, U, mode = 1:3) # X = Y x_1 A x_2 B x_3 C
 Xm1 <- kronecker(list(B, A)) %*% as.matrix(tenmat(Y, rdims = c(1, 2))) %*% t(C)
 Xm2 <- as.matrix(tenmat(X, rdims = c(1, 2)))
 norm(Xm1 - Xm2, type = "F") # should be zero
-#> [1] 2.860845e-15
+#> [1] 2.782211e-15
 
 Xm1 <- B %*% as.matrix(tenmat(Y, rdims = 2, cdims = c(3, 1))) %*% t(kronecker(list(A, C)))
 Xm2 <- as.matrix(tenmat(X, rdims = 2, cdims = c(3, 1)))
 norm(Xm1 - Xm2, type = "F") # should be zero
-#> [1] 2.7104e-15
+#> [1] 3.566564e-15
 
 # Vectorized
 Xm1 <- as.numeric(Y$as_array()) %*% t(kronecker(list(C, B, A)))
 Xm2 <- as.numeric(X$as_array())
 # Depending on native vector mapping, we compare element-wise
 norm(matrix(Xm1, ncol=1) - matrix(Xm2, ncol=1), type = "F") # should be zero
-#> [1] 4.772668e-15
+#> [1] 2.701289e-15
 ```
 
 ## Norm of difference between two tensors
@@ -168,7 +168,7 @@ X <- ttensor(Y, A)
 Apinv <- lapply(A, MASS::ginv)
 Y2 <- ttm(as.tensor(X), Apinv, mode = 1:3)
 fnorm(Y - as.tensor(Y2)) # should be zero
-#> [1] 3.872012e-13
+#> [1] 6.930815e-13
 ```
 
 **Proposition 4.2c**
@@ -184,7 +184,7 @@ X <- ttensor(Y, Q)
 Qt <- lapply(Q, t)
 Y2 <- ttm(as.tensor(X), Qt, mode = 1:3)
 fnorm(Y - as.tensor(Y2)) # should be zero
-#> [1] 2.789997e-14
+#> [1] 2.049196e-14
 ```
 
 ## Tucker operator and matricized tensors
@@ -225,7 +225,7 @@ R <- list(R1, R2, R3)
 
 Z <- ttm(Y, R, mode = 1:3)
 abs(fnorm(as.tensor(X)) - fnorm(as.tensor(Z))) # should be near zero
-#> [1] 5.684342e-14
+#> [1] 0
 ```
 
 ## Kruskal operator properties

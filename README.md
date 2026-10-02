@@ -100,10 +100,9 @@ R dependencies: R6, Rcpp, stats, graphics, utils.
 
 ## License
 
-MIT. The repository vendors third-party C++ headers under `inst/include/` that
-are distributed under BSD-style licenses; see [LICENSE](LICENSE),
-[LICENSE.md](LICENSE.md) and
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+MIT; see [LICENSE](LICENSE) and [LICENSE.md](LICENSE.md). The package vendors
+no third-party source code (see
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)).
 
 Naming and argument semantics take inspiration from the MATLAB Tensor Toolbox,
 which is distributed under a BSD 2-Clause license. This repository does not

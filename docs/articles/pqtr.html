@@ -124,38 +124,38 @@ then mapping the answer back to the original shape.</p>
 <col width="24%">
 <col width="29%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th></th>
 <th><code><a href="../reference/pqtr.html">pqtr()</a></code></th>
 <th><code><a href="../reference/tepls.html">tepls()</a></code></th>
 <th><code><a href="../reference/spgtr.html">spgtr()</a></code></th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td>Models</td>
 <td>a quantile of the outcome</td>
 <td>the mean</td>
 <td>a GLM mean (any family)</td>
 </tr>
-<tr class="even">
+<tr>
 <td>Outcome</td>
 <td>continuous</td>
 <td>continuous, one or several</td>
 <td>binary, count, continuous, …</td>
 </tr>
-<tr class="odd">
+<tr>
 <td>Extra covariates</td>
 <td>yes, unreduced</td>
 <td>no</td>
 <td>yes, unpenalized</td>
 </tr>
-<tr class="even">
+<tr>
 <td>Selects whole slices</td>
 <td>no</td>
 <td>no</td>
 <td>yes, via an L2,1 penalty</td>
 </tr>
-<tr class="odd">
+<tr>
 <td>Robust to outliers</td>
 <td>yes</td>
 <td>no</td>
@@ -241,7 +241,7 @@ data were generated:</p>
 <span>  <span class="fu"><a href="https://rdrr.io/r/graphics/image.html" class="external-link">image</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="fu"><a href="../reference/as.tensor.html">as.tensor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fits</span><span class="op">[[</span><span class="va">nm</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="fu">as_array</span><span class="op">(</span><span class="op">)</span><span class="op">[</span><span class="va">p</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">:</span><span class="fl">1</span>, <span class="op">]</span><span class="op">)</span>, main <span class="op">=</span> <span class="va">nm</span>,</span>
 <span>        axes <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
-<p><img src="pqtr_files/figure-html/unnamed-chunk-7-1.png" class="r-plt" alt="" width="576"></p>
+<p><img src="pqtr_files/figure-html/unnamed-chunk-7-1.png" class="r-plt" width="576"></p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span><span class="va">op</span><span class="op">)</span></span></code></pre></div>
 <p>Predictions are fitted <strong>conditional quantiles</strong>, not

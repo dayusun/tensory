@@ -80,8 +80,8 @@
 </h2>
 <p>Welcome to <code>tensory</code>, a modern, high-performance R package
 for tensor operations. <code>tensory</code> combines a user-friendly R6
-class system on the frontend with a high-performance C++
-<code>xtensor</code> and Fortran BLAS backend.</p>
+class system on the frontend with a high-performance C++ (Rcpp) and BLAS
+backend.</p>
 <p>The <code>tensory</code> package is designed to be highly compatible
 with the popular MATLAB Tensor Toolbox API, bringing familiar semantics
 to R but with a zero-copy memory integration approach natively optimized
@@ -269,15 +269,21 @@ with scalars.</p>
 <span><span class="co"># Logical and comparison operations</span></span>
 <span><span class="va">t_eq</span> <span class="op">&lt;-</span> <span class="va">t1</span> <span class="op">==</span> <span class="va">t2</span></span>
 <span><span class="va">t_eq</span><span class="op">$</span><span class="fu">as_array</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 1 0 0 0</span></span>
+<span><span class="co">#&gt;      [,1] [,2]</span></span>
+<span><span class="co">#&gt; [1,]    1    0</span></span>
+<span><span class="co">#&gt; [2,]    0    0</span></span>
 <span></span>
 <span><span class="va">t_gt</span> <span class="op">&lt;-</span> <span class="va">t1</span> <span class="op">&gt;</span> <span class="fl">2</span></span>
 <span><span class="va">t_gt</span><span class="op">$</span><span class="fu">as_array</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 0 0 1 1</span></span>
+<span><span class="co">#&gt;      [,1] [,2]</span></span>
+<span><span class="co">#&gt; [1,]    0    1</span></span>
+<span><span class="co">#&gt; [2,]    0    1</span></span>
 <span></span>
 <span><span class="va">t_not</span> <span class="op">&lt;-</span> <span class="op">!</span><span class="va">t2</span></span>
 <span><span class="va">t_not</span><span class="op">$</span><span class="fu">as_array</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 0 1 1 0</span></span></code></pre></div>
+<span><span class="co">#&gt;      [,1] [,2]</span></span>
+<span><span class="co">#&gt; [1,]    0    1</span></span>
+<span><span class="co">#&gt; [2,]    1    0</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -353,7 +359,7 @@ transposition, and standard matrix multiplication
 <h2 id="tensor-operations">Tensor Operations<a class="anchor" aria-label="anchor" href="#tensor-operations"></a>
 </h2>
 <p>The core feature of <code>tensory</code> is its extremely fast tensor
-contractions leveraging C++ xtensor-blas optimizations.</p>
+contractions backed by compiled BLAS kernels.</p>
 <div class="section level3">
 <h3 id="tensor-times-matrix-ttm">Tensor Times Matrix (ttm)<a class="anchor" aria-label="anchor" href="#tensor-times-matrix-ttm"></a>
 </h3>
@@ -616,11 +622,11 @@ dimension-aligned multiplying (broadcasting).</p>
 <h2 id="conclusion">Conclusion<a class="anchor" aria-label="anchor" href="#conclusion"></a>
 </h2>
 <p>The <code>tensory</code> package brings the flexibility of MATLAB
-Tensor Toolbox to the R ecosystem with heavily optimized
-<code>xtensor</code> bindings and an elegant R6 object-oriented
-interface. You can create tensors, matricize them mathematically, apply
-advanced reductions and element-wise scalings, and compute
-multi-dimensional products flawlessly.</p>
+Tensor Toolbox to the R ecosystem with compiled BLAS-backed kernels and
+an elegant R6 object-oriented interface. You can create tensors,
+matricize them mathematically, apply advanced reductions and
+element-wise scalings, and compute multi-dimensional products
+flawlessly.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

@@ -4,7 +4,7 @@
 
 Welcome to `tensory`, a modern, high-performance R package for tensor
 operations. `tensory` combines a user-friendly R6 class system on the
-frontend with a high-performance C++ `xtensor` and Fortran BLAS backend.
+frontend with a high-performance C++ (Rcpp) and BLAS backend.
 
 The `tensory` package is designed to be highly compatible with the
 popular MATLAB Tensor Toolbox API, bringing familiar semantics to R but
@@ -201,15 +201,21 @@ t_mod$as_array()
 # Logical and comparison operations
 t_eq <- t1 == t2
 t_eq$as_array()
-#> [1] 1 0 0 0
+#>      [,1] [,2]
+#> [1,]    1    0
+#> [2,]    0    0
 
 t_gt <- t1 > 2
 t_gt$as_array()
-#> [1] 0 0 1 1
+#>      [,1] [,2]
+#> [1,]    0    1
+#> [2,]    0    1
 
 t_not <- !t2
 t_not$as_array()
-#> [1] 0 1 1 0
+#>      [,1] [,2]
+#> [1,]    0    1
+#> [2,]    1    0
 ```
 
 ## The `Tenmat` Class (Matricized Tensors)
@@ -286,7 +292,7 @@ t_orig <- tensory::as.tensor(tmC)
 ## Tensor Operations
 
 The core feature of `tensory` is its extremely fast tensor contractions
-leveraging C++ xtensor-blas optimizations.
+backed by compiled BLAS kernels.
 
 ### Tensor Times Matrix (ttm)
 
@@ -562,7 +568,7 @@ t_scale(t_dense, c(10, 20), dims = 3)$dim()
 ## Conclusion
 
 The `tensory` package brings the flexibility of MATLAB Tensor Toolbox to
-the R ecosystem with heavily optimized `xtensor` bindings and an elegant
-R6 object-oriented interface. You can create tensors, matricize them
+the R ecosystem with compiled BLAS-backed kernels and an elegant R6
+object-oriented interface. You can create tensors, matricize them
 mathematically, apply advanced reductions and element-wise scalings, and
 compute multi-dimensional products flawlessly.

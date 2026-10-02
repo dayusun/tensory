@@ -26,6 +26,17 @@ First development version. Everything below is new.
   `mttkrps` 4.5-24x faster depending on the tensor order, and a `cp_als()`
   sweep on 100^3 2.8x faster; with reference BLAS the gains are 1.0-1.3x,
   2-7x and 1.1x.
+* `cp_als()` on a dense tensor of order 3 or more uses a dimension tree:
+  the modes are split into two groups and each group's MTTKRPs are finished
+  from one partial contraction with the other group's (fixed) factors, so a
+  sweep reads the tensor twice instead of once per mode. Results are the
+  same up to rounding. Over 10 sweeps at R = 10 it is 1.9-2.3x faster with
+  OpenBLAS and 1.6-2.8x with reference BLAS for orders 4-6 (1.07-1.6x for
+  order 3). `options(tensory.cp_dimtree = FALSE)` turns it off; a
+  `dimorder` other than `1:N` or `N:1` and sparse tensors use per-mode
+  `mttkrp()` as before.
+* The vendored xtensor-r headers and `inst/tools/vendor` are removed; the
+  package vendors no third-party code.
 * `mttkrp()` in the first and last mode of high-order tensors no longer
   builds a Khatri-Rao product with `prod(dims) / I_n` rows: the kernel
   contracts a block of modes whose size is near `sqrt(prod(dims))` first.

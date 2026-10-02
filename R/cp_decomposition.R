@@ -78,6 +78,28 @@ NULL
   U
 }
 
+# Split point s (modes [1, s] / [s+1, N]) for cp_als's dimension tree, or
+# NULL when it does not apply: sparse input, fewer than 3 modes (the tree
+# saves nothing), an update order other than 1:N or N:1 (each group must be
+# updated contiguously), no compiled kernels, or
+# options(tensory.cp_dimtree = FALSE). Balances the two groups' sizes, like
+# mttkrps_cpp.
+.cp_dimtree_split <- function(X, dims, dimorder) {
+  N <- length(dims)
+  if (N < 3L || inherits(X, "Sptensor") ||
+      !isTRUE(getOption("tensory.cp_dimtree", TRUE)) ||
+      !exists("mttkrp_partial_cpp", mode = "function")) {
+    return(NULL)
+  }
+  if (!identical(dimorder, seq_len(N)) && !identical(dimorder, rev(seq_len(N)))) {
+    return(NULL)
+  }
+  worst <- vapply(seq_len(N - 1L), function(c) {
+    max(prod(dims[seq_len(c)]), prod(dims[-seq_len(c)]))
+  }, numeric(1))
+  which.min(worst)
+}
+
 #' CP Alternating Least Squares Decomposition
 #'
 #' Computes a rank-R canonical polyadic (CP) decomposition of a dense tensor by
@@ -149,10 +171,31 @@ cp_als <- function(X, R,
 
   n_last <- dimorder[N]
 
+  # Dimension tree (dense X): split the modes into [1, s] and [s+1, N]. While
+  # one group is being updated the other group's factors are fixed, so one
+  # partial contraction of X with the fixed group serves every MTTKRP of the
+  # group being updated -- two passes over X per sweep instead of N. Gives
+  # the same V as mttkrp() up to rounding.
+  split <- .cp_dimtree_split(X, dims, dimorder)
+  if (!is.null(split)) {
+    Xd <- .dense_data(X)
+  }
+
   for (iter in seq_len(maxiters)) {
     V_last <- NULL
+    partial <- NULL
+    partial_left <- NA
     for (n in dimorder) {
-      V <- mttkrp(X, U, mode = n)
+      if (is.null(split)) {
+        V <- mttkrp(X, U, mode = n)
+      } else {
+        left <- n <= split
+        if (!identical(partial_left, left)) {
+          partial <- mttkrp_partial_cpp(Xd, U, split, left)
+          partial_left <- left
+        }
+        V <- mttkrp_finish_cpp(partial, U, dims, split, n)
+      }
 
       Y <- matrix(1, R, R)
       for (k in setdiff(seq_len(N), n)) {

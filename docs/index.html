@@ -12,9 +12,9 @@
 <link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Tensor algebra and tensor regression for R">
-<meta name="description" content="Dense, sparse, symmetric and factorized tensor classes with a MATLAB Tensor Toolbox-style API, compiled xtensor/BLAS kernels, the CP and Tucker decomposition families, and three regression models that relate an array-valued predictor to a scalar outcome.
+<meta name="description" content="Dense, sparse, symmetric and factorized tensor classes with a MATLAB Tensor Toolbox-style API, compiled Rcpp/BLAS kernels, the CP and Tucker decomposition families, and three regression models that relate an array-valued predictor to a scalar outcome.
 ">
-<meta property="og:description" content="Dense, sparse, symmetric and factorized tensor classes with a MATLAB Tensor Toolbox-style API, compiled xtensor/BLAS kernels, the CP and Tucker decomposition families, and three regression models that relate an array-valued predictor to a scalar outcome.
+<meta property="og:description" content="Dense, sparse, symmetric and factorized tensor classes with a MATLAB Tensor Toolbox-style API, compiled Rcpp/BLAS kernels, the CP and Tucker decomposition families, and three regression models that relate an array-valued predictor to a scalar outcome.
 ">
 </head>
 <body>
@@ -74,7 +74,7 @@
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("remotes")</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"dayusun/tensory"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/remotes/man/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"dayusun/tensory"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="tensor-classes-and-operations">Tensor classes and operations<a class="anchor" aria-label="anchor" href="#tensor-classes-and-operations"></a>
@@ -117,7 +117,7 @@
 <div class="section level2">
 <h2 id="implementation">Implementation<a class="anchor" aria-label="anchor" href="#implementation"></a>
 </h2>
-<p>Performance-critical kernels — <code>ttm</code>, <code>mttkrp</code>, the mode covariances and the manifold solver — are compiled C++ built on xtensor and on whichever BLAS/LAPACK R itself was built against. Compiling them requires a C++20 compiler. Every compiled kernel is optional: an equivalent pure-R path runs when the package is installed without compilation, and the two paths are tested against each other.</p>
+<p>Performance-critical kernels — <code>ttm</code>, <code>mttkrp</code>, the mode covariances and the manifold solver — are compiled C++ (plain Rcpp, operating on R’s own array storage without copying) calling whichever BLAS/LAPACK R itself was built against, so linking R to an optimized BLAS such as OpenBLAS or MKL speeds them up directly. Every compiled kernel is optional: an equivalent pure-R path runs when the package is installed without compilation, and the two paths are tested against each other.</p>
 <p>R dependencies: R6, Rcpp, stats, graphics, utils.</p>
 </div>
 <div class="section level2">
@@ -137,7 +137,7 @@
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
 </h2>
-<p>MIT. The repository vendors third-party C++ headers under <code>inst/include/</code> that are distributed under BSD-style licenses; see <a href="LICENSE">LICENSE</a>, <a href="LICENSE.html">LICENSE.md</a> and <a href="THIRD_PARTY_NOTICES.html">THIRD_PARTY_NOTICES.md</a>.</p>
+<p>MIT; see <a href="LICENSE">LICENSE</a> and <a href="LICENSE.html">LICENSE.md</a>. The package vendors no third-party source code (see <a href="THIRD_PARTY_NOTICES.html">THIRD_PARTY_NOTICES.md</a>).</p>
 <p>Naming and argument semantics take inspiration from the MATLAB Tensor Toolbox, which is distributed under a BSD 2-Clause license. This repository does not vendor Tensor Toolbox source code; if Tensor Toolbox code or documentation is copied in the future, its copyright and license notices must be retained.</p>
 </div>
 <div class="section level2">

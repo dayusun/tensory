@@ -29,11 +29,11 @@ bm <- bench::mark(
   check = FALSE
 )
 bm
-#> # A tibble: 2 × 6
+#> # A tibble: 2 x 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 tensory      1.74ms   1.84ms      514.   511.1KB     4.11
-#> 2 rTensor      1.76ms   1.82ms      538.     1.2MB    15.4
+#> 1 tensory       150us    264us     3859.   279.2KB     19.5
+#> 2 rTensor       775us    920us     1030.     1.2MB     26.8
 
 
 
@@ -82,11 +82,11 @@ bm <- bench::mark(
   check = FALSE
 )
 bm
-#> # A tibble: 2 × 6
+#> # A tibble: 2 x 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 tensory      4.32ms   4.88ms      204.  781.67KB     4.16
-#> 2 rTensor      4.32ms   5.19ms      197.    1.53MB     8.22
+#> 1 tensory       335us 543.92us     1901.  393.49KB      0  
+#> 2 rTensor       959us   1.06ms      817.    1.53MB     34.1
 
 # Visualization
 library(ggplot2)
@@ -137,11 +137,11 @@ bm_multiple <- bench::mark(
   check = FALSE
 )
 bm_multiple
-#> # A tibble: 2 × 6
+#> # A tibble: 2 x 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 tensory      12.3ms   14.3ms      70.5    1.08MB     4.50
-#> 2 rTensor        13ms   13.3ms      73.7   14.07MB    73.7
+#> 1 tensory    514.81us  579.3us     1701.    1.09MB     70.9
+#> 2 rTensor      6.82ms   7.84ms      118.   14.07MB    118.
 
 # Visualization
 library(ggplot2)
@@ -182,11 +182,11 @@ bm_multiple <- bench::mark(
   check = FALSE
 )
 bm_multiple
-#> # A tibble: 2 × 6
+#> # A tibble: 2 x 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 tensory    954.77µs 986.36µs     1016.     225KB        0
-#> 2 rTensor      2.01ms   2.05ms      486.     773KB        0
+#> 1 tensory    175.68us 203.68us     4373.     195KB        0
+#> 2 rTensor      1.76ms   1.93ms      512.     792KB        0
 
 # Visualization
 library(ggplot2)
@@ -221,11 +221,11 @@ bm_memory <- bench::mark(
   check = FALSE
 )
 bm_memory
-#> # A tibble: 2 × 6
+#> # A tibble: 2 x 6
 #>   expression      min   median `itr/sec` mem_alloc `gc/sec`
 #>   <bch:expr> <bch:tm> <bch:tm>     <dbl> <bch:byt>    <dbl>
-#> 1 tensory       700µs    744µs     1357.     329KB        0
-#> 2 rTensor       798µs    831µs     1201.     610KB        0
+#> 1 tensory       130us    140us     6463.     167KB      0  
+#> 2 rTensor       417us    525us     1894.     610KB     99.7
 
 # Visualization
 library(ggplot2)

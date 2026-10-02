@@ -3,8 +3,8 @@
 Provides dense and decomposed tensor classes for R together with
 operations that use an API similar to the MATLAB Tensor Toolbox,
 including matricized products, contractions, reshaping helpers, and
-symmetry utilities. Selected kernels can delegate to
-\`xtensor\`/\`Rcpp\` backends for performance.
+symmetry utilities. Selected kernels can delegate to compiled 'Rcpp' +
+'BLAS' code for performance.
 
 `tensory` provides dense and decomposed tensor classes together with an
 API similar to the MATLAB Tensor Toolbox for R users.
@@ -32,7 +32,7 @@ operations able to delegate to optimized C++ backends.
 - Dense helpers for unfolding, vectorization, symmetry checks, and
   matricized tensor products
 
-- Optional C++ acceleration hooks via `xtensor` and `Rcpp`
+- Optional compiled acceleration via `Rcpp` and BLAS
 
 ## Main Classes
 

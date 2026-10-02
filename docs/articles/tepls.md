@@ -359,7 +359,7 @@ ys <- vapply(Xs, function(xi) sum(xi[1:2]), numeric(1)) + rnorm(200, sd = 0.2)
 full <- tepls(Xs, ys, u = ps)
 ols <- lm(ys ~ t(vapply(Xs, as.vector, numeric(prod(ps)))))
 max(abs(as.vector(as.tensor(coef(full))$as_array()) - unname(coef(ols)[-1])))
-#> [1] 5.434164e-11
+#> [1] 5.434286e-11
 ```
 
 **[`spgtr()`](https://www.sundayu.me/tensory/reference/spgtr.md) with a
@@ -370,7 +370,7 @@ Gaussian family and the SIMPLS basis is the same model.**
 a <- tepls(X, y, u = c(2, 2))
 b <- spgtr(X, y, u = c(2, 2), family = gaussian(), basis = "simpls")
 max(abs(as.vector(as.tensor(coef(a))$as_array()) - b$bvec))
-#> [1] 9.763435e-11
+#> [1] 9.763479e-11
 ```
 
 ## Reference
