@@ -100,6 +100,71 @@ NULL
   which.min(worst)
 }
 
+# MTTKRPs for an ALS-type sweep (cp_als, cp_nmu) that updates the factors one
+# mode at a time in `dimorder`. Returns list(start, mttkrp): call start() at
+# the beginning of every sweep, then mttkrp(U, n) for each mode in order with
+# the current factors. With a dimension tree (.cp_dimtree_split) the partial
+# for a group is computed on entering it and reused for the group's other
+# modes -- valid because during a contiguous run of one group's updates the
+# other group's factors do not change. Otherwise it is mttkrp() per mode.
+.mttkrp_sweeper <- function(X, dims, dimorder) {
+  split <- .cp_dimtree_split(X, dims, dimorder)
+  if (is.null(split)) {
+    return(list(start = function() invisible(NULL),
+                mttkrp = function(U, n) mttkrp(X, U, mode = n)))
+  }
+  Xd <- .dense_data(X)
+  state <- new.env(parent = emptyenv())
+  start <- function() {
+    state$partial <- NULL
+    state$left <- NA
+    invisible(NULL)
+  }
+  start()
+  list(
+    start = start,
+    mttkrp = function(U, n) {
+      left <- n <= split
+      if (!identical(state$left, left)) {
+        state$partial <- mttkrp_partial_cpp(Xd, U, split, left)
+        state$left <- left
+      }
+      mttkrp_finish_cpp(state$partial, U, dims, split, n)
+    }
+  )
+}
+
+# mttkrp(X, U, n) for every mode with the same factors (gradient-based CP
+# fits). A dense tensor of order >= 3 goes through mttkrps(), which reads it
+# twice in total instead of once per mode; sparse tensors (mttkrps would
+# densify them), order 2, or options(tensory.cp_dimtree = FALSE) use
+# mttkrp() per mode.
+.mttkrp_all <- function(X, U) {
+  N <- length(U)
+  if (N >= 3L && !inherits(X, "Sptensor") && inherits(X, "Tensor") &&
+      isTRUE(getOption("tensory.cp_dimtree", TRUE)) &&
+      exists("mttkrps_cpp", mode = "function")) {
+    return(mttkrps(X, U))
+  }
+  lapply(seq_len(N), function(n) mttkrp(X, U, mode = n))
+}
+
+# optim()'s L-BFGS-B asks for fn and gr separately, usually at the same
+# point; computing value and gradient together (fg(v) -> list(value,
+# gradient)) and remembering the last point halves the work.
+.fg_cached <- function(fg) {
+  last_v <- NULL
+  last <- NULL
+  get <- function(v) {
+    if (!identical(v, last_v)) {
+      last <<- fg(v)
+      last_v <<- v
+    }
+    last
+  }
+  list(fn = function(v) get(v)$value, gr = function(v) get(v)$gradient)
+}
+
 #' CP Alternating Least Squares Decomposition
 #'
 #' Computes a rank-R canonical polyadic (CP) decomposition of a dense tensor by
@@ -171,31 +236,15 @@ cp_als <- function(X, R,
 
   n_last <- dimorder[N]
 
-  # Dimension tree (dense X): split the modes into [1, s] and [s+1, N]. While
-  # one group is being updated the other group's factors are fixed, so one
-  # partial contraction of X with the fixed group serves every MTTKRP of the
-  # group being updated -- two passes over X per sweep instead of N. Gives
-  # the same V as mttkrp() up to rounding.
-  split <- .cp_dimtree_split(X, dims, dimorder)
-  if (!is.null(split)) {
-    Xd <- .dense_data(X)
-  }
+  # Dimension tree (dense X): two passes over X per sweep instead of N, same
+  # V as mttkrp() up to rounding (see .mttkrp_sweeper).
+  sweep_mttkrp <- .mttkrp_sweeper(X, dims, dimorder)
 
   for (iter in seq_len(maxiters)) {
     V_last <- NULL
-    partial <- NULL
-    partial_left <- NA
+    sweep_mttkrp$start()
     for (n in dimorder) {
-      if (is.null(split)) {
-        V <- mttkrp(X, U, mode = n)
-      } else {
-        left <- n <= split
-        if (!identical(partial_left, left)) {
-          partial <- mttkrp_partial_cpp(Xd, U, split, left)
-          partial_left <- left
-        }
-        V <- mttkrp_finish_cpp(partial, U, dims, split, n)
-      }
+      V <- sweep_mttkrp$mttkrp(U, n)
 
       Y <- matrix(1, R, R)
       for (k in setdiff(seq_len(N), n)) {

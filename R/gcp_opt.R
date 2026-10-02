@@ -124,17 +124,15 @@ gcp_opt <- function(X, R,
     f <- sum(loss$f(xvals, M))
     D <- Tensor$new(array(loss$g(xvals, M), dim = dims), dims = dims,
                     fast = TRUE)
-    grad <- vector("list", N)
-    for (n in seq_len(N)) {
-      grad[[n]] <- mttkrp(D, U, mode = n)
-    }
+    grad <- .mttkrp_all(D, U)
     list(value = f, gradient = .factors_to_vec(grad))
   }
+  obj <- .fg_cached(fg)
 
   res <- stats::optim(
     par = .factors_to_vec(U0),
-    fn = function(v) fg(v)$value,
-    gr = function(v) fg(v)$gradient,
+    fn = obj$fn,
+    gr = obj$gr,
     method = "L-BFGS-B",
     lower = loss$lower,
     control = list(maxit = as.integer(maxiters), factr = factr,
